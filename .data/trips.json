@@ -1,0 +1,54 @@
+{
+  "c34a8ea97f": {
+    "id": "c34a8ea97f",
+    "createdAt": "2025-10-30T14:47:09.002Z",
+    "destinationCountry": "Slovenia",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 3,
+    "budgetTotal": 750,
+    "result": {
+      "perDay": 115,
+      "bucket": "cheap",
+      "accom": 70,
+      "other": 45,
+      "styleLabel": "Comfort",
+      "flight": {
+        "low": 80,
+        "high": 120,
+        "from": "LTN",
+        "to": "LJU",
+        "distanceKm": 1247
+      },
+      "totalLow": 425,
+      "totalHigh": 465,
+      "fits": true,
+      "suggestion": ""
+    }
+  },
+  "03826bf1e2": {
+    "id": "03826bf1e2",
+    "createdAt": "2025-10-30T14:51:45.458Z",
+    "destinationCountry": "Slovenia",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 3,
+    "budgetTotal": 500,
+    "result": {
+      "perDay": 75,
+      "bucket": "cheap",
+      "accom": 45,
+      "other": 30,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 80,
+        "high": 120,
+        "from": "LTN",
+        "to": "LJU",
+        "distanceKm": 1247
+      },
+      "totalLow": 305,
+      "totalHigh": 345,
+      "fits": true,
+      "suggestion": ""
+    }
+  }
+}
