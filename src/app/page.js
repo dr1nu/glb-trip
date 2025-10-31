@@ -211,54 +211,34 @@ function StyleToggle({ value, onChange }) {
 function ResultCard({ destinationCountry, homeCountry, tripLengthDays, budgetTotal, result, onBack }) {
   const { perDay, bucket, accom, other, styleLabel, flight, totalLow, totalHigh, fits, suggestion } = result;
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [isContinuing, setIsContinuing] = useState(false);
+  const [continueError, setContinueError] = useState('');
 
-  async function handleContinue() {
-    if (isSaving) return;
-    setIsSaving(true);
-    setSaveError('');
+  const pendingTripPayload = {
+    destinationCountry,
+    homeCountry,
+    tripLengthDays,
+    budgetTotal,
+    result,
+  };
 
+  function handleContinue() {
+    if (isContinuing) return;
+    setIsContinuing(true);
+    setContinueError('');
+
+    const STORAGE_KEY = 'glb-pending-trip';
     try {
-      const response = await fetch('/api/trips', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          destinationCountry,
-          homeCountry,
-          tripLengthDays,
-          budgetTotal,
-          result,
-        }),
-      });
-
-      let data = null;
-      try {
-        data = await response.json();
-      } catch (err) {
-        if (response.ok) {
-          throw new Error('Malformed response from server.');
-        }
-      }
-
-      if (!response.ok) {
-        const message = data?.error ?? `Failed with status ${response.status}.`;
-        throw new Error(message);
-      }
-
-      const tripId = data?.tripId;
-      if (!tripId) {
-        throw new Error('Trip ID missing from response.');
-      }
-
-      router.push(`/trip/${tripId}`);
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pendingTripPayload));
+      router.push('/trip/request');
     } catch (err) {
-      console.error('Failed to create trip', err);
-      setSaveError(
-        err instanceof Error ? err.message : 'Failed to save trip.'
+      console.error('Failed to store pending trip', err);
+      setContinueError(
+        err instanceof Error
+          ? err.message
+          : 'Please enable storage to continue.'
       );
-    } finally {
-      setIsSaving(false);
+      setIsContinuing(false);
     }
   }
 
@@ -308,21 +288,21 @@ function ResultCard({ destinationCountry, homeCountry, tripLengthDays, budgetTot
       <div className="text-center text-[13px] text-neutral-300">
         <div className="font-semibold mb-1">We can get you this trip for the cheapest possible price.</div>
         <div className="text-neutral-400">Next: add your dates & preferences and we’ll hand-build your itinerary.</div>
-        {saveError && (
+        {continueError && (
           <div className="mt-3 text-sm text-red-400">
-            {saveError}
+            {continueError}
           </div>
         )}
         <button
           className={`mt-3 w-full font-semibold text-sm py-3 rounded-xl transition-colors ${
-            isSaving
+            isContinuing
               ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
               : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
           }`}
           onClick={handleContinue}
-          disabled={isSaving}
+          disabled={isContinuing}
         >
-          {isSaving ? 'Saving…' : 'Continue →'}
+          {isContinuing ? 'Opening form…' : 'Continue →'}
         </button>
       </div>
     </section>

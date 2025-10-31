@@ -180,5 +180,65 @@
       "fits": true,
       "suggestion": ""
     }
+  },
+  "a886ecabac": {
+    "id": "a886ecabac",
+    "createdAt": "2025-10-31T19:06:50.795Z",
+    "destinationCountry": "Monaco",
+    "homeCountry": "Romania",
+    "tripLengthDays": 6,
+    "budgetTotal": 1100,
+    "result": {
+      "perDay": 135,
+      "bucket": "pricey",
+      "accom": 90,
+      "other": 45,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 102,
+        "high": 152,
+        "from": "OTP",
+        "to": "NCE",
+        "distanceKm": 1506
+      },
+      "totalLow": 912,
+      "totalHigh": 962,
+      "fits": true,
+      "suggestion": ""
+    }
+  },
+  "9e6cdd7033": {
+    "id": "9e6cdd7033",
+    "createdAt": "2025-10-31T19:22:09.374Z",
+    "destinationCountry": "Latvia",
+    "homeCountry": "Malta",
+    "tripLengthDays": 7,
+    "budgetTotal": 750,
+    "result": {
+      "perDay": 75,
+      "bucket": "cheap",
+      "accom": 45,
+      "other": 30,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 144,
+        "high": 217,
+        "from": "MLA",
+        "to": "RIX",
+        "distanceKm": 2448
+      },
+      "totalLow": 669,
+      "totalHigh": 742,
+      "fits": true,
+      "suggestion": ""
+    },
+    "contact": {
+      "name": "test",
+      "email": "test@test.com",
+      "city": "SANTA VENERA",
+      "adults": 2,
+      "children": 2,
+      "details": "this is a test trip"
+    }
   }
 }
