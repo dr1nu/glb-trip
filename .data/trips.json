@@ -50,5 +50,135 @@
       "fits": true,
       "suggestion": ""
     }
+  },
+  "561f62bc6f": {
+    "id": "561f62bc6f",
+    "createdAt": "2025-10-30T20:55:07.150Z",
+    "destinationCountry": "Slovenia",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 3,
+    "budgetTotal": 500,
+    "result": {
+      "perDay": 75,
+      "bucket": "cheap",
+      "accom": 45,
+      "other": 30,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 80,
+        "high": 120,
+        "from": "LTN",
+        "to": "LJU",
+        "distanceKm": 1247
+      },
+      "totalLow": 305,
+      "totalHigh": 345,
+      "fits": true,
+      "suggestion": ""
+    }
+  },
+  "9020928a93": {
+    "id": "9020928a93",
+    "createdAt": "2025-10-30T20:55:41.092Z",
+    "destinationCountry": "Monaco",
+    "homeCountry": "Switzerland",
+    "tripLengthDays": 3,
+    "budgetTotal": 1150,
+    "result": {
+      "perDay": 175,
+      "bucket": "pricey",
+      "accom": 115,
+      "other": 60,
+      "styleLabel": "Comfort",
+      "flight": {
+        "low": 47,
+        "high": 70,
+        "from": "ZRH",
+        "to": "NCE",
+        "distanceKm": 434
+      },
+      "totalLow": 572,
+      "totalHigh": 595,
+      "fits": true,
+      "suggestion": ""
+    }
+  },
+  "4715b7e254": {
+    "id": "4715b7e254",
+    "createdAt": "2025-10-30T20:57:55.657Z",
+    "destinationCountry": "Liechtenstein",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 6,
+    "budgetTotal": 500,
+    "result": {
+      "perDay": 135,
+      "bucket": "pricey",
+      "accom": 90,
+      "other": 45,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 68,
+        "high": 101,
+        "from": "LTN",
+        "to": "ZRH",
+        "distanceKm": 807
+      },
+      "totalLow": 878,
+      "totalHigh": 911,
+      "fits": false,
+      "suggestion": "Try 2 days or raise budget to ~€911."
+    }
+  },
+  "75ccb8c8ba": {
+    "id": "75ccb8c8ba",
+    "createdAt": "2025-10-31T13:50:46.278Z",
+    "destinationCountry": "Iceland",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 9,
+    "budgetTotal": 1100,
+    "result": {
+      "perDay": 135,
+      "bucket": "pricey",
+      "accom": 90,
+      "other": 45,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 131,
+        "high": 197,
+        "from": "LTN",
+        "to": "KEF",
+        "distanceKm": 1862
+      },
+      "totalLow": 1346,
+      "totalHigh": 1412,
+      "fits": false,
+      "suggestion": "Try 6 days or raise budget to ~€1412."
+    }
+  },
+  "f467f00b6e": {
+    "id": "f467f00b6e",
+    "createdAt": "2025-10-31T13:51:15.445Z",
+    "destinationCountry": "Türkiye",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 10,
+    "budgetTotal": 1050,
+    "result": {
+      "perDay": 75,
+      "bucket": "cheap",
+      "accom": 45,
+      "other": 30,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 133,
+        "high": 199,
+        "from": "LTN",
+        "to": "IST",
+        "distanceKm": 2495
+      },
+      "totalLow": 883,
+      "totalHigh": 949,
+      "fits": true,
+      "suggestion": ""
+    }
   }
 }
