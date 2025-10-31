@@ -27,6 +27,7 @@ export default async function TripPage({ params, searchParams }) {
     tripLengthDays,
     budgetTotal,
     result = {},
+    contact = null,
   } = trip;
 
   const {
@@ -107,6 +108,33 @@ export default async function TripPage({ params, searchParams }) {
             </div>
           </div>
         </section>
+
+        {contact ? (
+          <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-4">
+            <header>
+              <h2 className="text-lg font-semibold">Traveller details</h2>
+              <p className="text-sm text-neutral-400">
+                Captured when the holiday request was submitted.
+              </p>
+            </header>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <Detail label="Name" value={contact.name} />
+              <Detail label="Email" value={contact.email} />
+              <Detail label="City" value={contact.city} />
+              <Detail
+                label="Party"
+                value={`${contact.adults} adult${contact.adults === 1 ? '' : 's'}${typeof contact.children === 'number' && contact.children > 0 ? ` · ${contact.children} child${contact.children === 1 ? '' : 'ren'}` : ''}`}
+              />
+              {contact.details ? (
+                <Detail
+                  label="Requests"
+                  value={contact.details}
+                  className="sm:col-span-2"
+                />
+              ) : null}
+            </dl>
+          </section>
+        ) : null}
       </div>
     </main>
   );
@@ -119,6 +147,21 @@ function Fact({ label, value }) {
         {label}
       </div>
       <div className="text-sm font-medium">{value ?? '—'}</div>
+    </div>
+  );
+}
+
+function Detail({ label, value, className = '' }) {
+  return (
+    <div
+      className={`bg-neutral-900 border border-neutral-700 rounded-lg p-3 space-y-1 ${className}`}
+    >
+      <div className="text-[11px] uppercase tracking-wide text-neutral-500">
+        {label}
+      </div>
+      <div className="text-sm font-medium break-words">
+        {value ?? '—'}
+      </div>
     </div>
   );
 }

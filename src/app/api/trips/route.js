@@ -14,6 +14,7 @@ function normalizePayload(data) {
     tripLengthDays,
     budgetTotal,
     result,
+    contact,
   } = data;
 
   if (!destinationCountry || typeof destinationCountry !== 'string') {
@@ -33,12 +34,39 @@ function normalizePayload(data) {
     throw new Error('budgetTotal must be a non-negative number.');
   }
 
+  if (typeof contact !== 'object' || contact === null) {
+    throw new Error('contact information is required.');
+  }
+
+  const name = typeof contact.name === 'string' ? contact.name.trim() : '';
+  const email = typeof contact.email === 'string' ? contact.email.trim() : '';
+  const city = typeof contact.city === 'string' ? contact.city.trim() : '';
+  if (!name) throw new Error('Contact name is required.');
+  if (!email) throw new Error('Contact email is required.');
+  if (!city) throw new Error('Contact city is required.');
+
+  const adultsRaw = Number(contact.adults);
+  const adults = Number.isFinite(adultsRaw) && adultsRaw >= 1 ? Math.floor(adultsRaw) : 1;
+  const childrenRaw = Number(contact.children);
+  const children =
+    Number.isFinite(childrenRaw) && childrenRaw >= 0 ? Math.floor(childrenRaw) : 0;
+  const details =
+    typeof contact.details === 'string' ? contact.details.trim() : '';
+
   return {
     destinationCountry,
     homeCountry,
     tripLengthDays: days,
     budgetTotal: budget,
     result: typeof result === 'object' && result !== null ? result : {},
+    contact: {
+      name,
+      email,
+      city,
+      adults,
+      children,
+      details,
+    },
   };
 }
 
