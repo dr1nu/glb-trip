@@ -10,8 +10,10 @@ function euro(value) {
   return `€${Math.round(value)}`;
 }
 
-export default async function TripPage({ params }) {
+export default async function TripPage({ params, searchParams }) {
   const { tripId } = await params;
+  const query = (await searchParams) ?? {};
+  const fromAdmin = query.from === 'admin';
   const trip = await getTrip(tripId);
   if (!trip) {
     notFound();
@@ -48,11 +50,11 @@ export default async function TripPage({ params }) {
     <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center">
       <div className="w-full max-w-2xl space-y-6">
         <Link
-          href="/"
+          href={fromAdmin ? '/admin' : '/'}
           className="inline-flex items-center gap-1 text-sm text-neutral-400 hover:text-neutral-200"
         >
           <span aria-hidden>←</span>
-          Plan another trip
+          {fromAdmin ? 'Back to admin' : 'Plan another trip'}
         </Link>
 
         <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-6">

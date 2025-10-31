@@ -79,7 +79,7 @@ export default async function AdminPage() {
                     </p>
                   </div>
                   <Link
-                    href={`/trip/${id}`}
+                    href={`/trip/${id}?from=admin`}
                     className="text-sm font-medium text-orange-400 hover:text-orange-300"
                   >
                     View trip →
