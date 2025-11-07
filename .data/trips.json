@@ -1111,5 +1111,188 @@
         }
       ]
     }
+  },
+  "e2b699adda": {
+    "id": "e2b699adda",
+    "createdAt": "2025-11-07T22:54:03.175Z",
+    "updatedAt": "2025-11-07T22:54:03.175Z",
+    "destinationCountry": "Malta",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 5,
+    "budgetTotal": 800,
+    "result": {
+      "perDay": 135,
+      "bucket": "medium",
+      "accom": 85,
+      "other": 50,
+      "styleLabel": "Comfort",
+      "flight": {
+        "low": 122,
+        "high": 184,
+        "from": "LTN",
+        "to": "MLA",
+        "distanceKm": 2133
+      },
+      "totalLow": 797,
+      "totalHigh": 859,
+      "fits": false,
+      "suggestion": "Try 4 days or raise budget to ~€859."
+    },
+    "contact": {
+      "name": "another",
+      "email": "test@test.com",
+      "city": "SANTA VENERA",
+      "adults": 1,
+      "children": 0,
+      "details": "test"
+    }
+  },
+  "d0add8b790": {
+    "id": "d0add8b790",
+    "createdAt": "2025-11-07T23:09:54.756Z",
+    "updatedAt": "2025-11-07T23:10:11.268Z",
+    "destinationCountry": "Slovenia",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 3,
+    "budgetTotal": 500,
+    "result": {
+      "perDay": 75,
+      "bucket": "cheap",
+      "accom": 45,
+      "other": 30,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 80,
+        "high": 120,
+        "from": "LTN",
+        "to": "LJU",
+        "distanceKm": 1247
+      },
+      "totalLow": 305,
+      "totalHigh": 345,
+      "fits": true,
+      "suggestion": ""
+    },
+    "contact": {
+      "name": "Jane Doe",
+      "email": "fsd@fsd.com",
+      "city": "fsadsdfa",
+      "adults": 1,
+      "children": 0,
+      "details": "fsdafads"
+    },
+    "itinerary": {
+      "createdAt": "2025-11-07T23:10:08.861Z",
+      "updatedAt": "2025-11-07T23:10:11.267Z",
+      "cards": [
+        {
+          "id": "departure-flight",
+          "type": "departure",
+          "title": "Departure flight",
+          "airports": {
+            "from": "LTN",
+            "to": "LJU"
+          },
+          "priceLabel": "€80 – €120",
+          "summary": "LTN → LJU",
+          "fields": {
+            "homeAirport": "LTN",
+            "arrivalAirport": "LJU",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€80 – €120"
+          },
+          "notes": ""
+        },
+        {
+          "id": "accommodation",
+          "type": "accommodation",
+          "title": "Accommodation",
+          "subtitle": "cheap",
+          "priceLabel": "€45 / night",
+          "summary": "cheap stay · 3 nights",
+          "fields": {
+            "lengthOfStay": "3 nights",
+            "accommodationType": "",
+            "breakfastIncluded": "",
+            "bookingLink": "",
+            "price": "€45 / night"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-1",
+          "type": "day",
+          "title": "Day 1",
+          "subtitle": "Slovenia",
+          "priceLabel": "€75",
+          "summary": "Arrival, city orientation, highlight activity.",
+          "fields": {
+            "city": "Slovenia",
+            "highlightAttraction": "Arrival, city orientation, highlight activity.",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-2",
+          "type": "day",
+          "title": "Day 2",
+          "subtitle": "Slovenia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Slovenia",
+            "highlightAttraction": "Plan headline experiences, dining, and downtime.",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-3",
+          "type": "day",
+          "title": "Day 3",
+          "subtitle": "Slovenia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Slovenia",
+            "highlightAttraction": "Plan headline experiences, dining, and downtime.",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "return-flight",
+          "type": "return",
+          "title": "Return flight",
+          "airports": {
+            "from": "LJU",
+            "to": "LTN"
+          },
+          "priceLabel": "€80 – €120",
+          "summary": "LJU → LTN",
+          "fields": {
+            "homeAirport": "LJU",
+            "arrivalAirport": "LTN",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€80 – €120"
+          },
+          "notes": ""
+        },
+        {
+          "id": "budget-summary",
+          "type": "budget",
+          "title": "Budget summary",
+          "summary": "Trip est. €305 – €345 · Daily spend €75 · Client budget €500",
+          "notes": ""
+        }
+      ]
+    }
   }
 }
