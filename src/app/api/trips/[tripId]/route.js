@@ -92,6 +92,7 @@ function buildItinerary(trip) {
       highlightAttraction: '',
       dailyCost: defaultDailyCost,
     },
+    timeline: [],
     notes: '',
   }));
 

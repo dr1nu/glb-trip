@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import FlightCardPanel from './FlightCardPanel';
 import AccommodationCardPanel from './AccommodationCardPanel';
 import DayCardPanel from './DayCardPanel';
+import DayTimelineBuilder from './DayTimelineBuilder';
 import { applyCardFieldUpdates } from '@/lib/itinerary';
 
 function hasContent(value) {
@@ -113,6 +114,20 @@ export default function TripBuilderClient({ tripId, initialCards }) {
     );
   }
 
+  function handleTimelineChange(cardId, nextTimeline) {
+    setFeedback({ type: '', message: '' });
+    setCards((prev) =>
+      prev.map((card) => {
+        if (card.id !== cardId) return card;
+        return {
+          ...card,
+          timeline: Array.isArray(nextTimeline) ? nextTimeline : [],
+          isDirty: true,
+        };
+      })
+    );
+  }
+
   const hasDirty = cards.some((card) => card.isDirty);
 
   async function handleSave() {
@@ -127,6 +142,7 @@ export default function TripBuilderClient({ tripId, initialCards }) {
           .map(({ isDirty, ...card }) => ({
             id: card.id,
             fields: card.fields,
+            ...(Array.isArray(card.timeline) ? { timeline: card.timeline } : {}),
           })),
       };
 
@@ -241,6 +257,13 @@ export default function TripBuilderClient({ tripId, initialCards }) {
           )}
         </div>
       </section>
+
+      {dayCards.length > 0 ? (
+        <DayTimelineBuilder
+          dayCards={dayCards}
+          onTimelineChange={handleTimelineChange}
+        />
+      ) : null}
 
       <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
         <header className="flex flex-wrap items-center justify-between gap-3">

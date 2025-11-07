@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { getTrip, updateTrip } from '@/lib/db';
 import { applyCardFieldUpdates, normalizeFieldUpdates } from '@/lib/itinerary';
@@ -43,7 +44,17 @@ export async function PATCH(request, context) {
     const cardsMap = new Map();
     for (const item of cardsInput) {
       if (item && typeof item.id === 'string') {
-        cardsMap.set(item.id, normalizeFieldUpdates(item.fields ?? {}));
+        const normalizedFields = normalizeFieldUpdates(item.fields ?? {});
+        const update = {};
+        if (Object.keys(normalizedFields).length > 0) {
+          update.fields = normalizedFields;
+        }
+        if (Array.isArray(item.timeline)) {
+          update.timeline = sanitizeTimeline(item.timeline);
+        }
+        if (Object.keys(update).length > 0) {
+          cardsMap.set(item.id, update);
+        }
       }
     }
 
@@ -56,7 +67,18 @@ export async function PATCH(request, context) {
 
     const nextCards = trip.itinerary.cards.map((card) => {
       if (!cardsMap.has(card.id)) return card;
-      return applyCardFieldUpdates(card, cardsMap.get(card.id));
+      const updates = cardsMap.get(card.id);
+      let nextCard = card;
+      if (updates.fields) {
+        nextCard = applyCardFieldUpdates(nextCard, updates.fields);
+      }
+      if (Object.prototype.hasOwnProperty.call(updates, 'timeline')) {
+        nextCard = {
+          ...nextCard,
+          timeline: updates.timeline,
+        };
+      }
+      return nextCard;
     });
 
     const updated = await updateTrip(tripId, {
@@ -99,4 +121,38 @@ function extractTripIdFromUrl(url) {
   } catch {
     return null;
   }
+}
+
+const TIMELINE_FIELDS = {
+  transport: ['time', 'price', 'link', 'description'],
+  attraction: ['time', 'price', 'link', 'description'],
+  food: ['name', 'description'],
+};
+
+function sanitizeTimeline(input) {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((item) => normalizeTimelineItem(item))
+    .filter(Boolean);
+}
+
+function normalizeTimelineItem(item) {
+  if (typeof item !== 'object' || item === null) return null;
+  const type = item.type;
+  if (!Object.prototype.hasOwnProperty.call(TIMELINE_FIELDS, type)) {
+    return null;
+  }
+
+  const id =
+    typeof item.id === 'string' && item.id.trim()
+      ? item.id.trim()
+      : crypto.randomUUID();
+
+  const fields = {};
+  for (const key of TIMELINE_FIELDS[type]) {
+    const value = item.fields?.[key];
+    fields[key] = typeof value === 'string' ? value.trim() : '';
+  }
+
+  return { id, type, fields };
 }

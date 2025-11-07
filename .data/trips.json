@@ -1294,5 +1294,162 @@
         }
       ]
     }
+  },
+  "e9b1404ed1": {
+    "id": "e9b1404ed1",
+    "createdAt": "2025-11-07T23:30:23.717Z",
+    "updatedAt": "2025-11-07T23:43:01.035Z",
+    "destinationCountry": "Albania",
+    "homeCountry": "United Kingdom",
+    "tripLengthDays": 2,
+    "budgetTotal": 500,
+    "result": {
+      "perDay": 115,
+      "bucket": "cheap",
+      "accom": 70,
+      "other": 45,
+      "styleLabel": "Comfort",
+      "flight": {
+        "low": 112,
+        "high": 168,
+        "from": "LTN",
+        "to": "TIA",
+        "distanceKm": 1914
+      },
+      "totalLow": 342,
+      "totalHigh": 398,
+      "fits": true,
+      "suggestion": ""
+    },
+    "contact": {
+      "name": "test",
+      "email": "test@test.com",
+      "city": "Iceland",
+      "adults": 1,
+      "children": 0,
+      "details": "teset"
+    },
+    "itinerary": {
+      "createdAt": "2025-11-07T23:30:38.639Z",
+      "updatedAt": "2025-11-07T23:43:01.028Z",
+      "cards": [
+        {
+          "id": "departure-flight",
+          "type": "departure",
+          "title": "Departure flight",
+          "airports": {
+            "from": "LTN",
+            "to": "TIA"
+          },
+          "priceLabel": "€112 – €168",
+          "summary": "LTN → TIA",
+          "fields": {
+            "homeAirport": "LTN",
+            "arrivalAirport": "TIA",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€112 – €168"
+          },
+          "notes": ""
+        },
+        {
+          "id": "accommodation",
+          "type": "accommodation",
+          "title": "Accommodation",
+          "subtitle": "cheap",
+          "priceLabel": "€70 / night",
+          "summary": "cheap stay · 2 nights",
+          "fields": {
+            "lengthOfStay": "2 nights",
+            "accommodationType": "",
+            "breakfastIncluded": "",
+            "bookingLink": "",
+            "price": "€70 / night"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-1",
+          "type": "day",
+          "title": "Day 1",
+          "subtitle": "Albania",
+          "priceLabel": "€115",
+          "summary": "Arrival, city orientation, highlight activity.",
+          "fields": {
+            "city": "Albania",
+            "highlightAttraction": "Arrival, city orientation, highlight activity.",
+            "dailyCost": "€115"
+          },
+          "timeline": [
+            {
+              "id": "8d1451af-3892-4817-bac4-ec3f380af3d4",
+              "type": "transport",
+              "fields": {
+                "time": "09:00§",
+                "price": "32",
+                "link": "",
+                "description": "reaw"
+              }
+            },
+            {
+              "id": "ee242cf2-ebe1-4fbb-9679-1a0d7d80749b",
+              "type": "attraction",
+              "fields": {
+                "time": "14:00",
+                "price": "40",
+                "link": "",
+                "description": "tewtsa"
+              }
+            }
+          ],
+          "notes": ""
+        },
+        {
+          "id": "day-2",
+          "type": "day",
+          "title": "Day 2",
+          "subtitle": "Albania",
+          "priceLabel": "€115",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Albania",
+            "highlightAttraction": "Plan headline experiences, dining, and downtime.",
+            "dailyCost": "€115"
+          },
+          "timeline": [],
+          "notes": ""
+        },
+        {
+          "id": "return-flight",
+          "type": "return",
+          "title": "Return flight",
+          "airports": {
+            "from": "TIA",
+            "to": "LTN"
+          },
+          "priceLabel": "€112 – €168",
+          "summary": "TIA → LTN",
+          "fields": {
+            "homeAirport": "TIA",
+            "arrivalAirport": "LTN",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€112 – €168"
+          },
+          "notes": ""
+        },
+        {
+          "id": "budget-summary",
+          "type": "budget",
+          "title": "Budget summary",
+          "summary": "Trip est. €342 – €398 · Daily spend €115 · Client budget €500",
+          "notes": ""
+        }
+      ]
+    }
   }
 }

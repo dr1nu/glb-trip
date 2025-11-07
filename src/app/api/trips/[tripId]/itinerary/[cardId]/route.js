@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { getTrip, updateTrip } from '@/lib/db';
 import {
@@ -53,12 +54,36 @@ export async function PATCH(request, context) {
     }
 
     const card = cards[idx];
-    const fieldUpdates = normalizeFieldUpdates(payload);
-    if (Object.keys(fieldUpdates).length === 0) {
-      return NextResponse.json({ card }, { status: 200 });
+    const {
+      timeline: timelineInput = undefined,
+      fields: explicitFields,
+      ...rest
+    } = payload;
+
+    const fieldPayload =
+      explicitFields && typeof explicitFields === 'object'
+        ? explicitFields
+        : rest;
+
+    const fieldUpdates = normalizeFieldUpdates(fieldPayload);
+
+    let updatedCard = card;
+
+    if (Object.keys(fieldUpdates).length > 0) {
+      updatedCard = applyCardFieldUpdates(updatedCard, fieldUpdates);
     }
 
-    const updatedCard = applyCardFieldUpdates(card, fieldUpdates);
+    const hasTimelineUpdate = Array.isArray(timelineInput);
+    if (hasTimelineUpdate) {
+      updatedCard = {
+        ...updatedCard,
+        timeline: sanitizeTimeline(timelineInput),
+      };
+    }
+
+    if (updatedCard === card) {
+      return NextResponse.json({ card }, { status: 200 });
+    }
 
     cards[idx] = updatedCard;
 
@@ -88,4 +113,38 @@ export async function PATCH(request, context) {
       { status: 500 }
     );
   }
+}
+
+const TIMELINE_FIELDS = {
+  transport: ['time', 'price', 'link', 'description'],
+  attraction: ['time', 'price', 'link', 'description'],
+  food: ['name', 'description'],
+};
+
+function sanitizeTimeline(input) {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((item) => normalizeTimelineItem(item))
+    .filter(Boolean);
+}
+
+function normalizeTimelineItem(item) {
+  if (typeof item !== 'object' || item === null) return null;
+  const type = item.type;
+  if (!Object.prototype.hasOwnProperty.call(TIMELINE_FIELDS, type)) {
+    return null;
+  }
+
+  const id =
+    typeof item.id === 'string' && item.id.trim()
+      ? item.id.trim()
+      : crypto.randomUUID();
+
+  const fields = {};
+  for (const key of TIMELINE_FIELDS[type]) {
+    const value = item.fields?.[key];
+    fields[key] = typeof value === 'string' ? value.trim() : '';
+  }
+
+  return { id, type, fields };
 }
