@@ -39,6 +39,7 @@ export async function createTrip(payload) {
   const record = {
     id,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     ...payload,
   };
 
@@ -51,6 +52,29 @@ export async function getTrip(id) {
   if (!id) return null;
   const store = await readStore();
   return store[id] ?? null;
+}
+
+export async function updateTrip(id, updates) {
+  if (!id) throw new Error('Trip ID is required to update.');
+  if (typeof updates !== 'object' || updates === null) {
+    throw new Error('Updates must be an object.');
+  }
+
+  const store = await readStore();
+  const existing = store[id];
+  if (!existing) {
+    return null;
+  }
+
+  const record = {
+    ...existing,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  store[id] = record;
+  await writeStore(store);
+  return record;
 }
 
 export async function listTrips() {

@@ -75,7 +75,121 @@
       "totalHigh": 345,
       "fits": true,
       "suggestion": ""
-    }
+    },
+    "itinerary": {
+      "createdAt": "2025-10-31T23:43:35.631Z",
+      "updatedAt": "2025-10-31T23:43:35.631Z",
+      "cards": [
+        {
+          "id": "departure-flight",
+          "type": "departure",
+          "title": "Departure flight",
+          "airports": {
+            "from": "LTN",
+            "to": "LJU"
+          },
+          "priceLabel": "€80 – €120",
+          "summary": "LTN → LJU",
+          "fields": {
+            "homeAirport": "LTN",
+            "arrivalAirport": "LJU",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€80 – €120"
+          },
+          "notes": ""
+        },
+        {
+          "id": "accommodation",
+          "type": "accommodation",
+          "title": "Accommodation",
+          "subtitle": "cheap",
+          "priceLabel": "€45 / night",
+          "summary": "cheap stay · 3 nights",
+          "fields": {
+            "lengthOfStay": "3 nights",
+            "accommodationType": "",
+            "breakfastIncluded": "",
+            "bookingLink": "",
+            "price": "€45 / night"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-1",
+          "type": "day",
+          "title": "Day 1",
+          "subtitle": "Slovenia",
+          "priceLabel": "€75",
+          "summary": "Arrival, city orientation, highlight activity.",
+          "fields": {
+            "city": "Slovenia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-2",
+          "type": "day",
+          "title": "Day 2",
+          "subtitle": "Slovenia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Slovenia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-3",
+          "type": "day",
+          "title": "Day 3",
+          "subtitle": "Slovenia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Slovenia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "return-flight",
+          "type": "return",
+          "title": "Return flight",
+          "airports": {
+            "from": "LJU",
+            "to": "LTN"
+          },
+          "priceLabel": "€80 – €120",
+          "summary": "LJU → LTN",
+          "fields": {
+            "homeAirport": "LJU",
+            "arrivalAirport": "LTN",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€80 – €120"
+          },
+          "notes": ""
+        },
+        {
+          "id": "budget-summary",
+          "type": "budget",
+          "title": "Budget summary",
+          "summary": "Trip est. €305 – €345 · Daily spend €75 · Client budget €500",
+          "notes": ""
+        }
+      ]
+    },
+    "updatedAt": "2025-10-31T23:43:35.634Z"
   },
   "9020928a93": {
     "id": "9020928a93",
@@ -153,7 +267,207 @@
       "totalHigh": 1412,
       "fits": false,
       "suggestion": "Try 6 days or raise budget to ~€1412."
-    }
+    },
+    "itinerary": {
+      "createdAt": "2025-11-01T09:42:12.464Z",
+      "updatedAt": "2025-11-01T15:06:36.110Z",
+      "cards": [
+        {
+          "id": "departure-flight",
+          "type": "departure",
+          "title": "Departure flight",
+          "airports": {
+            "from": "LTN",
+            "to": "KEF"
+          },
+          "priceLabel": "€131 – €197",
+          "summary": "LTN → KEF",
+          "fields": {
+            "homeAirport": "LTN",
+            "arrivalAirport": "KEF",
+            "baggageType": "test",
+            "departTime": "test",
+            "arrivalTime": "test",
+            "bookingLink": "test",
+            "price": "€131 – €197"
+          },
+          "notes": "",
+          "subtitle": ""
+        },
+        {
+          "id": "accommodation",
+          "type": "accommodation",
+          "title": "Accommodation",
+          "subtitle": "Hostel",
+          "priceLabel": "€90 / night",
+          "summary": "9 nights",
+          "fields": {
+            "lengthOfStay": "9 nights",
+            "accommodationType": "hostel",
+            "breakfastIncluded": "",
+            "bookingLink": "test",
+            "price": "€90 / night"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-1",
+          "type": "day",
+          "title": "Day 1",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-2",
+          "type": "day",
+          "title": "Day 2",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-3",
+          "type": "day",
+          "title": "Day 3",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-4",
+          "type": "day",
+          "title": "Day 4",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-5",
+          "type": "day",
+          "title": "Day 5",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-6",
+          "type": "day",
+          "title": "Day 6",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-7",
+          "type": "day",
+          "title": "Day 7",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-8",
+          "type": "day",
+          "title": "Day 8",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-9",
+          "type": "day",
+          "title": "Day 9",
+          "subtitle": "Iceland",
+          "priceLabel": "€135",
+          "summary": "test",
+          "fields": {
+            "city": "Iceland",
+            "highlightAttraction": "test",
+            "dailyCost": "€135"
+          },
+          "notes": ""
+        },
+        {
+          "id": "return-flight",
+          "type": "return",
+          "title": "Return flight",
+          "airports": {
+            "from": "KEF",
+            "to": "LTN"
+          },
+          "priceLabel": "€131 – €197",
+          "summary": "KEF → LTN",
+          "fields": {
+            "homeAirport": "KEF",
+            "arrivalAirport": "LTN",
+            "baggageType": "test",
+            "departTime": "test",
+            "arrivalTime": "test",
+            "bookingLink": "test",
+            "price": "€131 – €197"
+          },
+          "notes": "",
+          "subtitle": ""
+        },
+        {
+          "id": "budget-summary",
+          "type": "budget",
+          "title": "Budget summary",
+          "summary": "Trip est. €1346 – €1412 · Daily spend €135 · Client budget €1100",
+          "notes": ""
+        }
+      ]
+    },
+    "updatedAt": "2025-11-01T15:06:36.116Z"
   },
   "f467f00b6e": {
     "id": "f467f00b6e",
@@ -179,7 +493,111 @@
       "totalHigh": 949,
       "fits": true,
       "suggestion": ""
-    }
+    },
+    "itinerary": {
+      "createdAt": "2025-10-31T23:19:12.437Z",
+      "cards": [
+        {
+          "id": "departure-flight",
+          "type": "departure",
+          "title": "Departure flight",
+          "summary": "LTN → IST · est. €133 – €199",
+          "notes": ""
+        },
+        {
+          "id": "accommodation",
+          "type": "accommodation",
+          "title": "Accommodation",
+          "summary": "cheap stay · €45 per night",
+          "notes": ""
+        },
+        {
+          "id": "day-1",
+          "type": "day",
+          "title": "Day 1",
+          "summary": "Arrival, city orientation, highlight activity.",
+          "notes": ""
+        },
+        {
+          "id": "day-2",
+          "type": "day",
+          "title": "Day 2",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-3",
+          "type": "day",
+          "title": "Day 3",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-4",
+          "type": "day",
+          "title": "Day 4",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-5",
+          "type": "day",
+          "title": "Day 5",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-6",
+          "type": "day",
+          "title": "Day 6",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-7",
+          "type": "day",
+          "title": "Day 7",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-8",
+          "type": "day",
+          "title": "Day 8",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-9",
+          "type": "day",
+          "title": "Day 9",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-10",
+          "type": "day",
+          "title": "Day 10",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "return-flight",
+          "type": "return",
+          "title": "Return flight",
+          "summary": "IST → LTN · similar pricing to outbound",
+          "notes": ""
+        },
+        {
+          "id": "budget-summary",
+          "type": "budget",
+          "title": "Budget summary",
+          "summary": "Trip est. €883 – €949 · Daily spend €75 · Client budget €1050",
+          "notes": ""
+        }
+      ]
+    },
+    "updatedAt": "2025-10-31T23:19:12.438Z"
   },
   "a886ecabac": {
     "id": "a886ecabac",
@@ -205,7 +623,112 @@
       "totalHigh": 962,
       "fits": true,
       "suggestion": ""
-    }
+    },
+    "itinerary": {
+      "createdAt": "2025-10-31T23:31:37.862Z",
+      "updatedAt": "2025-10-31T23:31:37.862Z",
+      "cards": [
+        {
+          "id": "departure-flight",
+          "type": "departure",
+          "title": "Departure flight",
+          "airports": {
+            "from": "OTP",
+            "to": "NCE"
+          },
+          "priceLabel": "€102 – €152",
+          "summary": "OTP → NCE",
+          "fields": {
+            "homeAirport": "OTP",
+            "arrivalAirport": "NCE",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€102 – €152"
+          },
+          "notes": ""
+        },
+        {
+          "id": "accommodation",
+          "type": "accommodation",
+          "title": "Accommodation",
+          "summary": "pricey stay · €90 per night",
+          "notes": ""
+        },
+        {
+          "id": "day-1",
+          "type": "day",
+          "title": "Day 1",
+          "summary": "Arrival, city orientation, highlight activity.",
+          "notes": ""
+        },
+        {
+          "id": "day-2",
+          "type": "day",
+          "title": "Day 2",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-3",
+          "type": "day",
+          "title": "Day 3",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-4",
+          "type": "day",
+          "title": "Day 4",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-5",
+          "type": "day",
+          "title": "Day 5",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-6",
+          "type": "day",
+          "title": "Day 6",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "return-flight",
+          "type": "return",
+          "title": "Return flight",
+          "airports": {
+            "from": "NCE",
+            "to": "OTP"
+          },
+          "priceLabel": "€102 – €152",
+          "summary": "NCE → OTP",
+          "fields": {
+            "homeAirport": "NCE",
+            "arrivalAirport": "OTP",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€102 – €152"
+          },
+          "notes": ""
+        },
+        {
+          "id": "budget-summary",
+          "type": "budget",
+          "title": "Budget summary",
+          "summary": "Trip est. €912 – €962 · Daily spend €135 · Client budget €1100",
+          "notes": ""
+        }
+      ]
+    },
+    "updatedAt": "2025-10-31T23:31:37.863Z"
   },
   "9e6cdd7033": {
     "id": "9e6cdd7033",
@@ -239,6 +762,308 @@
       "adults": 2,
       "children": 2,
       "details": "this is a test trip"
+    },
+    "itinerary": {
+      "createdAt": "2025-10-31T23:18:15.018Z",
+      "cards": [
+        {
+          "id": "departure-flight",
+          "type": "departure",
+          "title": "Departure flight",
+          "summary": "MLA → RIX · est. €144 – €217",
+          "notes": ""
+        },
+        {
+          "id": "accommodation",
+          "type": "accommodation",
+          "title": "Accommodation",
+          "summary": "cheap stay · €45 per night",
+          "notes": ""
+        },
+        {
+          "id": "day-1",
+          "type": "day",
+          "title": "Day 1",
+          "summary": "Arrival, city orientation, highlight activity.",
+          "notes": ""
+        },
+        {
+          "id": "day-2",
+          "type": "day",
+          "title": "Day 2",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-3",
+          "type": "day",
+          "title": "Day 3",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-4",
+          "type": "day",
+          "title": "Day 4",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-5",
+          "type": "day",
+          "title": "Day 5",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-6",
+          "type": "day",
+          "title": "Day 6",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "day-7",
+          "type": "day",
+          "title": "Day 7",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "notes": ""
+        },
+        {
+          "id": "return-flight",
+          "type": "return",
+          "title": "Return flight",
+          "summary": "RIX → MLA · similar pricing to outbound",
+          "notes": ""
+        },
+        {
+          "id": "budget-summary",
+          "type": "budget",
+          "title": "Budget summary",
+          "summary": "Trip est. €669 – €742 · Daily spend €75 · Client budget €750",
+          "notes": ""
+        }
+      ]
+    },
+    "updatedAt": "2025-10-31T23:18:15.020Z"
+  },
+  "63b33bd2f2": {
+    "id": "63b33bd2f2",
+    "createdAt": "2025-11-07T22:11:42.822Z",
+    "updatedAt": "2025-11-07T22:14:19.487Z",
+    "destinationCountry": "Latvia",
+    "homeCountry": "Romania",
+    "tripLengthDays": 8,
+    "budgetTotal": 1150,
+    "result": {
+      "perDay": 75,
+      "bucket": "cheap",
+      "accom": 45,
+      "other": 30,
+      "styleLabel": "Value",
+      "flight": {
+        "low": 91,
+        "high": 136,
+        "from": "OTP",
+        "to": "RIX",
+        "distanceKm": 1381
+      },
+      "totalLow": 691,
+      "totalHigh": 736,
+      "fits": true,
+      "suggestion": ""
+    },
+    "contact": {
+      "name": "Jane Doe",
+      "email": "andrewbst1@gmail.com",
+      "city": "SANTA VENERA",
+      "adults": 2,
+      "children": 0,
+      "details": "This is a test request"
+    },
+    "itinerary": {
+      "createdAt": "2025-11-07T22:13:54.737Z",
+      "updatedAt": "2025-11-07T22:14:19.486Z",
+      "cards": [
+        {
+          "id": "departure-flight",
+          "type": "departure",
+          "title": "Departure flight",
+          "airports": {
+            "from": "OTP",
+            "to": "RIX"
+          },
+          "priceLabel": "€91 – €136",
+          "summary": "OTP → RIX",
+          "fields": {
+            "homeAirport": "OTP",
+            "arrivalAirport": "RIX",
+            "baggageType": "",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€91 – €136"
+          },
+          "notes": ""
+        },
+        {
+          "id": "accommodation",
+          "type": "accommodation",
+          "title": "Accommodation",
+          "subtitle": "cheap",
+          "priceLabel": "€45 / night",
+          "summary": "cheap stay · 8 nights",
+          "fields": {
+            "lengthOfStay": "8 nights",
+            "accommodationType": "",
+            "breakfastIncluded": "",
+            "bookingLink": "",
+            "price": "€45 / night"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-1",
+          "type": "day",
+          "title": "Day 1",
+          "subtitle": "Latvia",
+          "priceLabel": "€75",
+          "summary": "Arrival, city orientation, highlight activity.",
+          "fields": {
+            "city": "Latvia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-2",
+          "type": "day",
+          "title": "Day 2",
+          "subtitle": "Latvia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Latvia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-3",
+          "type": "day",
+          "title": "Day 3",
+          "subtitle": "Latvia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Latvia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-4",
+          "type": "day",
+          "title": "Day 4",
+          "subtitle": "Latvia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Latvia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-5",
+          "type": "day",
+          "title": "Day 5",
+          "subtitle": "Latvia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Latvia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-6",
+          "type": "day",
+          "title": "Day 6",
+          "subtitle": "Latvia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Latvia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-7",
+          "type": "day",
+          "title": "Day 7",
+          "subtitle": "Latvia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Latvia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "day-8",
+          "type": "day",
+          "title": "Day 8",
+          "subtitle": "Latvia",
+          "priceLabel": "€75",
+          "summary": "Plan headline experiences, dining, and downtime.",
+          "fields": {
+            "city": "Latvia",
+            "highlightAttraction": "",
+            "dailyCost": "€75"
+          },
+          "notes": ""
+        },
+        {
+          "id": "return-flight",
+          "type": "return",
+          "title": "Return flight",
+          "airports": {
+            "from": "RIX",
+            "to": "OTP"
+          },
+          "priceLabel": "€91 – €136",
+          "summary": "RIX → OTP",
+          "fields": {
+            "homeAirport": "RIX",
+            "arrivalAirport": "OTP",
+            "baggageType": "Cabin",
+            "departTime": "",
+            "arrivalTime": "",
+            "bookingLink": "",
+            "price": "€91 – €136"
+          },
+          "notes": "",
+          "subtitle": ""
+        },
+        {
+          "id": "budget-summary",
+          "type": "budget",
+          "title": "Budget summary",
+          "summary": "Trip est. €691 – €736 · Daily spend €75 · Client budget €1150",
+          "notes": ""
+        }
+      ]
     }
   }
 }

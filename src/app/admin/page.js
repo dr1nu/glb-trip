@@ -61,6 +61,7 @@ export default async function AdminPage() {
               tripLengthDays,
               budgetTotal,
               result = {},
+              itinerary = null,
             } = trip;
 
             return (
@@ -78,12 +79,22 @@ export default async function AdminPage() {
                       {tripLengthDays === 1 ? '' : 's'}
                     </p>
                   </div>
-                  <Link
-                    href={`/trip/${id}?from=admin`}
-                    className="text-sm font-medium text-orange-400 hover:text-orange-300"
-                  >
-                    View trip →
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <Link
+                      href={`/trip/${id}?from=admin`}
+                      className="text-sm font-medium text-orange-400 hover:text-orange-300"
+                    >
+                      View trip →
+                    </Link>
+                    {itinerary?.cards?.length ? (
+                      <Link
+                        href={`/trip/${id}/builder?from=admin`}
+                        className="text-sm font-medium text-orange-400 hover:text-orange-300"
+                      >
+                        Open builder →
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
 
                 <dl className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
@@ -114,6 +125,14 @@ export default async function AdminPage() {
                           ? 'Yes'
                           : 'No'
                         : 'Unknown'
+                    }
+                  />
+                  <Fact
+                    label="Itinerary"
+                    value={
+                      itinerary?.cards?.length
+                        ? `${itinerary.cards.length} cards`
+                        : 'Not created'
                     }
                   />
                 </dl>
