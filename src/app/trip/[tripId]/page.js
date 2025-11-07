@@ -245,6 +245,7 @@ function FlightDisplay({ card }) {
       label: 'Booking link',
       value: fields.bookingLink,
       isLink: true,
+      linkLabel: 'Book this flight',
     },
   ];
 
@@ -278,6 +279,7 @@ function AccommodationDisplay({ card }) {
       label: 'Booking link',
       value: fields.bookingLink,
       isLink: true,
+      linkLabel: 'Book accommodation',
     },
   ];
 
@@ -350,14 +352,14 @@ function DetailList({ details }) {
 
   return (
     <dl className="space-y-2 text-sm">
-      {valid.map(({ label, value, isLink }) => (
+      {valid.map(({ label, value, isLink, linkLabel }) => (
         <div
           key={label}
           className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-2 last:border-b-0 last:pb-0"
         >
           <dt className="text-neutral-400">{label}</dt>
           <dd className="font-medium text-neutral-100">
-            {isLink ? <BookingLink href={value} /> : value}
+            {isLink ? <BookingLink href={value} label={linkLabel} /> : value}
           </dd>
         </div>
       ))}
@@ -365,16 +367,16 @@ function DetailList({ details }) {
   );
 }
 
-function BookingLink({ href }) {
+function BookingLink({ href, label = 'Book now' }) {
   if (typeof href !== 'string' || !href) return '—';
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-orange-300 hover:text-orange-200 underline"
+      className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-orange-400 transition-colors"
     >
-      View booking
+      {label}
     </a>
   );
 }

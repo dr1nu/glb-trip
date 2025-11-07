@@ -6,6 +6,72 @@ import AccommodationCardPanel from './AccommodationCardPanel';
 import DayCardPanel from './DayCardPanel';
 import { applyCardFieldUpdates } from '@/lib/itinerary';
 
+function hasContent(value) {
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+  return value != null;
+}
+
+function extractStayLength(summary) {
+  if (typeof summary !== 'string') return '';
+  const match = summary.match(/(\d+\s+night[s]?)/i);
+  return match ? match[1] : '';
+}
+
+function hydrateCardFields(card) {
+  if (!card) {
+    return { card, mutated: false };
+  }
+
+  const nextFields = {
+    ...(card.fields ?? {}),
+  };
+  let mutated = false;
+
+  const ensureField = (key, fallback) => {
+    if (!hasContent(nextFields[key]) && hasContent(fallback)) {
+      nextFields[key] = fallback;
+      mutated = true;
+    }
+  };
+
+  if (card.type === 'departure' || card.type === 'return') {
+    ensureField('homeAirport', card.airports?.from);
+    ensureField('arrivalAirport', card.airports?.to);
+    ensureField('price', card.priceLabel);
+  } else if (card.type === 'accommodation') {
+    ensureField('price', card.priceLabel);
+    ensureField('lengthOfStay', extractStayLength(card.summary));
+  } else if (card.type === 'day') {
+    ensureField('city', card.subtitle);
+    ensureField('dailyCost', card.priceLabel);
+    ensureField('highlightAttraction', card.summary);
+  }
+
+  if (!mutated) {
+    return { card, mutated };
+  }
+
+  return {
+    card: {
+      ...card,
+      fields: nextFields,
+    },
+    mutated,
+  };
+}
+
+function prepareCards(rawCards, { resetDirty = false } = {}) {
+  return (rawCards ?? []).map((card) => {
+    const { card: hydratedCard, mutated } = hydrateCardFields(card);
+    return {
+      ...hydratedCard,
+      isDirty: resetDirty ? false : Boolean(card.isDirty) || mutated,
+    };
+  });
+}
+
 function MissingCardNotice({ label }) {
   return (
     <div className="border border-dashed border-neutral-700 rounded-xl px-4 py-6 text-sm text-neutral-400 text-center">
@@ -15,9 +81,7 @@ function MissingCardNotice({ label }) {
 }
 
 export default function TripBuilderClient({ tripId, initialCards }) {
-  const [cards, setCards] = useState(
-    initialCards.map((card) => ({ ...card, isDirty: false }))
-  );
+  const [cards, setCards] = useState(() => prepareCards(initialCards));
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
@@ -90,7 +154,7 @@ export default function TripBuilderClient({ tripId, initialCards }) {
       }
 
       const nextCards = Array.isArray(data?.cards) ? data.cards : [];
-      setCards(nextCards.map((card) => ({ ...card, isDirty: false })));
+      setCards(prepareCards(nextCards, { resetDirty: true }));
       setFeedback({ type: 'success', message: 'Trip saved.' });
     } catch (err) {
       console.error('Failed to save itinerary', err);
