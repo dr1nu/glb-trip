@@ -1,57 +1,100 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import crypto from 'crypto';
+import { getSupabaseAdminClient } from './supabase/admin';
 
-const DATA_DIR = path.join(process.cwd(), '.data');
-const DATA_FILE = path.join(DATA_DIR, 'trips.json');
+const TABLE = 'trips';
 
-async function ensureDataDir() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+function generateId() {
+  return crypto.randomUUID().replace(/-/g, '').slice(0, 10);
 }
 
-async function readStore() {
-  await ensureDataDir();
-  try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
-    return raw.trim() ? JSON.parse(raw) : {};
-  } catch (err) {
-    if (err.code === 'ENOENT') return {};
-    throw err;
+function mapRowToTrip(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    createdAt: row.created_at ?? row.createdAt,
+    updatedAt: row.updated_at ?? row.updatedAt,
+    destinationCountry: row.destination_country,
+    homeCountry: row.home_country,
+    tripLengthDays: row.trip_length_days,
+    budgetTotal: row.budget_total,
+    result: row.result ?? {},
+    contact: row.contact ?? null,
+    itinerary: row.itinerary ?? null,
+    published: row.published ?? false,
+  };
+}
+
+function serializeTripPayload(payload) {
+  if (!payload || typeof payload !== 'object') return {};
+  const serialized = {};
+  if (payload.destinationCountry !== undefined) {
+    serialized.destination_country = payload.destinationCountry;
   }
-}
-
-async function writeStore(store) {
-  await ensureDataDir();
-  await fs.writeFile(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
-}
-
-function generateId(existing) {
-  let id;
-  do {
-    id = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
-  } while (existing[id]);
-  return id;
+  if (payload.homeCountry !== undefined) {
+    serialized.home_country = payload.homeCountry;
+  }
+  if (payload.tripLengthDays !== undefined) {
+    serialized.trip_length_days = payload.tripLengthDays;
+  }
+  if (payload.budgetTotal !== undefined) {
+    serialized.budget_total = payload.budgetTotal;
+  }
+  if (payload.result !== undefined) {
+    serialized.result = payload.result;
+  }
+  if (payload.contact !== undefined) {
+    serialized.contact = payload.contact;
+  }
+  if (payload.itinerary !== undefined) {
+    serialized.itinerary = payload.itinerary;
+  }
+  if (payload.published !== undefined) {
+    serialized.published = payload.published;
+  }
+  return serialized;
 }
 
 export async function createTrip(payload) {
-  const store = await readStore();
-  const id = generateId(store);
+  const supabase = getSupabaseAdminClient();
+  const id = generateId();
+  const serialized = serializeTripPayload(payload);
   const record = {
     id,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    ...payload,
+    ...serialized,
   };
 
-  store[id] = record;
-  await writeStore(store);
-  return record;
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert(record)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to create trip', error);
+    throw new Error('Unable to create trip.');
+  }
+
+  return mapRowToTrip(data);
 }
 
 export async function getTrip(id) {
   if (!id) return null;
-  const store = await readStore();
-  return store[id] ?? null;
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    console.error('Failed to fetch trip', error);
+    throw new Error('Unable to fetch trip.');
+  }
+
+  return mapRowToTrip(data);
 }
 
 export async function updateTrip(id, updates) {
@@ -60,26 +103,44 @@ export async function updateTrip(id, updates) {
     throw new Error('Updates must be an object.');
   }
 
-  const store = await readStore();
-  const existing = store[id];
-  if (!existing) {
-    return null;
+  const supabase = getSupabaseAdminClient();
+  const serialized = serializeTripPayload(updates);
+  if (Object.keys(serialized).length === 0) {
+    return getTrip(id);
   }
 
-  const record = {
-    ...existing,
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({
+      ...serialized,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
 
-  store[id] = record;
-  await writeStore(store);
-  return record;
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    console.error('Failed to update trip', error);
+    throw new Error('Unable to update trip.');
+  }
+
+  return mapRowToTrip(data);
 }
 
 export async function listTrips() {
-  const store = await readStore();
-  return Object.values(store).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to list trips', error);
+    throw new Error('Unable to load trips.');
+  }
+
+  return (data ?? []).map(mapRowToTrip);
 }
