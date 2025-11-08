@@ -23,8 +23,49 @@ const PALETTE_ITEMS = [
   },
 ];
 
+function TypeIcon({ type }) {
+  if (type === 'transport') {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path d="M4 16V6a4 4 0 014-4h8a4 4 0 014 4v10a4 4 0 01-4 4l2 1.5v.5h-2l-3-2h-2l-3 2H6v-.5L8 20a4 4 0 01-4-4zm2-5h12V6a2 2 0 00-2-2H8a2 2 0 00-2 2v5zm0 4a2 2 0 002 2h8a2 2 0 002-2v-1H6v1z" />
+      </svg>
+    );
+  }
+  if (type === 'attraction') {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <path d="M4 3h3v18H4V3zm13.5 0a4.5 4.5 0 00-4.5 4.5v8.25a3.75 3.75 0 007.5 0V7.5A4.5 4.5 0 0017.5 3zm-3 4.5A3 3 0 0117.5 4.5 3 3 0 0120.5 7.5v8.25a2.25 2.25 0 11-4.5 0V7.5z" />
+    </svg>
+  );
+}
+
 const FIELD_MAP = {
   transport: [
+    { name: 'title', label: 'Title', placeholder: 'Airport transfer' },
     { name: 'time', label: 'Time', placeholder: '08:30' },
     { name: 'price', label: 'Price', placeholder: '€40' },
     { name: 'link', label: 'Link', placeholder: 'https://carrier.com' },
@@ -36,6 +77,7 @@ const FIELD_MAP = {
     },
   ],
   attraction: [
+    { name: 'title', label: 'Title', placeholder: 'Old town tour' },
     { name: 'time', label: 'Time', placeholder: '14:00' },
     { name: 'price', label: 'Price', placeholder: '€25' },
     { name: 'link', label: 'Link', placeholder: 'https://experience.com' },
@@ -47,7 +89,8 @@ const FIELD_MAP = {
     },
   ],
   food: [
-    { name: 'name', label: 'Name', placeholder: 'Cafe Central' },
+    { name: 'title', label: 'Title', placeholder: 'Dinner at Bistro' },
+    { name: 'name', label: 'Venue name', placeholder: 'Cafe Central' },
     {
       name: 'description',
       label: 'Description',
@@ -278,7 +321,7 @@ function Palette({ onAdd }) {
           className="text-left border border-neutral-800 rounded-2xl p-4 bg-neutral-950 hover:border-orange-500/50 transition-colors space-y-3"
         >
           <div className={`h-10 w-10 rounded-full border ${item.iconColor} flex items-center justify-center`}>
-            <span className="text-sm font-semibold uppercase">{item.title.charAt(0)}</span>
+            <TypeIcon type={item.type} />
           </div>
           <div>
             <p className="font-semibold">{item.title}</p>
@@ -304,6 +347,10 @@ function TimelineCard({
 }) {
   const fields = FIELD_MAP[entry.type] ?? [];
   const paletteMeta = PALETTE_ITEMS.find((item) => item.type === entry.type);
+  const titleValue =
+    typeof entry.fields?.title === 'string' && entry.fields.title.trim()
+      ? entry.fields.title.trim()
+      : null;
   return (
     <div
       className="border border-neutral-800 rounded-2xl bg-neutral-950 p-4 space-y-3"
@@ -317,15 +364,17 @@ function TimelineCard({
           <div
             className={`h-11 w-11 rounded-full border ${paletteMeta?.iconColor ?? 'bg-neutral-800 text-neutral-300 border-neutral-700'} flex items-center justify-center`}
           >
-            <span className="text-sm font-semibold capitalize">
-              {entry.type.slice(0, 1).toUpperCase()}
-            </span>
+            <TypeIcon type={entry.type} />
           </div>
           <div>
-            <p className="text-sm font-semibold capitalize">
-              {entry.type}
+            <p className="text-sm font-semibold capitalize text-neutral-100">
+              {titleValue ?? entry.type}
             </p>
-            <p className="text-xs text-neutral-500">Item {index + 1}</p>
+            {titleValue ? (
+              <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+                {entry.type}
+              </p>
+            ) : null}
           </div>
         </div>
         <button

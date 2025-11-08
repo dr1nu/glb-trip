@@ -1298,7 +1298,7 @@
   "e9b1404ed1": {
     "id": "e9b1404ed1",
     "createdAt": "2025-11-07T23:30:23.717Z",
-    "updatedAt": "2025-11-07T23:43:01.035Z",
+    "updatedAt": "2025-11-08T09:02:17.522Z",
     "destinationCountry": "Albania",
     "homeCountry": "United Kingdom",
     "tripLengthDays": 2,
@@ -1331,7 +1331,7 @@
     },
     "itinerary": {
       "createdAt": "2025-11-07T23:30:38.639Z",
-      "updatedAt": "2025-11-07T23:43:01.028Z",
+      "updatedAt": "2025-11-08T09:02:17.519Z",
       "cards": [
         {
           "id": "departure-flight",
@@ -1387,20 +1387,33 @@
               "id": "8d1451af-3892-4817-bac4-ec3f380af3d4",
               "type": "transport",
               "fields": {
-                "time": "09:00§",
+                "title": "Accomodation Transfer",
+                "time": "09:00",
                 "price": "32",
                 "link": "",
-                "description": "reaw"
+                "description": "Private transfer to accomodation."
               }
             },
             {
               "id": "ee242cf2-ebe1-4fbb-9679-1a0d7d80749b",
               "type": "attraction",
               "fields": {
-                "time": "14:00",
+                "title": "Explore Tirana",
+                "time": "10:00",
                 "price": "40",
                 "link": "",
                 "description": "tewtsa"
+              }
+            },
+            {
+              "id": "cd5bfdac-81dc-4e86-9d8c-f2a2241f932b",
+              "type": "attraction",
+              "fields": {
+                "title": "Ksamil Lakes",
+                "time": "12:30",
+                "price": "15",
+                "link": "",
+                "description": "Head to Ksamil lakes"
               }
             }
           ],

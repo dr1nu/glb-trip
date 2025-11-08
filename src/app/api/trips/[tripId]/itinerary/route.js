@@ -124,9 +124,9 @@ function extractTripIdFromUrl(url) {
 }
 
 const TIMELINE_FIELDS = {
-  transport: ['time', 'price', 'link', 'description'],
-  attraction: ['time', 'price', 'link', 'description'],
-  food: ['name', 'description'],
+  transport: ['title', 'time', 'price', 'link', 'description'],
+  attraction: ['title', 'time', 'price', 'link', 'description'],
+  food: ['title', 'name', 'description'],
 };
 
 function sanitizeTimeline(input) {

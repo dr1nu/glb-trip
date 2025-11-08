@@ -188,6 +188,10 @@ function TimelineEntry({ entry, index }) {
     iconColor: 'bg-neutral-800 border-neutral-700 text-neutral-300',
   };
   const fields = entry?.fields ?? {};
+  const title =
+    typeof fields.title === 'string' && fields.title.trim()
+      ? fields.title.trim()
+      : meta.label;
   const time = fields.time;
   const price = fields.price;
   const link = fields.link;
@@ -201,22 +205,29 @@ function TimelineEntry({ entry, index }) {
           <span
             className={`h-11 w-11 rounded-full border ${meta.iconColor} flex items-center justify-center`}
           >
-            {meta.label.charAt(0)}
+            <ExperienceIcon type={entry?.type} />
           </span>
           <div>
-            <p className="text-sm font-semibold">{meta.label}</p>
-            <p className="text-xs text-neutral-500">Stop {index + 1}</p>
+            <p className="text-base font-semibold text-neutral-100">{title}</p>
+            {name && entry?.type === 'food' ? (
+              <p className="text-sm text-neutral-400">{name}</p>
+            ) : null}
           </div>
         </div>
-        <div className="text-right text-xs text-neutral-400 space-y-1">
-          {time ? <p>Time · {time}</p> : null}
-          {price ? <p>Price · {price}</p> : null}
+        <div className="flex flex-wrap justify-end gap-2 text-sm">
+          {time ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-neutral-700 px-3 py-1 text-neutral-200">
+              <ClockIcon /> {time}
+            </span>
+          ) : null}
+          {price ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-neutral-700 px-3 py-1 text-neutral-200">
+              <TagIcon /> {price}
+            </span>
+          ) : null}
         </div>
       </header>
       <div className="text-sm text-neutral-300 space-y-2">
-        {entry.type === 'food' && name ? (
-          <p className="font-semibold text-neutral-100">{name}</p>
-        ) : null}
         {description ? (
           <p>{description}</p>
         ) : (
@@ -236,5 +247,73 @@ function TimelineEntry({ entry, index }) {
         </a>
       ) : null}
     </article>
+  );
+}
+
+function ExperienceIcon({ type }) {
+  if (type === 'transport') {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path d="M4 16V6a4 4 0 014-4h8a4 4 0 014 4v10a4 4 0 01-4 4l2 1.5v.5h-2l-3-2h-2l-3 2H6v-.5L8 20a4 4 0 01-4-4zm2-5h12V6a2 2 0 00-2-2H8a2 2 0 00-2 2v5zm0 4a2 2 0 002 2h8a2 2 0 002-2v-1H6v1z" />
+      </svg>
+    );
+  }
+  if (type === 'attraction') {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <path d="M4 3h3v18H4V3zm13.5 0a4.5 4.5 0 00-4.5 4.5v8.25a3.75 3.75 0 007.5 0V7.5A4.5 4.5 0 0017.5 3zm-3 4.5A3 3 0 0117.5 4.5 3 3 0 0120.5 7.5v8.25a2.25 2.25 0 11-4.5 0V7.5z" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <path d="M12 2a10 10 0 1010 10A10.011 10.011 0 0012 2zm1 11h-3V7h2v4h1z" />
+    </svg>
+  );
+}
+
+function TagIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <path d="M20.59 13.41l-8-8A2 2 0 0011.17 5H5a2 2 0 00-2 2v6.17a2 2 0 00.59 1.41l8 8a2 2 0 002.82 0l6.18-6.18a2 2 0 000-2.82zM7.5 9A1.5 1.5 0 119 10.5 1.5 1.5 0 017.5 9z" />
+    </svg>
   );
 }
