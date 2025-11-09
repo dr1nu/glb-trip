@@ -11,6 +11,7 @@ function mapRowToTrip(row) {
   if (!row) return null;
   return {
     id: row.id,
+    ownerId: row.owner_id ?? null,
     createdAt: row.created_at ?? row.createdAt,
     updatedAt: row.updated_at ?? row.updatedAt,
     destinationCountry: row.destination_country,
@@ -54,12 +55,13 @@ function serializeTripPayload(payload) {
   return serialized;
 }
 
-export async function createTrip(payload) {
+export async function createTrip(payload, ownerId = null) {
   const supabase = getSupabaseAdminClient();
   const id = generateId();
   const serialized = serializeTripPayload(payload);
   const record = {
     id,
+    owner_id: ownerId ?? null,
     ...serialized,
   };
 
@@ -139,6 +141,23 @@ export async function listTrips() {
 
   if (error) {
     console.error('Failed to list trips', error);
+    throw new Error('Unable to load trips.');
+  }
+
+  return (data ?? []).map(mapRowToTrip);
+}
+
+export async function listTripsByOwner(ownerId) {
+  if (!ownerId) return [];
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('owner_id', ownerId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to list trips for user', error);
     throw new Error('Unable to load trips.');
   }
 

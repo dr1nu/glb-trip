@@ -1,11 +1,28 @@
-'use server';
+'use strict';
 
-import { cookies, headers } from 'next/headers';
+import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
 export async function createSupabaseServerClient({ admin = false } = {}) {
-  const cookieStore = cookies();
-  const headerStore = headers();
+  let headerStore;
+  let cookieStore;
+
+  try {
+    headerStore = await headers();
+  } catch {
+    headerStore = new Headers();
+  }
+
+  try {
+    cookieStore = await cookies();
+  } catch {
+    cookieStore = {
+      get() {
+        return undefined;
+      },
+    };
+  }
 
   const supabaseKey = admin
     ? process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -18,7 +35,7 @@ export async function createSupabaseServerClient({ admin = false } = {}) {
     {
       cookies: {
         get(name) {
-          return cookieStore.get(name)?.value;
+          return (cookieStore?.get?.(name) ?? undefined)?.value ?? undefined;
         },
         set() {},
         remove() {},

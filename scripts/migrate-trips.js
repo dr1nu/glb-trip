@@ -29,6 +29,7 @@ function requireEnv(name) {
 function serializeTripPayload(trip) {
   return {
     id: trip.id,
+    owner_id: trip.ownerId ?? trip.owner_id ?? null,
     destination_country: trip.destinationCountry ?? null,
     home_country: trip.homeCountry ?? null,
     trip_length_days: trip.tripLengthDays ?? null,

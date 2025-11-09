@@ -136,6 +136,27 @@ export default async function AdminPage() {
                     }
                   />
                 </dl>
+
+                {trip.contact ? (
+                  <div className="mt-4 bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-sm">
+                    <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+                      Traveller account
+                    </p>
+                    <div className="text-neutral-100 font-medium">
+                      {trip.contact.name || '—'}
+                    </div>
+                    <div className="text-neutral-400">{trip.contact.email || '—'}</div>
+                    <div className="text-neutral-500 text-xs mt-1">
+                      Country: {trip.contact.city || trip.contact.country || '—'} • Adults:{' '}
+                      {trip.contact.adults ?? '—'} • Children: {trip.contact.children ?? '—'}
+                    </div>
+                    {trip.ownerId ? (
+                      <div className="text-xs text-neutral-500 mt-1">
+                        User ID: {trip.ownerId}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </article>
             );
           })}

@@ -1,12 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
 import { getDailyBreakdown, STYLE_PRESETS } from '@/lib/pricing';
 import { estimateReturnFare } from '@/lib/airfare';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import AuthForm from '@/components/auth/AuthForm';
 
 export default function Home() {
+  const router = useRouter();
   // --- form state ---
   const [destinationCountry, setDestinationCountry] = useState('Slovenia');
   const [budgetTotal, setBudgetTotal] = useState(500);
@@ -15,6 +19,12 @@ export default function Home() {
   const [travelStyle, setTravelStyle] = useState('value'); // NEW
 
   const [showResult, setShowResult] = useState(false);
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authIntent, setAuthIntent] = useState(null);
+  const [pendingTrip, setPendingTrip] = useState(null);
 
   // --- compute result model when needed ---
   const result = useMemo(() => {
@@ -42,14 +52,103 @@ export default function Home() {
     return { perDay, bucket, accom, other, styleLabel, flight, totalLow, totalHigh, fits, suggestion };
   }, [destinationCountry, homeCountry, tripLengthDays, budgetTotal, travelStyle]);
 
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setUser(data.session?.user ?? null);
+      setAuthReady(true);
+    });
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!active) return;
+        setUser(session?.user ?? null);
+        setAuthReady(true);
+      }
+    );
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  function persistTrip(payload) {
+    if (!payload) return;
+    sessionStorage.setItem('glb-pending-trip', JSON.stringify(payload));
+    router.push('/trip/request');
+  }
+
+  function handleRequestTrip(payload) {
+    setPendingTrip(payload);
+    if (!authReady || !user) {
+      setAuthIntent('request');
+      setAuthModalOpen(true);
+      return;
+    }
+    persistTrip(payload);
+  }
+
+  function handleAuthSuccess(profile) {
+    setAuthModalOpen(false);
+    setUser((prev) => prev ?? profile.user ?? null);
+    if (authIntent === 'request' && pendingTrip) {
+      setTimeout(() => {
+        try {
+          persistTrip(pendingTrip);
+        } catch (err) {
+          console.error('Failed to continue after auth', err);
+        }
+      }, 0);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center">
       <div className="w-full max-w-md">
-        <header className="text-center mb-6">
-          <h1 className="text-xl font-semibold">Plan a Budget Trip</h1>
-          <p className="text-sm text-neutral-400 mt-1">
-            Answer 4 questions. See realistic costs instantly.
-          </p>
+        <header className="mb-6 space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-semibold">Plan a Budget Trip</h1>
+              <p className="text-sm text-neutral-400">
+                Answer 4 questions. See realistic costs instantly.
+              </p>
+            </div>
+            {authReady ? (
+              user ? (
+                <div className="text-right text-xs">
+                  <div className="text-neutral-300">{user.email}</div>
+                  <div className="flex items-center gap-2 text-orange-400">
+                    <Link href="/my-trips" className="hover:text-orange-300">
+                      My trips
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        setUser(null);
+                      }}
+                      className="text-neutral-400 hover:text-neutral-200"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthIntent('login');
+                    setAuthModalOpen(true);
+                  }}
+                  className="text-sm font-medium text-orange-400 hover:text-orange-300"
+                >
+                  Log in / Register
+                </button>
+              )
+            ) : (
+              <div className="text-xs text-neutral-500">Checking account…</div>
+            )}
+          </div>
         </header>
 
         {!showResult ? (
@@ -74,6 +173,7 @@ export default function Home() {
             budgetTotal={budgetTotal}
             result={result}
             onBack={() => setShowResult(false)}
+            onRequest={handleRequestTrip}
           />
         )}
 
@@ -81,6 +181,15 @@ export default function Home() {
           Prototype. Prices are estimates; seasons and luggage can change totals.
         </p>
       </div>
+      {authModalOpen ? (
+        <AuthOverlay onClose={() => setAuthModalOpen(false)}>
+          <AuthForm
+            supabase={supabase}
+            defaultCountry={homeCountry}
+            onSuccess={handleAuthSuccess}
+          />
+        </AuthOverlay>
+      ) : null}
     </main>
   );
 }
@@ -208,39 +317,18 @@ function StyleToggle({ value, onChange }) {
 }
 
 /* -------------------- Result Screen -------------------- */
-function ResultCard({ destinationCountry, homeCountry, tripLengthDays, budgetTotal, result, onBack }) {
+function ResultCard({
+  destinationCountry,
+  homeCountry,
+  tripLengthDays,
+  budgetTotal,
+  result,
+  onBack,
+  onRequest,
+}) {
   const { perDay, bucket, accom, other, styleLabel, flight, totalLow, totalHigh, fits, suggestion } = result;
-  const router = useRouter();
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState('');
-
-  const pendingTripPayload = {
-    destinationCountry,
-    homeCountry,
-    tripLengthDays,
-    budgetTotal,
-    result,
-  };
-
-  function handleContinue() {
-    if (isContinuing) return;
-    setIsContinuing(true);
-    setContinueError('');
-
-    const STORAGE_KEY = 'glb-pending-trip';
-    try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pendingTripPayload));
-      router.push('/trip/request');
-    } catch (err) {
-      console.error('Failed to store pending trip', err);
-      setContinueError(
-        err instanceof Error
-          ? err.message
-          : 'Please enable storage to continue.'
-      );
-      setIsContinuing(false);
-    }
-  }
 
   return (
     <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-4 space-y-5">
@@ -299,7 +387,29 @@ function ResultCard({ destinationCountry, homeCountry, tripLengthDays, budgetTot
               ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
               : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
           }`}
-          onClick={handleContinue}
+          onClick={() => {
+            if (isContinuing) return;
+            setIsContinuing(true);
+            setContinueError('');
+            try {
+              onRequest?.({
+                destinationCountry,
+                homeCountry,
+                tripLengthDays,
+                budgetTotal,
+                result,
+              });
+            } catch (err) {
+              console.error('Failed to continue', err);
+              setContinueError(
+                err instanceof Error
+                  ? err.message
+                  : 'Please try again.'
+              );
+            } finally {
+              setIsContinuing(false);
+            }
+          }}
           disabled={isContinuing}
         >
           {isContinuing ? 'Opening form…' : 'Continue →'}
@@ -357,3 +467,22 @@ function BudgetGauge({ budget, low, high }) {
 
 function euro(n) { return '€' + Math.round(n); }
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+
+function AuthOverlay({ children, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+      <div className="relative w-full max-w-md">
+        <button
+          type="button"
+          className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white"
+          onClick={onClose}
+        >
+          ×
+        </button>
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}

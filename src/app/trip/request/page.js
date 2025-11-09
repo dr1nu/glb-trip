@@ -2,11 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import AuthForm from '@/components/auth/AuthForm';
 
 const STORAGE_KEY = 'glb-pending-trip';
 
 export default function TripRequestPage() {
   const router = useRouter();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [trip, setTrip] = useState(null);
   const [form, setForm] = useState({
     name: '',
@@ -18,6 +22,8 @@ export default function TripRequestPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [authReady, setAuthReady] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     try {
@@ -38,6 +44,26 @@ export default function TripRequestPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setUser(data.session?.user ?? null);
+      setAuthReady(true);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!active) return;
+        setUser(session?.user ?? null);
+        setAuthReady(true);
+      }
+    );
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
   const summary = useMemo(() => {
     if (!trip) return null;
     return {
@@ -48,6 +74,24 @@ export default function TripRequestPage() {
       result: trip.result ?? {},
     };
   }, [trip]);
+
+  useEffect(() => {
+    if (!trip) return;
+    setForm((prev) => ({
+      ...prev,
+      city: prev.city || trip.homeCountry || '',
+    }));
+  }, [trip]);
+
+  useEffect(() => {
+    if (!user) return;
+    setForm((prev) => ({
+      ...prev,
+      name: prev.name || user.user_metadata?.name || '',
+      email: prev.email || user.email || '',
+      city: prev.city || trip?.homeCountry || '',
+    }));
+  }, [user, trip]);
 
   function handleInputChange(event) {
     const { name, value } = event.target;
@@ -60,6 +104,10 @@ export default function TripRequestPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     if (!trip || isSubmitting) return;
+    if (!user) {
+      setError('Please create an account before requesting your trip.');
+      return;
+    }
 
     setIsSubmitting(true);
     setError('');
@@ -204,7 +252,10 @@ export default function TripRequestPage() {
         </section>
 
         <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6">
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          {!authReady ? (
+            <div className="text-sm text-neutral-400">Checking your account…</div>
+          ) : user ? (
+            <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <h2 className="text-xl font-semibold">Tell us about you</h2>
               <p className="text-sm text-neutral-400 mt-1">
@@ -312,6 +363,33 @@ export default function TripRequestPage() {
               {isSubmitting ? 'Submitting…' : 'Request My Holiday!'}
             </button>
           </form>
+          ) : (
+            <AuthForm
+              supabase={supabase}
+              defaultName={form.name}
+              defaultEmail={form.email}
+              defaultCountry={trip?.homeCountry ?? ''}
+              layout="inline"
+              onSuccess={(profile) => {
+                setForm((prev) => ({
+                  ...prev,
+                  name: profile.name ?? prev.name,
+                  email: profile.email ?? prev.email,
+                  city: prev.city || trip?.homeCountry || '',
+                }));
+                setError('');
+              }}
+            />
+          )}
+        </section>
+
+        <section className="text-center text-sm text-neutral-500">
+          <p>
+            Already booked some trips?{' '}
+            <Link className="text-orange-400 hover:text-orange-300" href="/my-trips">
+              View My Trips
+            </Link>
+          </p>
         </section>
       </div>
     </main>
@@ -333,3 +411,5 @@ function euro(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) return '—';
   return `€${Math.round(value)}`;
 }
+
+// authentication handled via shared AuthForm component

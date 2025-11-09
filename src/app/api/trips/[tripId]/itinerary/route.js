@@ -87,6 +87,7 @@ export async function PATCH(request, context) {
         updatedAt: new Date().toISOString(),
         cards: nextCards,
       },
+      published: true,
     });
 
     if (!updated?.itinerary?.cards) {
