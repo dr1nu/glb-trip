@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { listTripsByOwner } from '@/lib/db';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import SignOutButton from './_components/SignOutButton';
@@ -24,7 +23,22 @@ export default async function MyTripsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/trip/request');
+    return (
+      <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center items-center">
+        <div className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 text-center space-y-4 max-w-md">
+          <h1 className="text-2xl font-semibold">My trips</h1>
+          <p className="text-sm text-neutral-400">
+            Sign in to save itineraries and view them across devices.
+          </p>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-orange-500 text-neutral-900 font-semibold text-sm hover:bg-orange-400"
+          >
+            Start planning →
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   const trips = await listTripsByOwner(user.id);
