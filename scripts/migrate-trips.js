@@ -36,6 +36,7 @@ function serializeTripPayload(trip) {
     budget_total: trip.budgetTotal ?? null,
     result: trip.result ?? null,
     contact: trip.contact ?? null,
+    preferences: trip.preferences ?? null,
     itinerary: trip.itinerary ?? null,
     published: trip.published ?? false,
     created_at: trip.createdAt ?? new Date().toISOString(),

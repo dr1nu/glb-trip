@@ -16,8 +16,15 @@ export default function TripRequestPage() {
     name: '',
     email: '',
     city: '',
-    adults: 1,
+    adults: 2,
     children: 0,
+    baggage: 'cabin',
+    travelWindow: 'specific',
+    dateFrom: '',
+    dateTo: '',
+    flexibleMonth: '',
+    accommodation: 'hotel',
+    interests: [],
     details: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,17 +71,6 @@ export default function TripRequestPage() {
     };
   }, [supabase]);
 
-  const summary = useMemo(() => {
-    if (!trip) return null;
-    return {
-      destinationCountry: trip.destinationCountry ?? '—',
-      homeCountry: trip.homeCountry ?? '—',
-      tripLengthDays: trip.tripLengthDays ?? '—',
-      budgetTotal: trip.budgetTotal ?? '—',
-      result: trip.result ?? {},
-    };
-  }, [trip]);
-
   useEffect(() => {
     if (!trip) return;
     setForm((prev) => ({
@@ -113,19 +109,31 @@ export default function TripRequestPage() {
     setError('');
 
     try {
+      const contact = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        city: form.city.trim(),
+        adults: form.adults,
+        children: form.children,
+      };
+      const preferences = {
+        baggage: form.baggage,
+        travelWindow: form.travelWindow,
+        dateFrom: form.dateFrom,
+        dateTo: form.dateTo,
+        flexibleMonth: form.flexibleMonth,
+        accommodation: form.accommodation,
+        interests: form.interests,
+        details: form.details.trim(),
+      };
+
       const response = await fetch('/api/trips', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...trip,
-          contact: {
-            name: form.name.trim(),
-            email: form.email.trim(),
-            city: form.city.trim(),
-            adults: form.adults,
-            children: form.children,
-            details: form.details.trim(),
-          },
+          contact,
+          preferences,
         }),
       });
 
@@ -153,7 +161,7 @@ export default function TripRequestPage() {
     }
   }
 
-  if (!summary) {
+  if (!trip) {
     return (
       <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex items-center justify-center">
         <div className="text-sm text-neutral-400">Loading your trip…</div>
@@ -161,13 +169,11 @@ export default function TripRequestPage() {
     );
   }
 
-  const {
-    destinationCountry,
-    homeCountry,
-    tripLengthDays,
-    budgetTotal,
-    result = {},
-  } = summary;
+  const destinationCountry = trip.destinationCountry ?? 'Destination';
+  const homeCountry = trip.homeCountry ?? 'Home';
+  const tripLengthDays = trip.tripLengthDays ?? 0;
+  const budgetTotal = trip.budgetTotal ?? 0;
+  const result = trip.result ?? {};
 
   const {
     perDay,
@@ -185,72 +191,6 @@ export default function TripRequestPage() {
   return (
     <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center">
       <div className="w-full max-w-3xl space-y-6">
-        <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-6">
-          <header className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-semibold">
-                Trip to {destinationCountry}
-              </h1>
-              <p className="text-sm text-neutral-400">
-                Ready to personalise and request your holiday.
-              </p>
-            </div>
-            <span className="text-xs uppercase tracking-wide text-neutral-400 border border-neutral-700 rounded-lg px-3 py-1">
-              Estimated total {euro(totalLow)} – {euro(totalHigh)}
-            </span>
-          </header>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <Fact label="Destination" value={destinationCountry} />
-            <Fact label="Home" value={homeCountry} />
-            <Fact
-              label="Trip length"
-              value={`${tripLengthDays} day${
-                tripLengthDays === 1 ? '' : 's'
-              }`}
-            />
-            <Fact label="Travel style" value={styleLabel ?? 'Not captured'} />
-            <Fact label="Budget" value={euro(budgetTotal)} />
-            <Fact
-              label="Daily spend"
-              value={perDay ? `${euro(perDay)} / day` : 'Not captured'}
-            />
-          </div>
-
-          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-4 space-y-3 text-sm">
-            <div className="flex flex-wrap justify-between gap-2">
-              <span className="text-neutral-400">Estimated total</span>
-              <span className="font-semibold">
-                {euro(totalLow)} – {euro(totalHigh)}
-              </span>
-            </div>
-            <div className="flex flex-wrap justify-between gap-2 text-neutral-400">
-              <span>Accommodation ({bucket ?? '—'})</span>
-              <span>{accom ? euro(accom) : '—'}</span>
-            </div>
-            <div className="flex flex-wrap justify-between gap-2 text-neutral-400">
-              <span>Other daily costs</span>
-              <span>{other ? euro(other) : '—'}</span>
-            </div>
-            <div className="flex flex-wrap justify-between gap-2 text-neutral-400">
-              <span>Flights</span>
-              <span>
-                {flight.low ? euro(flight.low) : '—'} –{' '}
-                {flight.high ? euro(flight.high) : '—'}
-              </span>
-            </div>
-            <div
-              className={`font-semibold ${
-                fits ? 'text-green-400' : 'text-red-400'
-              }`}
-            >
-              {fits
-                ? 'This itinerary fits the budget.'
-                : suggestion || 'Budget data unavailable.'}
-            </div>
-          </div>
-        </section>
-
         <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6">
           {!authReady ? (
             <div className="text-sm text-neutral-400">Checking your account…</div>
@@ -303,47 +243,219 @@ export default function TripRequestPage() {
               </label>
             </div>
 
-            <div>
-              <span className="block text-sm font-medium mb-2">
-                Who is travelling?
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label className="flex flex-col gap-2 text-sm">
-                  <span className="text-neutral-300">Adults</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="flex flex-col gap-2 text-sm">
+                <span className="font-medium">Adults</span>
+                <input
+                  min={1}
+                  type="number"
+                  name="adults"
+                  value={form.adults}
+                  onChange={handleInputChange}
+                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </label>
+              <label className="flex flex-col gap-2 text-sm">
+                <span className="font-medium">Children</span>
+                <input
+                  min={0}
+                  type="number"
+                  name="children"
+                  value={form.children}
+                  onChange={handleInputChange}
+                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </label>
+            </div>
+
+            <div className="border border-neutral-700 rounded-xl p-4 space-y-3">
+              <span className="block text-sm font-medium">Baggage preference</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                {[
+                  { key: 'small', label: 'Small bag only' },
+                  { key: 'cabin', label: 'Cabin bag' },
+                  { key: 'checked', label: 'Checked bag' },
+                ].map((option) => (
+                  <label
+                    key={option.key}
+                    className={`rounded-xl border px-3 py-2 text-center cursor-pointer ${
+                      form.baggage === option.key
+                        ? 'border-orange-500 text-orange-300'
+                        : 'border-neutral-700 text-neutral-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="baggage"
+                      value={option.key}
+                      checked={form.baggage === option.key}
+                      onChange={handleInputChange}
+                      className="hidden"
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3 border border-neutral-700 rounded-xl p-4">
+              <span className="block text-sm font-medium">When do you want to travel?</span>
+              <div className="flex flex-wrap gap-3 text-sm">
+                {[
+                  { key: 'specific', label: 'Specific dates' },
+                  { key: 'flexible', label: 'Flexible' },
+                  { key: 'range', label: 'Range' },
+                ].map((option) => (
+                  <label
+                    key={option.key}
+                    className={`rounded-xl border px-3 py-2 cursor-pointer ${
+                      form.travelWindow === option.key
+                        ? 'border-orange-500 text-orange-300'
+                        : 'border-neutral-700 text-neutral-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="travelWindow"
+                      value={option.key}
+                      checked={form.travelWindow === option.key}
+                      onChange={handleInputChange}
+                      className="hidden"
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+              {form.travelWindow === 'flexible' ? (
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm text-neutral-400">Preferred month</span>
                   <input
-                    min={1}
-                    type="number"
-                    name="adults"
-                    value={form.adults}
+                    type="month"
+                    name="flexibleMonth"
+                    value={form.flexibleMonth}
                     onChange={handleInputChange}
                     className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
-                </label>
-                <label className="flex flex-col gap-2 text-sm">
-                  <span className="text-neutral-300">Children</span>
-                  <input
-                    min={0}
-                    type="number"
-                    name="children"
-                    value={form.children}
-                    onChange={handleInputChange}
-                    className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </label>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-neutral-400">From</span>
+                    <input
+                      type="date"
+                      name="dateFrom"
+                      value={form.dateFrom}
+                      onChange={handleInputChange}
+                      className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required={form.travelWindow !== 'flexible'}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-neutral-400">To</span>
+                    <input
+                      type="date"
+                      name="dateTo"
+                      value={form.dateTo}
+                      onChange={handleInputChange}
+                      className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required={form.travelWindow !== 'flexible'}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+
+            <div className="border border-neutral-700 rounded-xl p-4 space-y-2">
+              <span className="text-sm font-medium">Accommodation preference</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                {[
+                  { key: 'budget', label: 'Budget hotel' },
+                  { key: 'b&b', label: 'Bed & breakfast' },
+                  { key: 'luxury', label: 'Luxury hotel' },
+                  { key: 'flat', label: 'Flat' },
+                  { key: 'airbnb', label: 'Airbnb' },
+                  { key: 'none', label: 'No preference' },
+                ].map((option) => (
+                  <label
+                    key={option.key}
+                    className={`rounded-xl border px-3 py-2 cursor-pointer ${
+                      form.accommodation === option.key
+                        ? 'border-orange-500 text-orange-300'
+                        : 'border-neutral-700 text-neutral-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="accommodation"
+                      value={option.key}
+                      checked={form.accommodation === option.key}
+                      onChange={handleInputChange}
+                      className="hidden"
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Travel interests</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                {[
+                  'Culture & History',
+                  'Adventure & Sports',
+                  'Food & Dining',
+                  'Nature & Wildlife',
+                  'Beach & Relaxation',
+                  'Shopping',
+                  'Nightlife',
+                  'Photography',
+                ].map((interest) => (
+                  <label
+                    key={interest}
+                    className={`rounded-xl border px-3 py-2 cursor-pointer ${
+                      form.interests.includes(interest)
+                        ? 'border-orange-500 text-orange-300'
+                        : 'border-neutral-700 text-neutral-300'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      value={interest}
+                      checked={form.interests.includes(interest)}
+                      onChange={(event) => {
+                        const { checked, value } = event.target;
+                        setForm((prev) => ({
+                          ...prev,
+                          interests: checked
+                            ? [...prev.interests, value]
+                            : prev.interests.filter((item) => item !== value),
+                        }));
+                      }}
+                      className="hidden"
+                    />
+                    {interest}
+                  </label>
+                ))}
               </div>
             </div>
 
             <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Additional details / requests</span>
+              <span className="font-medium">Special requests / preferences</span>
               <textarea
                 name="details"
                 value={form.details}
                 onChange={handleInputChange}
                 rows={4}
                 className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-                placeholder="Let us know about dates, budget tweaks, must-see spots…"
+                placeholder="Dietary needs, accessibility, must-see experiences..."
               />
             </label>
+
+            <div className="rounded-xl border border-yellow-400/30 bg-yellow-500/5 text-sm text-yellow-200 p-3">
+              After submitting, our travel experts will review your request and send a personalised
+              itinerary within 24–48 hours.
+            </div>
 
             {error && (
               <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2">
@@ -393,17 +505,6 @@ export default function TripRequestPage() {
         </section>
       </div>
     </main>
-  );
-}
-
-function Fact({ label, value }) {
-  return (
-    <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-3 space-y-1">
-      <div className="text-[11px] uppercase tracking-wide text-neutral-500">
-        {label}
-      </div>
-      <div className="text-sm font-medium">{value ?? '—'}</div>
-    </div>
   );
 }
 

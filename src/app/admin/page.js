@@ -157,6 +157,33 @@ export default async function AdminPage() {
                     ) : null}
                   </div>
                 ) : null}
+
+                {trip.preferences ? (
+                  <div className="mt-4 bg-neutral-950 border border-neutral-800 rounded-xl p-4 space-y-3 text-sm">
+                    <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+                      Trip preferences
+                    </p>
+                    <PreferenceRow label="Baggage" value={formatBaggage(trip.preferences)} />
+                    <PreferenceRow label="Travel window" value={formatTravelWindow(trip.preferences)} />
+                    <PreferenceRow
+                      label="Accommodation"
+                      value={formatAccommodation(trip.preferences)}
+                    />
+                    <PreferenceRow
+                      label="Interests"
+                      value={
+                        Array.isArray(trip.preferences.interests) &&
+                        trip.preferences.interests.length > 0
+                          ? trip.preferences.interests.join(', ')
+                          : '—'
+                      }
+                    />
+                    <PreferenceRow
+                      label="Special requests"
+                      value={trip.preferences.details || '—'}
+                    />
+                  </div>
+                ) : null}
               </article>
             );
           })}
@@ -175,4 +202,48 @@ function Fact({ label, value }) {
       <dd className="text-sm font-medium text-neutral-200 mt-1">{value}</dd>
     </div>
   );
+}
+
+function PreferenceRow({ label, value }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[11px] uppercase tracking-wide text-neutral-500">{label}</span>
+      <span className="text-sm text-neutral-100">{value ?? '—'}</span>
+    </div>
+  );
+}
+
+function formatBaggage(preferences) {
+  const map = {
+    small: 'Small bag only',
+    cabin: 'Cabin bag',
+    checked: 'Checked bag',
+  };
+  return map[preferences?.baggage] ?? '—';
+}
+
+function formatTravelWindow(preferences) {
+  if (!preferences) return '—';
+  if (preferences.travelWindow === 'flexible') {
+    return preferences.flexibleMonth ? `Flexible around ${preferences.flexibleMonth}` : 'Flexible';
+  }
+  if (preferences.travelWindow === 'range' || preferences.travelWindow === 'specific') {
+    const from = preferences.dateFrom || 'TBC';
+    const to = preferences.dateTo || 'TBC';
+    return `${from} → ${to}`;
+  }
+  return '—';
+}
+
+function formatAccommodation(preferences) {
+  const map = {
+    budget: 'Budget hotel',
+    'b&b': 'Bed & breakfast',
+    luxury: 'Luxury hotel',
+    flat: 'Flat',
+    airbnb: 'Airbnb',
+    none: 'No preference',
+    hotel: 'Hotel',
+  };
+  return map[preferences?.accommodation] ?? '—';
 }

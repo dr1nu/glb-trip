@@ -20,6 +20,7 @@ function mapRowToTrip(row) {
     budgetTotal: row.budget_total,
     result: row.result ?? {},
     contact: row.contact ?? null,
+    preferences: row.preferences ?? null,
     itinerary: row.itinerary ?? null,
     published: row.published ?? false,
   };
@@ -45,6 +46,9 @@ function serializeTripPayload(payload) {
   }
   if (payload.contact !== undefined) {
     serialized.contact = payload.contact;
+  }
+  if (payload.preferences !== undefined) {
+    serialized.preferences = payload.preferences;
   }
   if (payload.itinerary !== undefined) {
     serialized.itinerary = payload.itinerary;

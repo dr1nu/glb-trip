@@ -16,6 +16,7 @@ function normalizePayload(data) {
     budgetTotal,
     result,
     contact,
+    preferences,
   } = data;
 
   if (!destinationCountry || typeof destinationCountry !== 'string') {
@@ -68,6 +69,8 @@ function normalizePayload(data) {
       children,
       details,
     },
+    preferences:
+      typeof preferences === 'object' && preferences !== null ? preferences : null,
   };
 }
 

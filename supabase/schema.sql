@@ -10,6 +10,7 @@ create table if not exists public.trips (
   budget_total integer,
   result jsonb,
   contact jsonb,
+  preferences jsonb,
   itinerary jsonb,
   published boolean default false,
   created_at timestamptz not null default now(),
