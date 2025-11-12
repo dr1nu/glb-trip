@@ -4,7 +4,7 @@ import { getTrip, updateTrip } from '@/lib/db';
 import { applyCardFieldUpdates, normalizeFieldUpdates } from '@/lib/itinerary';
 
 export async function PATCH(request, context) {
-  const params = context?.params ?? {};
+  const params = context?.params ? await context.params : {};
   const tripId = params.tripId ?? extractTripIdFromUrl(request.url);
 
   if (!tripId) {

@@ -17,14 +17,17 @@ const POPULAR_DESTINATIONS = [
 
 const VALUE_CARDS = [
   {
+    key: 'search',
     title: 'Expert Planning',
     body: 'Travel experts craft every itinerary to your style, pace, and budget.',
   },
   {
+    key: 'award',
     title: 'Best Value',
     body: 'Competitive pricing with transparent cost breakdowns and smart tweaks.',
   },
   {
+    key: 'compass',
     title: 'Full Support',
     body: '24/7 assistance before, during, and after your journey.',
   },
@@ -341,8 +344,8 @@ function ValueProps() {
             key={card.title}
             className="rounded-2xl border border-white/70 bg-white/90 p-4 text-center shadow-lg shadow-orange-50 space-y-2"
           >
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-xl text-orange-500">
-              •
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-500">
+              <ValueIcon name={card.key} />
             </div>
             <p className="text-sm font-semibold text-neutral-900">{card.title}</p>
             <p className="text-xs text-neutral-500">{card.body}</p>
@@ -524,6 +527,33 @@ function EstimateRow({ label, value, color }) {
       <div className="text-sm font-semibold text-neutral-900">{value}</div>
     </div>
   );
+}
+
+const ICONS = {
+  search: (props) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
+      <circle cx="11" cy="11" r="6" />
+      <path d="M16 16l4 4" strokeLinecap="round" />
+    </svg>
+  ),
+  award: (props) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M8 13l-1 7 5-3 5 3-1-7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  compass: (props) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M10 10l5-2-2 5-5 2z" strokeLinejoin="round" />
+    </svg>
+  ),
+};
+
+function ValueIcon({ name }) {
+  const Icon = ICONS[name];
+  if (!Icon) return null;
+  return <Icon className="h-5 w-5" aria-hidden="true" />;
 }
 
 function AuthOverlay({ children, onClose }) {

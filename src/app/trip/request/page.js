@@ -169,11 +169,13 @@ export default function TripRequestPage() {
     );
   }
 
-  const destinationCountry = trip.destinationCountry ?? 'Destination';
-  const homeCountry = trip.homeCountry ?? 'Home';
-  const tripLengthDays = trip.tripLengthDays ?? 0;
-  const budgetTotal = trip.budgetTotal ?? 0;
-  const result = trip.result ?? {};
+  const {
+    destinationCountry,
+    homeCountry,
+    tripLengthDays,
+    budgetTotal,
+    result = {},
+  } = trip;
 
   const {
     perDay,

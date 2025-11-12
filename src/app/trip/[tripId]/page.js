@@ -30,6 +30,7 @@ export default async function TripPage({ params, searchParams }) {
     result = {},
     contact = null,
     itinerary = null,
+    preferences = null,
   } = trip;
 
   const {
@@ -118,7 +119,7 @@ export default async function TripPage({ params, searchParams }) {
           </div>
         </section>
 
-        {contact ? (
+        {contact || preferences ? (
           <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-4">
             <header>
               <h2 className="text-lg font-semibold">Traveller details</h2>
@@ -126,22 +127,52 @@ export default async function TripPage({ params, searchParams }) {
                 Captured when the holiday request was submitted.
               </p>
             </header>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <Detail label="Name" value={contact.name} />
-              <Detail label="Email" value={contact.email} />
-              <Detail label="City" value={contact.city} />
-              <Detail
-                label="Party"
-                value={`${contact.adults} adult${contact.adults === 1 ? '' : 's'}${typeof contact.children === 'number' && contact.children > 0 ? ` · ${contact.children} child${contact.children === 1 ? '' : 'ren'}` : ''}`}
-              />
-              {contact.details ? (
+            {contact ? (
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <Detail label="Name" value={contact.name} />
+                <Detail label="Email" value={contact.email} />
+                <Detail label="City" value={contact.city} />
                 <Detail
-                  label="Requests"
-                  value={contact.details}
-                  className="sm:col-span-2"
+                  label="Party"
+                  value={`${contact.adults} adult${contact.adults === 1 ? '' : 's'}${typeof contact.children === 'number' && contact.children > 0 ? ` · ${contact.children} child${contact.children === 1 ? '' : 'ren'}` : ''}`}
                 />
-              ) : null}
-            </dl>
+                {contact.details ? (
+                  <Detail
+                    label="Requests"
+                    value={contact.details}
+                    className="sm:col-span-2"
+                  />
+                ) : null}
+              </dl>
+            ) : (
+              <p className="text-sm text-neutral-400">Traveller details were not captured.</p>
+            )}
+
+            {preferences ? (
+              <div className="pt-4 border-t border-neutral-700 space-y-3">
+                <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+                  Trip preferences
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <Detail label="Baggage" value={formatBaggage(preferences)} />
+                  <Detail label="Travel window" value={formatTravelWindow(preferences)} />
+                  <Detail label="Accommodation" value={formatAccommodation(preferences)} />
+                  <Detail
+                    label="Interests"
+                    value={
+                      Array.isArray(preferences.interests) && preferences.interests.length > 0
+                        ? preferences.interests.join(', ')
+                        : '—'
+                    }
+                  />
+                  <Detail
+                    label="Special requests"
+                    value={preferences.details || '—'}
+                    className="sm:col-span-2"
+                  />
+                </div>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -224,4 +255,39 @@ function ItineraryStatus({ fromAdmin }) {
       </p>
     </section>
   );
+}
+
+function formatBaggage(preferences) {
+  const map = {
+    small: 'Small bag only',
+    cabin: 'Cabin bag',
+    checked: 'Checked bag',
+  };
+  return map[preferences?.baggage] ?? '—';
+}
+
+function formatTravelWindow(preferences) {
+  if (!preferences) return '—';
+  if (preferences.travelWindow === 'flexible') {
+    return preferences.flexibleMonth ? `Flexible around ${preferences.flexibleMonth}` : 'Flexible';
+  }
+  if (preferences.travelWindow === 'range' || preferences.travelWindow === 'specific') {
+    const from = preferences.dateFrom || 'TBC';
+    const to = preferences.dateTo || 'TBC';
+    return `${from} → ${to}`;
+  }
+  return '—';
+}
+
+function formatAccommodation(preferences) {
+  const map = {
+    budget: 'Budget hotel',
+    'b&b': 'Bed & breakfast',
+    luxury: 'Luxury hotel',
+    flat: 'Flat',
+    airbnb: 'Airbnb',
+    none: 'No preference',
+    hotel: 'Hotel',
+  };
+  return map[preferences?.accommodation] ?? '—';
 }
