@@ -22,10 +22,10 @@ export default function SignOutButton() {
       type="button"
       onClick={handleSignOut}
       disabled={loading}
-      className={`text-sm font-medium px-3 py-1.5 rounded-xl border ${
+      className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition ${
         loading
-          ? 'border-neutral-800 text-neutral-500'
-          : 'border-orange-500 text-orange-400 hover:bg-orange-500/10'
+          ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-neutral-400'
+          : 'border-orange-100 bg-white text-orange-600 hover:bg-orange-50'
       }`}
     >
       {loading ? 'Signing out…' : 'Sign out'}

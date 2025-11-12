@@ -124,12 +124,17 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center">
-      <div className="w-full max-w-3xl">
-        <header className="mb-6 space-y-2 text-center">
-          <h1 className="text-xl font-semibold">Plan a Budget Trip</h1>
-          <p className="text-sm text-neutral-400">
-            Answer 4 questions. See realistic costs instantly.
+    <main className="relative min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] text-neutral-900">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 pb-32 pt-12 sm:px-6 lg:px-8">
+        <header className="text-center space-y-2">
+          <p className="text-sm font-semibold uppercase tracking-wide text-orange-500">
+            Plan your perfect trip
+          </p>
+          <h1 className="text-3xl font-semibold text-neutral-900">
+            Get instant estimates and expert-crafted itineraries
+          </h1>
+          <p className="text-sm text-neutral-500">
+            Tell us the basics. We&apos;ll forecast costs and hand the rest to a travel specialist.
           </p>
         </header>
 
@@ -166,7 +171,7 @@ export default function Home() {
           </>
         ) : null}
 
-        <p className="text-[11px] text-neutral-600 text-center mt-6">
+        <p className="text-xs text-neutral-500 text-center">
           Prototype. Prices are estimates; seasons and luggage can change totals.
         </p>
       </div>
@@ -199,31 +204,19 @@ function FormCard({
 }) {
   return (
     <form
-      className="bg-neutral-800 border border-neutral-700 rounded-2xl p-4 space-y-5"
+      className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-xl shadow-orange-200/60 backdrop-blur-sm space-y-6"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">From</label>
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="flex w-full flex-col gap-2 sm:basis-3/4">
+          <label className="text-sm font-medium text-neutral-500">
+            Where do you want to go?
+          </label>
           <select
-            className="w-full bg-neutral-900 border border-neutral-700 text-neutral-100 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            value={homeCountry}
-            onChange={(e) => setHomeCountry(e.target.value)}
-          >
-            {EUROPE_COUNTRIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">To</label>
-          <select
-            className="w-full bg-neutral-900 border border-neutral-700 text-neutral-100 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
             value={destinationCountry}
             onChange={(e) => setDestinationCountry(e.target.value)}
           >
@@ -234,28 +227,23 @@ function FormCard({
             ))}
           </select>
         </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Days</label>
+        <div className="flex w-full flex-col gap-2 sm:basis-1/4">
+          <label className="text-sm font-medium text-neutral-500">Duration (days)</label>
           <input
             type="number"
             min="1"
             max="30"
             value={tripLengthDays}
             onChange={(e) => setTripLengthDays(parseInt(e.target.value, 10) || 1)}
-            className="bg-neutral-900 border border-neutral-700 text-neutral-100 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
           />
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Travel style</label>
-        <StyleToggle value={travelStyle} onChange={setTravelStyle} />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium flex justify-between">
-          <span>Total budget</span>
-          <span className="font-semibold text-orange-400">€{budgetTotal}</span>
+        <label className="text-sm font-medium flex justify-between text-neutral-500">
+          <span>Budget (total)</span>
+          <span className="font-semibold text-neutral-800">€{budgetTotal}</span>
         </label>
         <input
           type="range"
@@ -264,7 +252,7 @@ function FormCard({
           step="50"
           value={budgetTotal}
           onChange={(e) => setBudgetTotal(parseInt(e.target.value, 10))}
-          className="w-full accent-orange-500"
+          className="w-full accent-[#FF6B35]"
         />
         <div className="flex justify-between text-[11px] text-neutral-400">
           <span>€100</span>
@@ -272,11 +260,16 @@ function FormCard({
         </div>
       </div>
 
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium text-neutral-500">Travel style</label>
+        <StyleToggle value={travelStyle} onChange={setTravelStyle} />
+      </div>
+
       <button
         type="submit"
-        className="w-full bg-orange-500 hover:bg-orange-600 text-neutral-900 font-semibold text-sm py-3 rounded-xl transition-colors"
+        className="w-full rounded-2xl bg-gradient-to-r from-[#FF8B55] to-[#FF6B35] py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:from-[#FF9B66] hover:to-[#FF5B24] focus:outline-none focus:ring-2 focus:ring-[#FFB08F]"
       >
-        Generate my trip →
+        Get instant estimate
       </button>
     </form>
   );
@@ -297,10 +290,10 @@ function StyleToggle({ value, onChange }) {
             key={it.k}
             type="button"
             onClick={() => onChange(it.k)}
-            className={`rounded-xl px-3 py-2 text-sm border ${
+            className={`rounded-2xl px-3 py-2 text-sm font-semibold border transition ${
               active
-                ? 'bg-orange-500 text-neutral-900 border-orange-500'
-                : 'bg-neutral-900 text-neutral-200 border-neutral-700 hover:border-neutral-500'
+                ? 'border-[#FF6B35] bg-[#FFE7DA] text-[#C2461E] shadow-lg shadow-orange-100'
+                : 'border-slate-200 bg-white text-neutral-600 hover:text-neutral-900'
             }`}
             title={it.hint}
           >
@@ -314,20 +307,20 @@ function StyleToggle({ value, onChange }) {
 
 function PopularDestinations() {
   return (
-    <section className="mt-8 space-y-3">
-      <div className="text-sm font-semibold text-neutral-200 flex items-center gap-2">
-        <span className="text-blue-400">↗</span> Popular destinations
+    <section className="space-y-3">
+      <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
+        <span className="text-orange-500">↗</span> Popular Destinations
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {POPULAR_DESTINATIONS.map((item) => (
           <div
             key={item.city}
-            className="bg-neutral-800 border border-neutral-700 rounded-2xl overflow-hidden"
+            className="overflow-hidden rounded-2xl border border-white/70 bg-white shadow-lg shadow-slate-100"
           >
             <div className={`h-24 bg-gradient-to-r ${item.color}`} />
-            <div className="p-3 space-y-1">
-              <p className="text-sm font-semibold text-neutral-100">{item.city}</p>
-              <p className="text-xs text-neutral-400">{item.country}</p>
+            <div className="space-y-1 p-3">
+              <p className="text-sm font-semibold text-neutral-900">{item.city}</p>
+              <p className="text-xs text-neutral-500">{item.country}</p>
             </div>
           </div>
         ))}
@@ -338,21 +331,21 @@ function PopularDestinations() {
 
 function ValueProps() {
   return (
-    <section className="mt-8 space-y-3">
-      <div className="text-sm font-semibold text-neutral-200 flex items-center gap-2">
-        <span className="text-blue-400">◎</span> Why travel with us?
+    <section className="space-y-3">
+      <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
+        <span className="text-orange-500">◎</span> Why travel with us?
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {VALUE_CARDS.map((card) => (
           <div
             key={card.title}
-            className="bg-neutral-800 border border-neutral-700 rounded-2xl p-4 space-y-2 text-center"
+            className="rounded-2xl border border-white/70 bg-white/90 p-4 text-center shadow-lg shadow-orange-50 space-y-2"
           >
-            <div className="h-10 w-10 mx-auto rounded-full bg-neutral-900 border border-neutral-700 flex items-center justify-center text-blue-300">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-xl text-orange-500">
               •
             </div>
-            <p className="text-sm font-semibold text-neutral-100">{card.title}</p>
-            <p className="text-xs text-neutral-400">{card.body}</p>
+            <p className="text-sm font-semibold text-neutral-900">{card.title}</p>
+            <p className="text-xs text-neutral-500">{card.body}</p>
           </div>
         ))}
       </div>
@@ -381,85 +374,85 @@ function ResultCard({
 
   return (
     <section className="space-y-5">
-      <div className="bg-neutral-800 border border-neutral-700 rounded-2xl p-5 space-y-5">
+      <div className="rounded-[32px] border border-white/80 bg-white p-6 shadow-xl shadow-orange-100/50 space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Your instant estimate</h2>
-            <p className="text-sm text-neutral-400">
+            <h2 className="text-lg font-semibold text-neutral-900">Your instant estimate</h2>
+            <p className="text-sm text-neutral-500">
               Based on your preferences for {destinationCountry}
             </p>
           </div>
           <button
-            className="text-xs text-neutral-400 hover:text-neutral-200 underline"
+            className="text-xs font-medium text-neutral-400 hover:text-neutral-700 underline"
             onClick={onBack}
           >
             ← edit answers
           </button>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 text-center space-y-2">
-          <p className="text-xs uppercase tracking-wide text-neutral-400">Estimated total cost</p>
-          <p className="text-4xl font-semibold">{euro(totalEstimate)}</p>
-          <p className="text-sm text-neutral-400">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center space-y-2">
+          <p className="text-xs uppercase tracking-wide text-neutral-500">Estimated total cost</p>
+          <p className="text-4xl font-semibold text-neutral-900">{euro(totalEstimate)}</p>
+          <p className="text-sm text-neutral-500">
             {bucket} • {tripLengthDays} day{tripLengthDays === 1 ? '' : 's'}
           </p>
         </div>
 
         <div className="space-y-3">
-          <EstimateRow label="Flights" value={euro(flightsEstimate)} color="text-sky-300" />
+          <EstimateRow label="Flights" value={euro(flightsEstimate)} color="text-sky-500" />
           <EstimateRow
             label="Accommodation"
             value={euro(accommodationEstimate)}
-            color="text-purple-300"
+            color="text-purple-500"
           />
           <EstimateRow
             label="Activities & experiences"
             value={euro(activitiesEstimate)}
-            color="text-emerald-300"
+            color="text-emerald-500"
           />
         </div>
 
-        <div className="rounded-xl border border-blue-400/20 bg-blue-500/5 text-blue-200 text-sm p-3">
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 text-blue-700 text-sm p-3">
           This is an estimated range. Final pricing will be refined once we review your dates and
           must-haves.
         </div>
       </div>
 
-      <div className="bg-neutral-800 border border-neutral-700 rounded-2xl p-4 space-y-4">
-        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-4 text-sm">
-          <div className="flex justify-between mb-2">
-            <span className="text-neutral-400">Estimated total</span>
-            <span className="font-semibold">
+      <div className="rounded-[32px] border border-white/80 bg-white p-5 shadow-xl shadow-orange-100/50 space-y-4">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
+          <div className="mb-2 flex justify-between">
+            <span className="text-neutral-500">Estimated total</span>
+            <span className="font-semibold text-neutral-900">
               {euro(totalLow)} – {euro(totalHigh)}
             </span>
           </div>
           <BudgetGauge budget={budgetTotal} low={totalLow} high={totalHigh} />
-          <div className="flex justify-between mt-3 text-sm">
-            <span className="text-neutral-400">Your budget</span>
-            <span className="font-semibold">{euro(budgetTotal)}</span>
+          <div className="mt-3 flex justify-between text-sm">
+            <span className="text-neutral-500">Your budget</span>
+            <span className="font-semibold text-neutral-900">{euro(budgetTotal)}</span>
           </div>
           <div
             className={`mt-3 text-center text-sm font-semibold ${
-              fits ? 'text-green-400' : 'text-red-400'
+              fits ? 'text-emerald-600' : 'text-rose-600'
             }`}
           >
-            {fits ? '✅ This fits your budget.' : `❌ Over budget. ${suggestion}`}
+            {fits ? 'This fits your budget.' : `Over budget. ${suggestion}`}
           </div>
         </div>
 
-        <div className="text-center text-[13px] text-neutral-300">
-          <div className="font-semibold mb-1">
+        <div className="text-center text-[13px] text-neutral-600">
+          <div className="mb-1 font-semibold text-neutral-900">
             Ready to turn this into a personalised itinerary?
           </div>
-          <div className="text-neutral-400">
+          <div>
             Add your dates & specifics next—your travel specialist will take it from there.
           </div>
-          {continueError && <div className="mt-3 text-sm text-red-400">{continueError}</div>}
+          {continueError && <div className="mt-3 text-sm text-red-500">{continueError}</div>}
           <button
-            className={`mt-3 w-full font-semibold text-sm py-3 rounded-xl transition-colors ${
+            className={`mt-3 w-full rounded-2xl py-3 text-sm font-semibold transition ${
               isContinuing
-                ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
+                ? 'cursor-not-allowed bg-slate-200 text-neutral-500'
+                : 'bg-gradient-to-r from-[#FF8B55] to-[#FF6B35] text-white shadow-lg shadow-orange-200 hover:from-[#FF9B66] hover:to-[#FF5B24]'
             }`}
             onClick={() => {
               if (isContinuing) return;
@@ -498,19 +491,19 @@ function BudgetGauge({ budget, low, high }) {
 
   return (
     <div className="mt-2">
-      <div className="h-3 w-full bg-neutral-800 rounded-full relative overflow-hidden">
+      <div className="relative h-3 w-full rounded-full bg-white">
         <div
-          className="absolute top-0 bottom-0 bg-neutral-600/60"
+          className="absolute inset-y-0 bg-slate-300/70"
           style={{ left: `${pctLow}%`, width: `${Math.max(pctHigh - pctLow, 2)}%` }}
           title="Estimated total range"
         />
         <div
-          className="absolute top-[-4px] h-5 w-[2px] bg-orange-400"
+          className="absolute top-[-4px] h-5 w-[2px] bg-[#FF6B35]"
           style={{ left: `calc(${pctBudget}% - 1px)` }}
           title="Your budget"
         />
       </div>
-      <div className="flex justify-between text-[11px] text-neutral-500 mt-1">
+      <div className="mt-1 flex justify-between text-[11px] text-neutral-400">
         <span>0</span>
         <span>max {euro(Math.round(max))}</span>
       </div>
@@ -523,12 +516,12 @@ function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
 function EstimateRow({ label, value, color }) {
   return (
-    <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-2xl px-4 py-3">
-      <div className="flex items-center gap-3 text-sm font-medium">
+    <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white/80 px-4 py-3 shadow">
+      <div className="flex items-center gap-3 text-sm font-semibold text-neutral-700">
         <span className={`text-lg ${color}`}>•</span>
-        <span className="text-neutral-100">{label}</span>
+        <span>{label}</span>
       </div>
-      <div className="text-sm font-semibold text-neutral-100">{value}</div>
+      <div className="text-sm font-semibold text-neutral-900">{value}</div>
     </div>
   );
 }

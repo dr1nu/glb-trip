@@ -6,14 +6,182 @@ import SignOutButton from './_components/SignOutButton';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function formatDate(value) {
-  if (!value) return 'Pending';
+const DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+const MONTH_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric',
+});
+
+const IMAGE_PLACEHOLDERS = [
+  'from-sky-200 via-indigo-200 to-purple-200',
+  'from-amber-200 via-rose-200 to-pink-200',
+  'from-emerald-200 via-teal-200 to-sky-200',
+  'from-blue-200 via-cyan-200 to-emerald-200',
+];
+
+function parseDate(value) {
+  if (!value) return null;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Pending';
-  return date.toLocaleString('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatTripDates(trip) {
+  const start = parseDate(trip.preferences?.dateFrom);
+  const end = parseDate(trip.preferences?.dateTo);
+  if (start && end) {
+    if (start.getTime() === end.getTime()) {
+      return DATE_FORMATTER.format(start);
+    }
+    return `${DATE_FORMATTER.format(start)} to ${DATE_FORMATTER.format(end)}`;
+  }
+  if (start) return DATE_FORMATTER.format(start);
+  if (end) return DATE_FORMATTER.format(end);
+  return formatTravelWindowLabel(trip.preferences);
+}
+
+function formatDuration(trip) {
+  if (trip.tripLengthDays) {
+    return `${trip.tripLengthDays} day${trip.tripLengthDays === 1 ? '' : 's'}`;
+  }
+  const start = parseDate(trip.preferences?.dateFrom);
+  const end = parseDate(trip.preferences?.dateTo);
+  if (start && end) {
+    const diffDays = Math.max(
+      1,
+      Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    );
+    return `${diffDays} day${diffDays === 1 ? '' : 's'}`;
+  }
+  return 'Length pending';
+}
+
+function formatTravelWindowLabel(preferences) {
+  if (!preferences) return 'Travel window pending';
+  const { travelWindow, flexibleMonth } = preferences;
+  if (travelWindow === 'flexible') {
+    if (flexibleMonth) {
+      const parsed = new Date(`${flexibleMonth}-01`);
+      if (!Number.isNaN(parsed.getTime())) {
+        return `Flexible: ${MONTH_FORMATTER.format(parsed)}`;
+      }
+    }
+    return 'Flexible travel window';
+  }
+  if (travelWindow === 'range') {
+    return 'Preferred date range';
+  }
+  if (travelWindow === 'specific') {
+    return 'Specific dates pending';
+  }
+  return 'Dates pending';
+}
+
+function formatTravelers(trip) {
+  const adults = trip.contact?.adults ?? 0;
+  const children = trip.contact?.children ?? 0;
+  const total = adults + children;
+  if (total > 0) {
+    return `${total} traveler${total === 1 ? '' : 's'}`;
+  }
+  return 'Travelers pending';
+}
+
+function getTripStatus(trip) {
+  const endDate = parseDate(trip.preferences?.dateTo);
+  const now = new Date();
+  if (endDate && endDate < now) {
+    return {
+      label: 'Completed',
+      badge: 'bg-blue-100 text-blue-700',
+    };
+  }
+  if (trip.published) {
+    return {
+      label: 'Confirmed',
+      badge: 'bg-emerald-100 text-emerald-700',
+    };
+  }
+  return {
+    label: 'Pending',
+    badge: 'bg-amber-100 text-amber-700',
+  };
+}
+
+function TripInfoItem({ icon, label }) {
+  return (
+    <div className="flex items-center gap-2 text-sm text-neutral-600">
+      {icon}
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function TripCard({ trip, index }) {
+  const gradient =
+    IMAGE_PLACEHOLDERS[index % IMAGE_PLACEHOLDERS.length] ??
+    IMAGE_PLACEHOLDERS[0];
+  const status = getTripStatus(trip);
+  const dateRange = formatTripDates(trip);
+  const duration = formatDuration(trip);
+  const travelers = formatTravelers(trip);
+
+  return (
+    <article className="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
+      <div className="w-full overflow-hidden rounded-2xl sm:w-48">
+        <div
+          className={`relative h-36 w-full bg-gradient-to-br ${gradient}`}
+        >
+          <div className="absolute inset-0 bg-black/15" />
+          <div className="relative flex h-full w-full flex-col justify-end p-4 text-white">
+            <p className="text-xs uppercase tracking-wide opacity-80">Explore</p>
+            <p className="text-lg font-semibold truncate">
+              {trip.destinationCountry || 'Destination TBD'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-4">
+        <div className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-neutral-900">
+              {trip.destinationCountry || 'Destination TBD'}
+            </h2>
+            <p className="text-sm text-neutral-500">
+              {trip.homeCountry
+                ? `Departing from ${trip.homeCountry}`
+                : 'Origin pending'}
+            </p>
+          </div>
+          <span
+            className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${status.badge}`}
+          >
+            {status.label}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-5 text-sm text-neutral-600">
+          <TripInfoItem icon={<CalendarIcon />} label={dateRange} />
+          <TripInfoItem icon={<ClockIcon />} label={duration} />
+          <TripInfoItem icon={<UsersIcon />} label={travelers} />
+        </div>
+      </div>
+
+      <div className="w-full sm:w-auto sm:self-center">
+        <Link
+          href={`/trip/${trip.id}`}
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow shadow-orange-200 transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
+        >
+          View Details
+        </Link>
+      </div>
+    </article>
+  );
 }
 
 export default async function MyTripsPage() {
@@ -24,17 +192,20 @@ export default async function MyTripsPage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center items-center">
-        <div className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 text-center space-y-4 max-w-md">
-          <h1 className="text-2xl font-semibold">My trips</h1>
-          <p className="text-sm text-neutral-400">
-            Sign in to save itineraries and view them across devices.
+      <main className="min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] px-4 py-12 text-neutral-900">
+        <div className="mx-auto w-full max-w-md rounded-[32px] border border-white/80 bg-white p-10 text-center shadow-xl shadow-orange-100/40">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-2xl text-orange-500">
+            🔒
+          </div>
+          <h1 className="text-3xl font-semibold">Sign in to view your trips</h1>
+          <p className="mt-3 text-sm text-neutral-500">
+            Create an account or sign in to access your personalised travel itineraries and bookings.
           </p>
           <Link
             href="/"
-            className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-orange-500 text-neutral-900 font-semibold text-sm hover:bg-orange-400"
+            className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow shadow-orange-200 hover:bg-orange-600"
           >
-            Start planning →
+            Sign in
           </Link>
         </div>
       </main>
@@ -44,65 +215,45 @@ export default async function MyTripsPage() {
   const trips = await listTripsByOwner(user.id);
 
   return (
-    <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center">
-      <div className="w-full max-w-3xl space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-800 pb-4">
+    <main className="min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] text-neutral-900">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-28 pt-10 sm:px-6 lg:px-8">
+        <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">My trips</h1>
-            <p className="text-sm text-neutral-400">
-              {trips.length === 0
-                ? 'Save a trip to see it appear here.'
-                : `${trips.length} saved trip${trips.length === 1 ? '' : 's'}.`}
+            <h1 className="text-3xl font-bold text-neutral-900">My Trips</h1>
+            <p className="text-sm text-neutral-600">
+              View and manage your travel itineraries
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="text-sm font-medium text-orange-400 hover:text-orange-300"
-            >
-              New search
-            </Link>
-            <SignOutButton />
-          </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/"
+                className="text-sm font-semibold text-neutral-700 hover:text-neutral-900"
+              >
+                New search
+              </Link>
+              <SignOutButton />
+            </div>
         </header>
 
         {trips.length === 0 ? (
-          <div className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 text-sm text-neutral-400 text-center">
-            Plan a new holiday to add your first trip.
+          <div className="rounded-[32px] border border-dashed border-orange-100 bg-white/90 p-10 text-center shadow-sm shadow-orange-50">
+            <h2 className="text-xl font-semibold text-neutral-900">
+              No trips yet
+            </h2>
+            <p className="mt-2 text-sm text-neutral-500">
+              Plan your first adventure to see it appear here.
+            </p>
+            <Link
+              href="/"
+              className="mt-6 inline-flex items-center justify-center rounded-2xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow shadow-orange-200 hover:bg-orange-600"
+            >
+              Start a trip
+            </Link>
           </div>
         ) : (
-          <div className="space-y-4">
-            {trips.map((trip) => (
-              <article
-                key={trip.id}
-                className="bg-neutral-800 border border-neutral-700 rounded-2xl p-5 space-y-3"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-neutral-400">
-                      {formatDate(trip.createdAt)}
-                    </p>
-                    <h2 className="text-lg font-semibold">
-                      {trip.homeCountry} → {trip.destinationCountry}
-                    </h2>
-                  </div>
-                  <Link
-                    href={`/trip/${trip.id}`}
-                    className="text-sm font-medium text-orange-400 hover:text-orange-300"
-                  >
-                    View trip →
-                  </Link>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                  <Info label="Budget" value={trip.budgetTotal ? `€${Math.round(trip.budgetTotal)}` : '—'} />
-                  <Info label="Length" value={trip.tripLengthDays ? `${trip.tripLengthDays} days` : '—'} />
-                  <Info
-                    label="Status"
-                    value={trip.itinerary?.cards?.length ? 'Itinerary ready' : 'Pending'}
-                  />
-                  <Info label="Published" value={trip.published ? 'Yes' : 'No'} />
-                </div>
-              </article>
+          <div className="space-y-5">
+            {trips.map((trip, index) => (
+              <TripCard key={trip.id} trip={trip} index={index} />
             ))}
           </div>
         )}
@@ -111,11 +262,58 @@ export default async function MyTripsPage() {
   );
 }
 
-function Info({ label, value }) {
+function CalendarIcon() {
   return (
-    <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-3 space-y-1">
-      <p className="text-[11px] uppercase tracking-wide text-neutral-500">{label}</p>
-      <p className="text-sm font-medium text-neutral-100">{value}</p>
-    </div>
+    <svg
+      className="h-5 w-5 text-neutral-400"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M3 10h18M8 2v4M16 2v4" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg
+      className="h-5 w-5 text-neutral-400"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg
+      className="h-5 w-5 text-neutral-400"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="3" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
   );
 }

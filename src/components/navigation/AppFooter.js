@@ -70,25 +70,35 @@ export default function AppFooter() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-800 bg-neutral-950/95 backdrop-blur px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-orange-100 bg-white/90 backdrop-blur px-4 py-3">
+        <div className="mx-auto flex max-w-3xl items-center justify-between">
           {tabs.map((tab) => {
             const isActive =
               (tab.key === 'home' && pathname === '/') ||
               (tab.href && pathname === tab.href);
             const Icon = tab.icon;
             const baseClasses =
-              'flex-1 flex flex-col items-center gap-1 text-xs font-medium py-2 rounded-xl transition-colors';
-            const activeClasses = isActive ? 'text-orange-400' : 'text-neutral-400';
+              'flex-1 flex flex-col items-center gap-1 text-xs font-semibold py-1.5 rounded-2xl transition-colors';
+            const isAccount = tab.key === 'account';
+            const labelColor = isAccount
+              ? 'text-neutral-900'
+              : isActive
+              ? 'text-[#FF6B35]'
+              : 'text-[#4C5A6B]';
+            const iconColor = isAccount
+              ? isActive
+                ? 'text-[#FF6B35]'
+                : 'text-[#4C5A6B]'
+              : labelColor;
 
             if (tab.key === 'home') {
               return (
                 <Link
                   key={tab.key}
                   href={tab.href}
-                  className={`${baseClasses} ${activeClasses}`}
+                  className={`${baseClasses} ${labelColor}`}
                 >
-                  <Icon active={isActive} />
+                  <Icon colorClass={iconColor} />
                   {tab.label}
                 </Link>
               );
@@ -99,24 +109,28 @@ export default function AppFooter() {
                 <Link
                   key={tab.key}
                   href={tab.href}
-                  className={`${baseClasses} ${activeClasses}`}
+                  className={`${baseClasses} ${labelColor}`}
                 >
-                  <Icon active={isActive} />
+                  <Icon colorClass={iconColor} />
                   {tab.label}
                 </Link>
               );
             }
+
+            const accountActive = tab.key === 'account' && !!user;
+            const accountLabel = accountActive ? 'text-neutral-900' : labelColor;
+            const accountIconColor = accountActive
+              ? 'text-[#FF6B35]'
+              : 'text-[#4C5A6B]';
 
             return (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => handleTabPress(tab)}
-                className={`${baseClasses} ${
-                  tab.key === 'account' && user ? 'text-orange-400' : activeClasses
-                }`}
+                className={`${baseClasses} ${accountLabel}`}
               >
-                <Icon active={tab.key === 'account' && !!user} />
+                <Icon colorClass={accountIconColor} />
                 {tab.label}
               </button>
             );
@@ -223,28 +237,24 @@ function renderOverlayContent({ overlay, user, supabase, ready, onClose, setOver
   return null;
 }
 
-function IconWrapper({ children, active }) {
+function IconWrapper({ children, colorClass }) {
   return (
-    <span
-      className={`h-6 w-6 flex items-center justify-center rounded-full border ${
-        active ? 'border-orange-400 text-orange-400' : 'border-neutral-600 text-neutral-400'
-      }`}
-    >
+    <span className={`flex h-6 w-6 items-center justify-center ${colorClass ?? ''}`}>
       {children}
     </span>
   );
 }
 
-function HomeIcon({ active }) {
+function HomeIcon({ colorClass }) {
   return (
-    <IconWrapper active={active}>
+    <IconWrapper colorClass={colorClass}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.5"
-        className="h-4 w-4"
+        strokeWidth="1.8"
+        className="h-6 w-6"
       >
         <path d="M3 11.5L12 4l9 7.5" />
         <path d="M5 10.5V20h14v-9.5" />
@@ -253,16 +263,16 @@ function HomeIcon({ active }) {
   );
 }
 
-function TripsIcon({ active }) {
+function TripsIcon({ colorClass }) {
   return (
-    <IconWrapper active={active}>
+    <IconWrapper colorClass={colorClass}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.5"
-        className="h-4 w-4"
+        strokeWidth="1.8"
+        className="h-6 w-6 -translate-y-[1px]"
       >
         <path d="M12 21s6-4.5 6-9a6 6 0 10-12 0c0 4.5 6 9 6 9z" />
         <circle cx="12" cy="12" r="2" />
@@ -271,16 +281,16 @@ function TripsIcon({ active }) {
   );
 }
 
-function AccountIcon({ active }) {
+function AccountIcon({ colorClass }) {
   return (
-    <IconWrapper active={active}>
+    <IconWrapper colorClass={colorClass}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.5"
-        className="h-4 w-4"
+        strokeWidth="1.8"
+        className="h-6 w-6"
       >
         <circle cx="12" cy="8" r="3" />
         <path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" />
