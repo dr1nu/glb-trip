@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createTrip, getTrip, listTrips } from '@/lib/db';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { splitFullName } from '@/lib/profile';
 
 export const dynamic = 'force-dynamic';
+
+function cleanString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 function normalizePayload(data) {
   if (typeof data !== 'object' || data === null) {
@@ -40,12 +45,30 @@ function normalizePayload(data) {
     throw new Error('contact information is required.');
   }
 
-  const name = typeof contact.name === 'string' ? contact.name.trim() : '';
-  const email = typeof contact.email === 'string' ? contact.email.trim() : '';
-  const city = typeof contact.city === 'string' ? contact.city.trim() : '';
-  if (!name) throw new Error('Contact name is required.');
+  const email = cleanString(contact.email);
+  const fullName = cleanString(contact.name);
+  let firstName = cleanString(contact.firstName);
+  let lastName = cleanString(contact.lastName);
+  if ((!firstName || !lastName) && fullName) {
+    const split = splitFullName(fullName);
+    firstName = firstName || split.firstName;
+    lastName = lastName || split.lastName;
+  }
+  if (!firstName) throw new Error('Contact first name is required.');
+  if (!lastName) throw new Error('Contact surname is required.');
   if (!email) throw new Error('Contact email is required.');
-  if (!city) throw new Error('Contact city is required.');
+
+  const contactHomeCountry =
+    cleanString(contact.homeCountry) ||
+    cleanString(contact.country) ||
+    cleanString(contact.city);
+  if (!contactHomeCountry) {
+    throw new Error('Contact home country is required.');
+  }
+  const nearestAirport = cleanString(contact.nearestAirport);
+  if (!nearestAirport) {
+    throw new Error('Contact nearest airport is required.');
+  }
 
   const adultsRaw = Number(contact.adults);
   const adults = Number.isFinite(adultsRaw) && adultsRaw >= 1 ? Math.floor(adultsRaw) : 1;
@@ -62,9 +85,12 @@ function normalizePayload(data) {
     budgetTotal: budget,
     result: typeof result === 'object' && result !== null ? result : {},
     contact: {
-      name,
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`.trim(),
       email,
-      city,
+      homeCountry: contactHomeCountry,
+      nearestAirport,
       adults,
       children,
       details,

@@ -143,12 +143,21 @@ export default async function AdminPage() {
                       Traveller account
                     </p>
                     <div className="text-neutral-100 font-medium">
-                      {trip.contact.name || '—'}
+                      {trip.contact.name ||
+                        [trip.contact.firstName, trip.contact.lastName]
+                          .filter(Boolean)
+                          .join(' ') ||
+                        '—'}
                     </div>
                     <div className="text-neutral-400">{trip.contact.email || '—'}</div>
                     <div className="text-neutral-500 text-xs mt-1">
-                      Country: {trip.contact.city || trip.contact.country || '—'} • Adults:{' '}
-                      {trip.contact.adults ?? '—'} • Children: {trip.contact.children ?? '—'}
+                      Home:{' '}
+                      {trip.contact.homeCountry || trip.contact.city || '—'} • Airport:{' '}
+                      {trip.contact.nearestAirport || '—'}
+                    </div>
+                    <div className="text-neutral-500 text-xs mt-1">
+                      Adults: {trip.contact.adults ?? '—'} • Children:{' '}
+                      {trip.contact.children ?? '—'}
                     </div>
                     {trip.ownerId ? (
                       <div className="text-xs text-neutral-500 mt-1">

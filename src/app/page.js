@@ -182,7 +182,12 @@ export default function Home() {
         <AuthOverlay onClose={() => setAuthModalOpen(false)}>
           <AuthForm
             supabase={supabase}
-            defaultCountry={homeCountry}
+            defaultHomeCountry={homeCountry}
+            initialMode="signin"
+            onRequestSignup={() => {
+              setAuthModalOpen(false);
+              router.push('/account');
+            }}
             onSuccess={handleAuthSuccess}
           />
         </AuthOverlay>
