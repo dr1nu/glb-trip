@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createTrip, getTrip, listTrips } from '@/lib/db';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,7 @@ function normalizePayload(data) {
     budgetTotal,
     result,
     contact,
+    preferences,
   } = data;
 
   if (!destinationCountry || typeof destinationCountry !== 'string') {
@@ -67,6 +69,8 @@ function normalizePayload(data) {
       children,
       details,
     },
+    preferences:
+      typeof preferences === 'object' && preferences !== null ? preferences : null,
   };
 }
 
@@ -82,7 +86,19 @@ export async function POST(request) {
   }
 
   try {
-    const trip = await createTrip(payload);
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Please sign in to request a trip.' },
+        { status: 401 }
+      );
+    }
+
+    const trip = await createTrip(payload, user.id);
     return NextResponse.json({ tripId: trip.id });
   } catch (err) {
     console.error('Failed to create trip', err);

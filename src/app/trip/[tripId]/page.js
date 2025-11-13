@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTrip } from '@/lib/db';
+import CreateItineraryButton from './_components/CreateItineraryButton';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,8 @@ export default async function TripPage({ params, searchParams }) {
     budgetTotal,
     result = {},
     contact = null,
+    itinerary = null,
+    preferences = null,
   } = trip;
 
   const {
@@ -46,6 +49,13 @@ export default async function TripPage({ params, searchParams }) {
   const createdLabel = createdAt
     ? new Date(createdAt).toLocaleString()
     : 'unknown';
+
+  const itineraryReady = Boolean(itinerary?.cards?.length);
+  const immersiveHref = fromAdmin
+    ? `/trip/${id}/experience?from=admin`
+    : `/trip/${id}/experience`;
+  const showTravellerCTA = itineraryReady && !fromAdmin;
+  const showAdminCTA = itineraryReady && fromAdmin;
 
   return (
     <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center">
@@ -109,7 +119,7 @@ export default async function TripPage({ params, searchParams }) {
           </div>
         </section>
 
-        {contact ? (
+        {contact || preferences ? (
           <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-4">
             <header>
               <h2 className="text-lg font-semibold">Traveller details</h2>
@@ -117,24 +127,92 @@ export default async function TripPage({ params, searchParams }) {
                 Captured when the holiday request was submitted.
               </p>
             </header>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <Detail label="Name" value={contact.name} />
-              <Detail label="Email" value={contact.email} />
-              <Detail label="City" value={contact.city} />
-              <Detail
-                label="Party"
-                value={`${contact.adults} adult${contact.adults === 1 ? '' : 's'}${typeof contact.children === 'number' && contact.children > 0 ? ` · ${contact.children} child${contact.children === 1 ? '' : 'ren'}` : ''}`}
-              />
-              {contact.details ? (
+            {contact ? (
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <Detail label="Name" value={contact.name} />
+                <Detail label="Email" value={contact.email} />
+                <Detail label="City" value={contact.city} />
                 <Detail
-                  label="Requests"
-                  value={contact.details}
-                  className="sm:col-span-2"
+                  label="Party"
+                  value={`${contact.adults} adult${contact.adults === 1 ? '' : 's'}${typeof contact.children === 'number' && contact.children > 0 ? ` · ${contact.children} child${contact.children === 1 ? '' : 'ren'}` : ''}`}
                 />
-              ) : null}
-            </dl>
+                {contact.details ? (
+                  <Detail
+                    label="Requests"
+                    value={contact.details}
+                    className="sm:col-span-2"
+                  />
+                ) : null}
+              </dl>
+            ) : (
+              <p className="text-sm text-neutral-400">Traveller details were not captured.</p>
+            )}
+
+            {preferences ? (
+              <div className="pt-4 border-t border-neutral-700 space-y-3">
+                <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+                  Trip preferences
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <Detail label="Baggage" value={formatBaggage(preferences)} />
+                  <Detail label="Travel window" value={formatTravelWindow(preferences)} />
+                  <Detail label="Accommodation" value={formatAccommodation(preferences)} />
+                  <Detail
+                    label="Interests"
+                    value={
+                      Array.isArray(preferences.interests) && preferences.interests.length > 0
+                        ? preferences.interests.join(', ')
+                        : '—'
+                    }
+                  />
+                  <Detail
+                    label="Special requests"
+                    value={preferences.details || '—'}
+                    className="sm:col-span-2"
+                  />
+                </div>
+              </div>
+            ) : null}
           </section>
         ) : null}
+
+        {showTravellerCTA ? (
+          <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">Your itinerary is live</h2>
+              <p className="text-sm text-neutral-400">
+                Jump into the immersive view to explore day-by-day plans and booking links.
+              </p>
+            </div>
+            <Link
+              href={immersiveHref}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-orange-500 text-sm font-semibold text-neutral-900 hover:bg-orange-400 transition-colors"
+            >
+              View my itinerary
+            </Link>
+          </section>
+        ) : null}
+
+        {fromAdmin ? (
+          <CreateItineraryButton
+            tripId={id}
+            hasItinerary={Boolean(itinerary?.cards?.length)}
+            cardCount={itinerary?.cards?.length ?? 0}
+          />
+        ) : null}
+
+        {showAdminCTA ? (
+          <div className="text-right">
+            <Link
+              href={immersiveHref}
+              className="text-sm font-medium text-orange-400 hover:text-orange-300"
+            >
+              Open immersive view →
+            </Link>
+          </div>
+        ) : null}
+
+        {!itineraryReady ? <ItineraryStatus fromAdmin={fromAdmin} /> : null}
       </div>
     </main>
   );
@@ -164,4 +242,52 @@ function Detail({ label, value, className = '' }) {
       </div>
     </div>
   );
+}
+
+function ItineraryStatus({ fromAdmin }) {
+  return (
+    <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-3">
+      <h2 className="text-lg font-semibold">Itinerary status</h2>
+      <p className="text-sm text-neutral-400">
+        {fromAdmin
+          ? 'Create the trip to generate departure, stay, daily, and budget cards.'
+          : 'We are preparing your personalised itinerary. Stay tuned!'}
+      </p>
+    </section>
+  );
+}
+
+function formatBaggage(preferences) {
+  const map = {
+    small: 'Small bag only',
+    cabin: 'Cabin bag',
+    checked: 'Checked bag',
+  };
+  return map[preferences?.baggage] ?? '—';
+}
+
+function formatTravelWindow(preferences) {
+  if (!preferences) return '—';
+  if (preferences.travelWindow === 'flexible') {
+    return preferences.flexibleMonth ? `Flexible around ${preferences.flexibleMonth}` : 'Flexible';
+  }
+  if (preferences.travelWindow === 'range' || preferences.travelWindow === 'specific') {
+    const from = preferences.dateFrom || 'TBC';
+    const to = preferences.dateTo || 'TBC';
+    return `${from} → ${to}`;
+  }
+  return '—';
+}
+
+function formatAccommodation(preferences) {
+  const map = {
+    budget: 'Budget hotel',
+    'b&b': 'Bed & breakfast',
+    luxury: 'Luxury hotel',
+    flat: 'Flat',
+    airbnb: 'Airbnb',
+    none: 'No preference',
+    hotel: 'Hotel',
+  };
+  return map[preferences?.accommodation] ?? '—';
 }

@@ -61,6 +61,7 @@ export default async function AdminPage() {
               tripLengthDays,
               budgetTotal,
               result = {},
+              itinerary = null,
             } = trip;
 
             return (
@@ -78,12 +79,22 @@ export default async function AdminPage() {
                       {tripLengthDays === 1 ? '' : 's'}
                     </p>
                   </div>
-                  <Link
-                    href={`/trip/${id}?from=admin`}
-                    className="text-sm font-medium text-orange-400 hover:text-orange-300"
-                  >
-                    View trip →
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <Link
+                      href={`/trip/${id}?from=admin`}
+                      className="text-sm font-medium text-orange-400 hover:text-orange-300"
+                    >
+                      View trip →
+                    </Link>
+                    {itinerary?.cards?.length ? (
+                      <Link
+                        href={`/trip/${id}/builder?from=admin`}
+                        className="text-sm font-medium text-orange-400 hover:text-orange-300"
+                      >
+                        Open builder →
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
 
                 <dl className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
@@ -116,7 +127,37 @@ export default async function AdminPage() {
                         : 'Unknown'
                     }
                   />
+                  <Fact
+                    label="Itinerary"
+                    value={
+                      itinerary?.cards?.length
+                        ? `${itinerary.cards.length} cards`
+                        : 'Not created'
+                    }
+                  />
                 </dl>
+
+                {trip.contact ? (
+                  <div className="mt-4 bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-sm">
+                    <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+                      Traveller account
+                    </p>
+                    <div className="text-neutral-100 font-medium">
+                      {trip.contact.name || '—'}
+                    </div>
+                    <div className="text-neutral-400">{trip.contact.email || '—'}</div>
+                    <div className="text-neutral-500 text-xs mt-1">
+                      Country: {trip.contact.city || trip.contact.country || '—'} • Adults:{' '}
+                      {trip.contact.adults ?? '—'} • Children: {trip.contact.children ?? '—'}
+                    </div>
+                    {trip.ownerId ? (
+                      <div className="text-xs text-neutral-500 mt-1">
+                        User ID: {trip.ownerId}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
               </article>
             );
           })}
