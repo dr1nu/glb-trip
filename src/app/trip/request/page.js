@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { composeProfilePayload } from '@/lib/profile';
+import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
+import {
+  ACCOMMODATION_OPTIONS,
+  BAGGAGE_OPTIONS,
+  TRAVEL_INTERESTS,
+  TRAVEL_WINDOW_OPTIONS,
+} from '@/lib/travel-preferences';
 import AuthForm from '@/components/auth/AuthForm';
 
 const STORAGE_KEY = 'glb-pending-trip';
@@ -13,9 +21,11 @@ export default function TripRequestPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [trip, setTrip] = useState(null);
   const [form, setForm] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
-    city: '',
+    homeCountry: '',
+    nearestAirport: '',
     adults: 2,
     children: 0,
     baggage: 'cabin',
@@ -75,17 +85,31 @@ export default function TripRequestPage() {
     if (!trip) return;
     setForm((prev) => ({
       ...prev,
-      city: prev.city || trip.homeCountry || '',
+      homeCountry: prev.homeCountry || trip.homeCountry || '',
     }));
   }, [trip]);
 
   useEffect(() => {
     if (!user) return;
+    const profile = composeProfilePayload(user);
     setForm((prev) => ({
       ...prev,
-      name: prev.name || user.user_metadata?.name || '',
-      email: prev.email || user.email || '',
-      city: prev.city || trip?.homeCountry || '',
+      firstName: profile.firstName || profile.fullName || prev.firstName || '',
+      lastName: profile.lastName || prev.lastName || '',
+      email: profile.email || prev.email || '',
+      homeCountry: profile.homeCountry || prev.homeCountry || trip?.homeCountry || '',
+      nearestAirport: profile.nearestAirport || prev.nearestAirport || '',
+      baggage: prev.baggage || profile.travelPreferences.baggage,
+      travelWindow: prev.travelWindow || profile.travelPreferences.travelWindow,
+      dateFrom: prev.dateFrom || profile.travelPreferences.dateFrom,
+      dateTo: prev.dateTo || profile.travelPreferences.dateTo,
+      flexibleMonth: prev.flexibleMonth || profile.travelPreferences.flexibleMonth,
+      accommodation: prev.accommodation || profile.travelPreferences.accommodation,
+      interests:
+        prev.interests?.length > 0
+          ? prev.interests
+          : [...(profile.travelPreferences.interests || [])],
+      details: prev.details || profile.travelPreferences.details || '',
     }));
   }, [user, trip]);
 
@@ -110,11 +134,15 @@ export default function TripRequestPage() {
 
     try {
       const contact = {
-        name: form.name.trim(),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        name: [form.firstName, form.lastName].filter(Boolean).join(' ').trim(),
         email: form.email.trim(),
-        city: form.city.trim(),
+        homeCountry: form.homeCountry,
+        nearestAirport: form.nearestAirport.trim(),
         adults: form.adults,
         children: form.children,
+        details: form.details.trim(),
       };
       const preferences = {
         baggage: form.baggage,
@@ -208,39 +236,74 @@ export default function TripRequestPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium">Name</span>
+                <span className="font-medium">First name</span>
                 <input
                   required
                   type="text"
-                  name="name"
-                  value={form.name}
+                  name="firstName"
+                  value={form.firstName}
                   onChange={handleInputChange}
                   className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Jane Doe"
+                  placeholder="Jane"
                 />
               </label>
               <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium">Email</span>
-                <input
-                  required
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleInputChange}
-                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="jane@example.com"
-                />
-              </label>
-              <label className="flex flex-col gap-2 text-sm sm:col-span-2">
-                <span className="font-medium">City</span>
+                <span className="font-medium">Surname</span>
                 <input
                   required
                   type="text"
-                  name="city"
-                  value={form.city}
+                  name="lastName"
+                  value={form.lastName}
                   onChange={handleInputChange}
                   className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Where you live"
+                  placeholder="Doe"
+                />
+              </label>
+            </div>
+
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="font-medium">Email</span>
+              <input
+                required
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleInputChange}
+                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="jane@example.com"
+              />
+            </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="flex flex-col gap-2 text-sm">
+                <span className="font-medium">Home country</span>
+                <select
+                  required
+                  name="homeCountry"
+                  value={form.homeCountry}
+                  onChange={handleInputChange}
+                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="" disabled>
+                    Select your country
+                  </option>
+                  {EUROPE_COUNTRIES.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-2 text-sm">
+                <span className="font-medium">Nearest airport</span>
+                <input
+                  required
+                  type="text"
+                  name="nearestAirport"
+                  value={form.nearestAirport}
+                  onChange={handleInputChange}
+                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="e.g. Lisbon"
                 />
               </label>
             </div>
@@ -273,11 +336,7 @@ export default function TripRequestPage() {
             <div className="border border-neutral-700 rounded-xl p-4 space-y-3">
               <span className="block text-sm font-medium">Baggage preference</span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                {[
-                  { key: 'small', label: 'Small bag only' },
-                  { key: 'cabin', label: 'Cabin bag' },
-                  { key: 'checked', label: 'Checked bag' },
-                ].map((option) => (
+                {BAGGAGE_OPTIONS.map((option) => (
                   <label
                     key={option.key}
                     className={`rounded-xl border px-3 py-2 text-center cursor-pointer ${
@@ -303,11 +362,7 @@ export default function TripRequestPage() {
             <div className="space-y-3 border border-neutral-700 rounded-xl p-4">
               <span className="block text-sm font-medium">When do you want to travel?</span>
               <div className="flex flex-wrap gap-3 text-sm">
-                {[
-                  { key: 'specific', label: 'Specific dates' },
-                  { key: 'flexible', label: 'Flexible' },
-                  { key: 'range', label: 'Range' },
-                ].map((option) => (
+                {TRAVEL_WINDOW_OPTIONS.map((option) => (
                   <label
                     key={option.key}
                     className={`rounded-xl border px-3 py-2 cursor-pointer ${
@@ -370,14 +425,7 @@ export default function TripRequestPage() {
             <div className="border border-neutral-700 rounded-xl p-4 space-y-2">
               <span className="text-sm font-medium">Accommodation preference</span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                {[
-                  { key: 'budget', label: 'Budget hotel' },
-                  { key: 'b&b', label: 'Bed & breakfast' },
-                  { key: 'luxury', label: 'Luxury hotel' },
-                  { key: 'flat', label: 'Flat' },
-                  { key: 'airbnb', label: 'Airbnb' },
-                  { key: 'none', label: 'No preference' },
-                ].map((option) => (
+                {ACCOMMODATION_OPTIONS.map((option) => (
                   <label
                     key={option.key}
                     className={`rounded-xl border px-3 py-2 cursor-pointer ${
@@ -403,16 +451,7 @@ export default function TripRequestPage() {
             <div className="space-y-2">
               <span className="text-sm font-medium">Travel interests</span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                {[
-                  'Culture & History',
-                  'Adventure & Sports',
-                  'Food & Dining',
-                  'Nature & Wildlife',
-                  'Beach & Relaxation',
-                  'Shopping',
-                  'Nightlife',
-                  'Photography',
-                ].map((interest) => (
+                {TRAVEL_INTERESTS.map((interest) => (
                   <label
                     key={interest}
                     className={`rounded-xl border px-3 py-2 cursor-pointer ${
@@ -480,16 +519,21 @@ export default function TripRequestPage() {
           ) : (
             <AuthForm
               supabase={supabase}
-              defaultName={form.name}
+              defaultFirstName={form.firstName}
+              defaultLastName={form.lastName}
               defaultEmail={form.email}
-              defaultCountry={trip?.homeCountry ?? ''}
+              defaultHomeCountry={form.homeCountry || trip?.homeCountry || ''}
+              defaultNearestAirport={form.nearestAirport}
               layout="inline"
               onSuccess={(profile) => {
                 setForm((prev) => ({
                   ...prev,
-                  name: profile.name ?? prev.name,
-                  email: profile.email ?? prev.email,
-                  city: prev.city || trip?.homeCountry || '',
+                  firstName: profile.firstName ?? prev.firstName ?? '',
+                  lastName: profile.lastName ?? prev.lastName ?? '',
+                  email: profile.email ?? prev.email ?? '',
+                  homeCountry:
+                    profile.homeCountry ?? prev.homeCountry ?? trip?.homeCountry ?? '',
+                  nearestAirport: profile.nearestAirport ?? prev.nearestAirport ?? '',
                 }));
                 setError('');
               }}

@@ -129,12 +129,31 @@ export default async function TripPage({ params, searchParams }) {
             </header>
             {contact ? (
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <Detail label="Name" value={contact.name} />
+                <Detail
+                  label="Name"
+                  value={
+                    contact.name ||
+                    [contact.firstName, contact.lastName].filter(Boolean).join(' ')
+                  }
+                />
                 <Detail label="Email" value={contact.email} />
-                <Detail label="City" value={contact.city} />
+                <Detail
+                  label="Home country"
+                  value={contact.homeCountry || contact.city || '—'}
+                />
+                <Detail
+                  label="Nearest airport"
+                  value={contact.nearestAirport || '—'}
+                />
                 <Detail
                   label="Party"
-                  value={`${contact.adults} adult${contact.adults === 1 ? '' : 's'}${typeof contact.children === 'number' && contact.children > 0 ? ` · ${contact.children} child${contact.children === 1 ? '' : 'ren'}` : ''}`}
+                  value={`${contact.adults} adult${contact.adults === 1 ? '' : 's'}${
+                    typeof contact.children === 'number' && contact.children > 0
+                      ? ` · ${contact.children} child${
+                          contact.children === 1 ? '' : 'ren'
+                        }`
+                      : ''
+                  }`}
                 />
                 {contact.details ? (
                   <Detail

@@ -15,6 +15,8 @@ const POPULAR_DESTINATIONS = [
   { city: 'New York', country: 'USA', color: 'from-sky-500 to-blue-500' },
 ];
 
+const HOME_IMAGES_BUCKET = 'home-page-images';
+
 const VALUE_CARDS = [
   {
     key: 'search',
@@ -33,6 +35,28 @@ const VALUE_CARDS = [
   },
 ];
 
+async function getAllHomeImages(supabase) {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.storage
+    .from(HOME_IMAGES_BUCKET)
+    .list('', { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? [])
+    .filter((file) => file && file.name && !file.name.endsWith('/'))
+    .map((file) => {
+      const { data: publicData } = supabase.storage
+        .from(HOME_IMAGES_BUCKET)
+        .getPublicUrl(file.name);
+      return publicData?.publicUrl ?? null;
+    })
+    .filter(Boolean);
+}
+
 export default function Home() {
   const router = useRouter();
   // --- form state ---
@@ -49,6 +73,7 @@ export default function Home() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authIntent, setAuthIntent] = useState(null);
   const [pendingTrip, setPendingTrip] = useState(null);
+  const [popularImages, setPopularImages] = useState([]);
 
   // --- compute result model when needed ---
   const result = useMemo(() => {
@@ -93,6 +118,27 @@ export default function Home() {
     return () => {
       active = false;
       subscription.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadImages() {
+      try {
+        const urls = await getAllHomeImages(supabase);
+        if (!cancelled) {
+          setPopularImages(urls);
+        }
+      } catch (err) {
+        console.error('Failed to load home images', err);
+      }
+    }
+
+    loadImages();
+
+    return () => {
+      cancelled = true;
     };
   }, [supabase]);
 
@@ -169,7 +215,7 @@ export default function Home() {
 
         {!showResult ? (
           <>
-            <PopularDestinations />
+            <PopularDestinations images={popularImages} />
             <ValueProps />
           </>
         ) : null}
@@ -182,7 +228,12 @@ export default function Home() {
         <AuthOverlay onClose={() => setAuthModalOpen(false)}>
           <AuthForm
             supabase={supabase}
-            defaultCountry={homeCountry}
+            defaultHomeCountry={homeCountry}
+            initialMode="signin"
+            onRequestSignup={() => {
+              setAuthModalOpen(false);
+              router.push('/account');
+            }}
             onSuccess={handleAuthSuccess}
           />
         </AuthOverlay>
@@ -308,25 +359,37 @@ function StyleToggle({ value, onChange }) {
   );
 }
 
-function PopularDestinations() {
+function PopularDestinations({ images = [] }) {
+  const hasImages = Array.isArray(images) && images.length > 0;
+
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
         <span className="text-orange-500">↗</span> Popular Destinations
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {POPULAR_DESTINATIONS.map((item) => (
-          <div
-            key={item.city}
-            className="overflow-hidden rounded-2xl border border-white/70 bg-white shadow-lg shadow-slate-100"
-          >
-            <div className={`h-24 bg-gradient-to-r ${item.color}`} />
-            <div className="space-y-1 p-3">
-              <p className="text-sm font-semibold text-neutral-900">{item.city}</p>
-              <p className="text-xs text-neutral-500">{item.country}</p>
+        {POPULAR_DESTINATIONS.map((item, index) => {
+          const imageUrl = hasImages ? images[index % images.length] : null;
+          const backgroundClass = imageUrl
+            ? 'h-24 bg-cover bg-center'
+            : `h-24 bg-gradient-to-r ${item.color}`;
+
+          return (
+            <div
+              key={item.city}
+              className="overflow-hidden rounded-2xl border border-white/70 bg-white shadow-lg shadow-slate-100"
+            >
+              <div
+                className={backgroundClass}
+                style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
+              />
+              <div className="space-y-1 p-3">
+                <p className="text-sm font-semibold text-neutral-900">{item.city}</p>
+                <p className="text-xs text-neutral-500">{item.country}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

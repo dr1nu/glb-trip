@@ -37,8 +37,11 @@ alter table public.trips disable row level security;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  name text,
-  country text,
+  first_name text,
+  last_name text,
+  home_country text,
+  nearest_airport text,
+  travel_preferences jsonb,
   email text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

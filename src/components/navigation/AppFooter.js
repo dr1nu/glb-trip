@@ -9,7 +9,7 @@ import AuthForm from '@/components/auth/AuthForm';
 const tabs = [
   { key: 'home', label: 'Home', href: '/', icon: HomeIcon },
   { key: 'trips', label: 'My Trips', href: '/my-trips', icon: TripsIcon },
-  { key: 'account', label: 'My Account', icon: AccountIcon },
+  { key: 'account', label: 'My Account', href: '/account', icon: AccountIcon },
 ];
 
 export default function AppFooter() {
@@ -45,26 +45,12 @@ export default function AppFooter() {
   }
 
   function handleTabPress(tab) {
-    if (tab.key === 'home') {
-      router.push('/');
+    if (tab.key !== 'trips') return;
+    if (user) {
+      router.push('/my-trips');
       closeOverlay();
-      return;
-    }
-    if (tab.key === 'trips') {
-      if (user) {
-        router.push('/my-trips');
-        closeOverlay();
-      } else {
-        setOverlay('trips');
-      }
-      return;
-    }
-    if (tab.key === 'account') {
-      if (user) {
-        setOverlay('account');
-      } else {
-        setOverlay('auth');
-      }
+    } else {
+      setOverlay('trips');
     }
   }
 
@@ -79,24 +65,30 @@ export default function AppFooter() {
             const Icon = tab.icon;
             const baseClasses =
               'flex-1 flex flex-col items-center gap-1 text-xs font-semibold py-1.5 rounded-2xl transition-colors';
-            const isAccount = tab.key === 'account';
-            const labelColor = isAccount
-              ? 'text-neutral-900'
-              : isActive
-              ? 'text-[#FF6B35]'
-              : 'text-[#4C5A6B]';
-            const iconColor = isAccount
-              ? isActive
-                ? 'text-[#FF6B35]'
-                : 'text-[#4C5A6B]'
-              : labelColor;
+            const labelColor = isActive ? 'text-[#FF6B35]' : 'text-[#4C5A6B]';
+            const iconColor = labelColor;
 
-            if (tab.key === 'home') {
+            if (tab.key === 'trips') {
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => handleTabPress(tab)}
+                  className={`${baseClasses} ${labelColor}`}
+                >
+                  <Icon colorClass={iconColor} />
+                  {tab.label}
+                </button>
+              );
+            }
+
+            if (tab.href) {
               return (
                 <Link
                   key={tab.key}
                   href={tab.href}
                   className={`${baseClasses} ${labelColor}`}
+                  onClick={() => closeOverlay()}
                 >
                   <Icon colorClass={iconColor} />
                   {tab.label}
@@ -104,36 +96,7 @@ export default function AppFooter() {
               );
             }
 
-            if (tab.href && tab.key !== 'account') {
-              return (
-                <Link
-                  key={tab.key}
-                  href={tab.href}
-                  className={`${baseClasses} ${labelColor}`}
-                >
-                  <Icon colorClass={iconColor} />
-                  {tab.label}
-                </Link>
-              );
-            }
-
-            const accountActive = tab.key === 'account' && !!user;
-            const accountLabel = accountActive ? 'text-neutral-900' : labelColor;
-            const accountIconColor = accountActive
-              ? 'text-[#FF6B35]'
-              : 'text-[#4C5A6B]';
-
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => handleTabPress(tab)}
-                className={`${baseClasses} ${accountLabel}`}
-              >
-                <Icon colorClass={accountIconColor} />
-                {tab.label}
-              </button>
-            );
+            return null;
           })}
         </div>
       </nav>
@@ -146,6 +109,7 @@ export default function AppFooter() {
             ready,
             onClose: closeOverlay,
             setOverlay,
+            router,
           })}
         </Overlay>
       ) : null}
@@ -170,53 +134,44 @@ function Overlay({ children, onClose }) {
   );
 }
 
-function renderOverlayContent({ overlay, user, supabase, ready, onClose, setOverlay }) {
+function renderOverlayContent({
+  overlay,
+  user,
+  supabase,
+  ready,
+  onClose,
+  setOverlay,
+  router,
+}) {
   if (overlay === 'trips') {
     return (
-      <div className="space-y-2 text-sm text-neutral-300">
-        <h3 className="text-lg font-semibold text-neutral-100">Sign in to view trips</h3>
-        <p>
-          Create an account to save itineraries and find them here. Once you&apos;re in, this
-          tab will open your saved trips automatically.
-        </p>
-        <button
-          type="button"
-          className="w-full bg-orange-500 text-neutral-900 font-semibold py-2 rounded-xl"
-          onClick={() => setOverlay('auth')}
-        >
-          Create account / Log in
-        </button>
-      </div>
-    );
-  }
-
-  if (overlay === 'account') {
-    return (
-      <div className="space-y-4 text-sm">
+      <div className="space-y-3 text-sm text-neutral-300">
         <div>
-          <h3 className="text-lg font-semibold text-neutral-100">My account</h3>
-          <p className="text-neutral-400">Signed in as {user?.email}</p>
-        </div>
-        <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 space-y-1">
-          <p className="text-[11px] uppercase tracking-wide text-neutral-500">Name</p>
-          <p className="text-sm font-medium text-neutral-100">
-            {user?.user_metadata?.name || '—'}
-          </p>
-          <p className="text-[11px] uppercase tracking-wide text-neutral-500 mt-3">Country</p>
-          <p className="text-sm font-medium text-neutral-100">
-            {user?.user_metadata?.country || '—'}
+          <h3 className="text-lg font-semibold text-neutral-100">Sign in to view trips</h3>
+          <p>
+            Create an account to save itineraries and find them here. Once you&apos;re in, this
+            tab will open your saved trips automatically.
           </p>
         </div>
-        <button
-          type="button"
-          className="w-full text-sm font-semibold py-2 rounded-xl border border-neutral-700 text-neutral-300 hover:text-white"
-          onClick={async () => {
-            await supabase.auth.signOut();
-            onClose();
-          }}
-        >
-          Sign out
-        </button>
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="w-full rounded-xl bg-orange-500 py-2 font-semibold text-neutral-900"
+            onClick={() => setOverlay('auth')}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            className="w-full rounded-xl border border-neutral-700 py-2 font-semibold text-neutral-200 hover:text-white"
+            onClick={() => {
+              onClose();
+              router.push('/account');
+            }}
+          >
+            Create an account
+          </button>
+        </div>
       </div>
     );
   }
