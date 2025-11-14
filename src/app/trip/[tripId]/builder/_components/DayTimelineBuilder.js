@@ -243,7 +243,6 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
                 key={card.id}
                 type="button"
                 onClick={() => {
-                  setFeedback({ type: '', message: '' });
                   setActiveDayId(card.id);
                 }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
