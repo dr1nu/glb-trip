@@ -6,6 +6,7 @@ import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
 import { getDailyBreakdown, STYLE_PRESETS } from '@/lib/pricing';
 import { estimateReturnFare } from '@/lib/airfare';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { composeProfilePayload } from '@/lib/profile';
 import AuthForm from '@/components/auth/AuthForm';
 
 const POPULAR_DESTINATIONS = [
@@ -65,6 +66,7 @@ export default function Home() {
   const [tripLengthDays, setTripLengthDays] = useState(3);
   const [homeCountry, setHomeCountry] = useState('United Kingdom');
   const [travelStyle, setTravelStyle] = useState('value'); // NEW
+  const [homePrefilled, setHomePrefilled] = useState(false);
 
   const [showResult, setShowResult] = useState(false);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -122,6 +124,19 @@ export default function Home() {
   }, [supabase]);
 
   useEffect(() => {
+    if (!user) {
+      setHomePrefilled(false);
+      return;
+    }
+    if (homePrefilled) return;
+    const profile = composeProfilePayload(user);
+    if (profile.homeCountry) {
+      setHomeCountry(profile.homeCountry);
+      setHomePrefilled(true);
+    }
+  }, [user, homePrefilled]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadImages() {
@@ -160,6 +175,10 @@ export default function Home() {
 
   function handleAuthSuccess(profile) {
     setAuthModalOpen(false);
+    if (profile?.homeCountry) {
+      setHomeCountry(profile.homeCountry);
+      setHomePrefilled(true);
+    }
     setUser((prev) => prev ?? profile.user ?? null);
     if (authIntent === 'request' && pendingTrip) {
       setTimeout(() => {
@@ -265,7 +284,21 @@ function FormCard({
       }}
     >
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="flex w-full flex-col gap-2 sm:basis-3/4">
+        <div className="flex w-full flex-col gap-2 sm:basis-1/3">
+          <label className="text-sm font-medium text-neutral-500">Home</label>
+          <select
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            value={homeCountry}
+            onChange={(e) => setHomeCountry(e.target.value)}
+          >
+            {EUROPE_COUNTRIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:basis-1/3">
           <label className="text-sm font-medium text-neutral-500">
             Where do you want to go?
           </label>
@@ -281,8 +314,8 @@ function FormCard({
             ))}
           </select>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:basis-1/4">
-          <label className="text-sm font-medium text-neutral-500">Duration (days)</label>
+        <div className="flex w-full flex-col gap-2 sm:basis-1/3">
+          <label className="text-sm font-medium text-neutral-500">No. of days</label>
           <input
             type="number"
             min="1"

@@ -192,21 +192,37 @@ export default async function MyTripsPage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] px-4 py-12 text-neutral-900">
-        <div className="mx-auto w-full max-w-md rounded-[32px] border border-white/80 bg-white p-10 text-center shadow-xl shadow-orange-100/40">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-2xl text-orange-500">
-            🔒
+      <main className="min-h-screen bg-gradient-to-b from-[#f7faff] via-white to-[#fff7ef] px-4 py-14 text-neutral-900">
+        <div className="mx-auto flex min-h-[70vh] w-full max-w-4xl items-center justify-center">
+          <div className="w-full rounded-[28px] border border-neutral-200 bg-white px-6 py-12 text-center shadow-xl shadow-orange-100/60 sm:px-10">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-7 w-7"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.5 10.5V8.25a4.5 4.5 0 1 0-9 0v2.25m-.75 0h10.5a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5v-6a1.5 1.5 0 0 1 1.5-1.5Z"
+                />
+              </svg>
+            </div>
+            <h1 className="text-xl font-semibold text-neutral-900">Sign in to view your trips</h1>
+            <p className="mt-3 text-sm text-neutral-600">
+              Create an account or sign in to access your personalized travel itineraries and
+              bookings.
+            </p>
+            <Link
+              href="/account"
+              className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow shadow-orange-200 transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
+            >
+              Sign In
+            </Link>
           </div>
-          <h1 className="text-3xl font-semibold">Sign in to view your trips</h1>
-          <p className="mt-3 text-sm text-neutral-500">
-            Create an account or sign in to access your personalised travel itineraries and bookings.
-          </p>
-          <Link
-            href="/"
-            className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow shadow-orange-200 hover:bg-orange-600"
-          >
-            Sign in
-          </Link>
         </div>
       </main>
     );

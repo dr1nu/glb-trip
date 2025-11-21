@@ -45,12 +45,9 @@ export default function AppFooter() {
   }
 
   function handleTabPress(tab) {
-    if (tab.key !== 'trips') return;
-    if (user) {
-      router.push('/my-trips');
+    if (tab.href) {
+      router.push(tab.href);
       closeOverlay();
-    } else {
-      setOverlay('trips');
     }
   }
 
@@ -68,27 +65,13 @@ export default function AppFooter() {
             const labelColor = isActive ? 'text-[#FF6B35]' : 'text-[#4C5A6B]';
             const iconColor = labelColor;
 
-            if (tab.key === 'trips') {
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => handleTabPress(tab)}
-                  className={`${baseClasses} ${labelColor}`}
-                >
-                  <Icon colorClass={iconColor} />
-                  {tab.label}
-                </button>
-              );
-            }
-
             if (tab.href) {
               return (
                 <Link
                   key={tab.key}
                   href={tab.href}
                   className={`${baseClasses} ${labelColor}`}
-                  onClick={() => closeOverlay()}
+                  onClick={() => handleTabPress(tab)}
                 >
                   <Icon colorClass={iconColor} />
                   {tab.label}
