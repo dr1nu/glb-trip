@@ -4,10 +4,82 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
 import { getDailyBreakdown, STYLE_PRESETS } from '@/lib/pricing';
-import { estimateReturnFare } from '@/lib/airfare';
+import { COUNTRY_HUBS, estimateReturnFare } from '@/lib/airfare';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { composeProfilePayload } from '@/lib/profile';
 import AuthForm from '@/components/auth/AuthForm';
+
+const SUMMER_HEAVY_DESTINATIONS = new Set([
+  'Spain', 'Portugal', 'France', 'Italy', 'Croatia', 'Greece', 'Malta', 'Cyprus', 'Türkiye',
+  'Albania', 'Montenegro', 'Georgia'
+]);
+
+const WINTER_HEAVY_DESTINATIONS = new Set([
+  'Switzerland', 'Austria', 'Norway', 'Sweden', 'Finland', 'Iceland', 'Andorra'
+]);
+
+const PEAK_SUMMER_MONTHS = [5, 6, 7]; // Jun-Aug
+const SHOULDER_SUMMER_MONTHS = [3, 4, 8, 9]; // Apr-May, Sep-Oct
+const PEAK_WINTER_MONTHS = [11, 0, 1]; // Dec-Feb
+const SHOULDER_WINTER_MONTHS = [2, 10]; // Mar, Nov
+
+const DESTINATION_CITIES = {
+  Italy: [
+    { city: 'Rome', hub: { iata: 'FCO', lat: 41.8003, lon: 12.2389, factor: 0.95 } },
+    { city: 'Milan', hub: { iata: 'MXP', lat: 45.6306, lon: 8.7281, factor: 0.95 } },
+    { city: 'Venice', hub: { iata: 'VCE', lat: 45.5053, lon: 12.3519, factor: 1.0 } },
+    { city: 'Florence', hub: { iata: 'FLR', lat: 43.8100, lon: 11.2051, factor: 1.0 } },
+    { city: 'Naples', hub: { iata: 'NAP', lat: 40.8860, lon: 14.2908, factor: 1.0 } },
+  ],
+  Spain: [
+    { city: 'Barcelona', hub: { iata: 'BCN', lat: 41.2974, lon: 2.0833, factor: 0.95 } },
+    { city: 'Madrid', hub: { iata: 'MAD', lat: 40.4722, lon: -3.5608, factor: 0.9 } },
+    { city: 'Seville', hub: { iata: 'SVQ', lat: 37.4170, lon: -5.8931, factor: 0.95 } },
+    { city: 'Valencia', hub: { iata: 'VLC', lat: 39.4893, lon: -0.4816, factor: 0.95 } },
+    { city: 'Malaga', hub: { iata: 'AGP', lat: 36.6749, lon: -4.4991, factor: 0.95 } },
+  ],
+  France: [
+    { city: 'Paris', hub: { iata: 'ORY', lat: 48.7233, lon: 2.3794, factor: 0.95 } },
+    { city: 'Nice', hub: { iata: 'NCE', lat: 43.6653, lon: 7.2150, factor: 1.05 } },
+    { city: 'Lyon', hub: { iata: 'LYS', lat: 45.7264, lon: 5.0908, factor: 0.95 } },
+    { city: 'Marseille', hub: { iata: 'MRS', lat: 43.4367, lon: 5.2150, factor: 0.95 } },
+    { city: 'Bordeaux', hub: { iata: 'BOD', lat: 44.8283, lon: -0.7156, factor: 0.95 } },
+  ],
+  Portugal: [
+    { city: 'Lisbon', hub: { iata: 'LIS', lat: 38.7742, lon: -9.1342, factor: 0.95 } },
+    { city: 'Porto', hub: { iata: 'OPO', lat: 41.2421, lon: -8.6781, factor: 0.95 } },
+    { city: 'Faro', hub: { iata: 'FAO', lat: 37.0144, lon: -7.9659, factor: 0.95 } },
+  ],
+  Greece: [
+    { city: 'Athens', hub: { iata: 'ATH', lat: 37.9364, lon: 23.9465, factor: 1.0 } },
+    { city: 'Santorini', hub: { iata: 'JTR', lat: 36.3992, lon: 25.4793, factor: 1.05 } },
+    { city: 'Mykonos', hub: { iata: 'JMK', lat: 37.4351, lon: 25.3481, factor: 1.08 } },
+    { city: 'Crete (Heraklion)', hub: { iata: 'HER', lat: 35.3397, lon: 25.1803, factor: 1.05 } },
+  ],
+  Türkiye: [
+    { city: 'Istanbul', hub: { iata: 'IST', lat: 41.2753, lon: 28.7519, factor: 0.95 } },
+    { city: 'Antalya', hub: { iata: 'AYT', lat: 36.8987, lon: 30.8005, factor: 1.05 } },
+    { city: 'Bodrum', hub: { iata: 'BJV', lat: 37.2506, lon: 27.6670, factor: 1.05 } },
+  ],
+  Germany: [
+    { city: 'Berlin', hub: { iata: 'BER', lat: 52.3667, lon: 13.5033, factor: 0.95 } },
+    { city: 'Munich', hub: { iata: 'MUC', lat: 48.3538, lon: 11.7861, factor: 1.0 } },
+    { city: 'Frankfurt', hub: { iata: 'FRA', lat: 50.0379, lon: 8.5622, factor: 0.95 } },
+  ],
+  Switzerland: [
+    { city: 'Zurich', hub: { iata: 'ZRH', lat: 47.4581, lon: 8.5555, factor: 1.15 } },
+    { city: 'Geneva', hub: { iata: 'GVA', lat: 46.2381, lon: 6.1089, factor: 1.15 } },
+  ],
+  Austria: [
+    { city: 'Vienna', hub: { iata: 'VIE', lat: 48.1103, lon: 16.5697, factor: 1.0 } },
+    { city: 'Salzburg', hub: { iata: 'SZG', lat: 47.7933, lon: 13.0033, factor: 1.05 } },
+  ],
+  'United Kingdom': [
+    { city: 'London', hub: { iata: 'LTN', lat: 51.8740, lon: -0.3683, factor: 0.9 } },
+    { city: 'Manchester', hub: { iata: 'MAN', lat: 53.3650, lon: -2.2720, factor: 0.95 } },
+    { city: 'Edinburgh', hub: { iata: 'EDI', lat: 55.9500, lon: -3.3720, factor: 1.0 } },
+  ],
+};
 
 const POPULAR_DESTINATIONS = [
   { city: 'Paris', country: 'France', color: 'from-rose-400 to-orange-300' },
@@ -36,6 +108,247 @@ const VALUE_CARDS = [
   },
 ];
 
+function toDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+const REGION_TO_COUNTRY = {
+  GB: 'United Kingdom',
+  UK: 'United Kingdom',
+  IE: 'Ireland',
+  FR: 'France',
+  DE: 'Germany',
+  IT: 'Italy',
+  ES: 'Spain',
+  PT: 'Portugal',
+  NL: 'Netherlands',
+  BE: 'Belgium',
+  SE: 'Sweden',
+  NO: 'Norway',
+  FI: 'Finland',
+  DK: 'Denmark',
+  IS: 'Iceland',
+  GR: 'Greece',
+  TR: 'Türkiye',
+  SI: 'Slovenia',
+  SK: 'Slovakia',
+  HR: 'Croatia',
+  AT: 'Austria',
+  CH: 'Switzerland',
+  PL: 'Poland',
+  CZ: 'Czechia',
+  HU: 'Hungary',
+  RO: 'Romania',
+  BG: 'Bulgaria',
+  RS: 'Serbia',
+  BA: 'Bosnia and Herzegovina',
+  AL: 'Albania',
+  MK: 'North Macedonia',
+  UA: 'Ukraine',
+  RU: 'Russia',
+  GE: 'Georgia',
+  AM: 'Armenia',
+  AZ: 'Azerbaijan',
+  KZ: 'Kazakhstan',
+  MT: 'Malta',
+  CY: 'Cyprus',
+  AD: 'Andorra',
+  LI: 'Liechtenstein',
+  LU: 'Luxembourg',
+  MC: 'Monaco',
+  SM: 'San Marino',
+  VA: 'Vatican City',
+  MD: 'Moldova',
+  EE: 'Estonia',
+  LV: 'Latvia',
+  LT: 'Lithuania',
+};
+
+const TZ_TO_COUNTRY = {
+  'Europe/London': 'United Kingdom',
+  'Europe/Dublin': 'Ireland',
+  'Europe/Paris': 'France',
+  'Europe/Berlin': 'Germany',
+  'Europe/Rome': 'Italy',
+  'Europe/Madrid': 'Spain',
+  'Europe/Lisbon': 'Portugal',
+  'Europe/Amsterdam': 'Netherlands',
+  'Europe/Brussels': 'Belgium',
+  'Europe/Stockholm': 'Sweden',
+  'Europe/Oslo': 'Norway',
+  'Europe/Helsinki': 'Finland',
+  'Europe/Copenhagen': 'Denmark',
+  'Atlantic/Reykjavik': 'Iceland',
+  'Europe/Athens': 'Greece',
+  'Europe/Istanbul': 'Türkiye',
+  'Europe/Vienna': 'Austria',
+  'Europe/Zurich': 'Switzerland',
+  'Europe/Warsaw': 'Poland',
+  'Europe/Prague': 'Czechia',
+  'Europe/Budapest': 'Hungary',
+  'Europe/Bucharest': 'Romania',
+  'Europe/Sofia': 'Bulgaria',
+  'Europe/Belgrade': 'Serbia',
+  'Europe/Sarajevo': 'Bosnia and Herzegovina',
+  'Europe/Tirane': 'Albania',
+  'Europe/Skopje': 'North Macedonia',
+  'Europe/Kiev': 'Ukraine',
+  'Europe/Moscow': 'Russia',
+  'Europe/Tbilisi': 'Georgia',
+  'Asia/Yerevan': 'Armenia',
+  'Asia/Baku': 'Azerbaijan',
+  'Asia/Almaty': 'Kazakhstan',
+  'Europe/Malta': 'Malta',
+  'Asia/Nicosia': 'Cyprus',
+  'Europe/Luxembourg': 'Luxembourg',
+  'Europe/Vaduz': 'Liechtenstein',
+  'Europe/Monaco': 'Monaco',
+  'Europe/San_Marino': 'San Marino',
+  'Europe/Vatican': 'Vatican City',
+  'Europe/Chisinau': 'Moldova',
+  'Europe/Tallinn': 'Estonia',
+  'Europe/Riga': 'Latvia',
+  'Europe/Vilnius': 'Lithuania',
+};
+
+function formatDateInput(date) {
+  return date.toISOString().split('T')[0];
+}
+
+function getDefaultDates() {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() + 14); // default two weeks out
+  const end = new Date(start);
+  end.setDate(start.getDate() + 3); // default 3-day getaway
+  return { start: formatDateInput(start), end: formatDateInput(end) };
+}
+
+function guessBrowserCountry() {
+  if (typeof navigator === 'undefined') return '';
+  let region = '';
+
+  const lang = navigator.language || (Array.isArray(navigator.languages) ? navigator.languages[0] : '');
+  if (lang && lang.includes('-')) {
+    const parts = lang.split('-');
+    region = parts[parts.length - 1].toUpperCase();
+  }
+  if (region && REGION_TO_COUNTRY[region]) {
+    return REGION_TO_COUNTRY[region];
+  }
+
+  const tz = Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone;
+  if (tz && TZ_TO_COUNTRY[tz]) {
+    return TZ_TO_COUNTRY[tz];
+  }
+
+  return '';
+}
+
+function daysBetweenDates(startValue, endValue) {
+  const start = toDate(startValue);
+  const end = toDate(endValue);
+  if (!start || !end) return 1;
+  const day = 1000 * 60 * 60 * 24;
+  const diffDays = Math.ceil((end.getTime() - start.getTime()) / day);
+  return Math.max(1, diffDays || 1);
+}
+
+function monthsInRange(start, end) {
+  const months = [];
+  if (!start || !end) return months;
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  const endMarker = new Date(end.getFullYear(), end.getMonth(), 1);
+  while (cursor <= endMarker) {
+    months.push(cursor.getMonth());
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return months;
+}
+
+function deriveSeasonality(destinationCountry, startValue, endValue) {
+  const start = toDate(startValue);
+  const end = toDate(endValue);
+  if (!start || !end) return { factor: 1.0, label: 'Standard season' };
+
+  const months = monthsInRange(start, end);
+  const isSummer = SUMMER_HEAVY_DESTINATIONS.has(destinationCountry);
+  const isWinter = WINTER_HEAVY_DESTINATIONS.has(destinationCountry);
+
+  let factor = 1.0;
+  let label = 'Standard season';
+  const apply = (nextFactor, nextLabel) => {
+    if (nextFactor > factor) {
+      factor = nextFactor;
+      label = nextLabel;
+    }
+  };
+
+  if (isSummer) {
+    if (months.some((m) => PEAK_SUMMER_MONTHS.includes(m))) {
+      apply(1.45, 'Peak summer');
+    } else if (months.some((m) => SHOULDER_SUMMER_MONTHS.includes(m))) {
+      apply(1.2, 'Warm shoulder');
+    } else {
+      apply(0.95, 'Off-season');
+    }
+  }
+
+  if (isWinter) {
+    if (months.some((m) => PEAK_WINTER_MONTHS.includes(m))) {
+      apply(1.3, 'Peak winter');
+    } else if (months.some((m) => SHOULDER_WINTER_MONTHS.includes(m))) {
+      apply(1.12, 'Cool shoulder');
+    }
+  }
+
+  if (!isSummer && months.some((m) => m === 6 || m === 7)) {
+    apply(1.18, 'High summer demand');
+  }
+
+  return { factor: Number(factor.toFixed(2)), label };
+}
+
+function rangeTouchesDays(start, end, daysOfWeek) {
+  if (!start || !end) return false;
+  const day = 1000 * 60 * 60 * 24;
+  for (let ts = start.getTime(); ts <= end.getTime(); ts += day) {
+    const dow = new Date(ts).getDay();
+    if (daysOfWeek.includes(dow)) return true;
+  }
+  return false;
+}
+
+function deriveWeekendFactor(startValue, endValue) {
+  const start = toDate(startValue);
+  const end = toDate(endValue);
+  if (!start || !end) return { factor: 1.0, label: 'Weekday travel' };
+
+  const weekendDays = [5, 6, 0]; // Fri/Sat/Sun
+  const startIsWeekend = weekendDays.includes(start.getDay());
+  const endIsWeekend = weekendDays.includes(end.getDay());
+  const touchesWeekend = startIsWeekend || endIsWeekend;
+
+  return touchesWeekend
+    ? { factor: 1.1, label: 'Weekend travel' }
+    : { factor: 1.0, label: 'Weekday travel' };
+}
+
+const DEFAULT_DATES = getDefaultDates();
+
+function getDestinationHub(country, city) {
+  const cityList = DESTINATION_CITIES[country] ?? [];
+  const match = cityList.find((c) => c.city === city);
+  if (match?.hub) return match.hub;
+  return COUNTRY_HUBS[country] ?? null;
+}
+
+function labelForDestination(country, city) {
+  return city ? `${city}, ${country}` : country;
+}
+
 async function getAllHomeImages(supabase) {
   if (!supabase) return [];
 
@@ -62,10 +375,12 @@ export default function Home() {
   const router = useRouter();
   // --- form state ---
   const [destinationCountry, setDestinationCountry] = useState('Slovenia');
+  const [destinationCity, setDestinationCity] = useState('');
   const [budgetTotal, setBudgetTotal] = useState(500);
-  const [tripLengthDays, setTripLengthDays] = useState(3);
-  const [homeCountry, setHomeCountry] = useState('United Kingdom');
-  const [travelStyle, setTravelStyle] = useState('value'); // NEW
+  const [startDate, setStartDate] = useState(DEFAULT_DATES.start);
+  const [endDate, setEndDate] = useState(DEFAULT_DATES.end);
+  const [homeCountry, setHomeCountry] = useState('');
+  const [travelStyle, setTravelStyle] = useState('value');
   const [homePrefilled, setHomePrefilled] = useState(false);
 
   const [showResult, setShowResult] = useState(false);
@@ -76,13 +391,27 @@ export default function Home() {
   const [authIntent, setAuthIntent] = useState(null);
   const [pendingTrip, setPendingTrip] = useState(null);
   const [popularImages, setPopularImages] = useState([]);
+  const destinationOptions = useMemo(() => buildDestinationList(), []);
+
+  const tripLengthDays = useMemo(
+    () => daysBetweenDates(startDate, endDate),
+    [startDate, endDate]
+  );
 
   // --- compute result model when needed ---
   const result = useMemo(() => {
     const { perDay, bucket, accom, other, styleLabel } =
       getDailyBreakdown(destinationCountry, travelStyle);
 
-    const flight = estimateReturnFare(homeCountry, destinationCountry);
+    const seasonality = deriveSeasonality(destinationCountry, startDate, endDate);
+    const weekend = deriveWeekendFactor(startDate, endDate);
+    const destHubOverride = getDestinationHub(destinationCountry, destinationCity);
+
+    const flight = estimateReturnFare(homeCountry, destinationCountry, {
+      seasonFactor: seasonality.factor,
+      weekendFactor: weekend.factor,
+      destHubOverride,
+    });
 
     const totalLow  = perDay * tripLengthDays + flight.low;
     const totalHigh = perDay * tripLengthDays + flight.high;
@@ -100,8 +429,23 @@ export default function Home() {
           : `Budget is tight. Consider a cheaper destination or raise budget to ~€${Math.round(totalHigh)}.`;
     }
 
-    return { perDay, bucket, accom, other, styleLabel, flight, totalLow, totalHigh, fits, suggestion };
-  }, [destinationCountry, homeCountry, tripLengthDays, budgetTotal, travelStyle]);
+    return {
+      perDay,
+      bucket,
+      accom,
+      other,
+      styleLabel,
+      flight,
+      totalLow,
+      totalHigh,
+      fits,
+      suggestion,
+      seasonality,
+      weekend,
+      destinationCity,
+      destinationLabel: labelForDestination(destinationCountry, destinationCity),
+    };
+  }, [destinationCountry, destinationCity, homeCountry, tripLengthDays, budgetTotal, travelStyle, startDate, endDate]);
 
   useEffect(() => {
     let active = true;
@@ -124,17 +468,46 @@ export default function Home() {
   }, [supabase]);
 
   useEffect(() => {
-    if (!user) {
-      setHomePrefilled(false);
-      return;
-    }
-    if (homePrefilled) return;
+    if (!user || homePrefilled) return;
     const profile = composeProfilePayload(user);
     if (profile.homeCountry) {
       setHomeCountry(profile.homeCountry);
       setHomePrefilled(true);
     }
   }, [user, homePrefilled]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (homePrefilled || user) return;
+
+    async function hydrateFromGeo() {
+      try {
+        const res = await fetch('/api/country');
+        if (!res.ok) throw new Error('geo lookup failed');
+        const data = await res.json();
+        const code = (data?.country || '').toUpperCase();
+        const mapped = code ? REGION_TO_COUNTRY[code] ?? code : '';
+        if (!cancelled && mapped && mapped !== 'Unknown') {
+          setHomeCountry(mapped);
+          setHomePrefilled(true);
+          return;
+        }
+      } catch (_err) {
+        // noop
+      }
+      if (cancelled) return;
+      const guess = guessBrowserCountry();
+      if (guess) {
+        setHomeCountry(guess);
+        setHomePrefilled(true);
+      }
+    }
+
+    hydrateFromGeo();
+    return () => {
+      cancelled = true;
+    };
+  }, [homePrefilled, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,6 +529,29 @@ export default function Home() {
       cancelled = true;
     };
   }, [supabase]);
+
+  function handleStartDateChange(value) {
+    const next = value || '';
+    setStartDate(next);
+    const start = toDate(next);
+    const currentEnd = toDate(endDate);
+    if (start && currentEnd && start > currentEnd) {
+      const adjusted = new Date(start);
+      adjusted.setDate(start.getDate() + 1);
+      setEndDate(formatDateInput(adjusted));
+    }
+  }
+
+  function handleEndDateChange(value) {
+    const next = value || '';
+    const start = toDate(startDate);
+    const parsed = toDate(next);
+    if (start && parsed && parsed < start) {
+      setEndDate(formatDateInput(start));
+      return;
+    }
+    setEndDate(next);
+  }
 
   function persistTrip(payload) {
     if (!payload) return;
@@ -210,10 +606,15 @@ export default function Home() {
           <FormCard
             destinationCountry={destinationCountry}
             setDestinationCountry={setDestinationCountry}
+            destinationCity={destinationCity}
+            setDestinationCity={setDestinationCity}
+            destinationOptions={destinationOptions}
             budgetTotal={budgetTotal}
             setBudgetTotal={setBudgetTotal}
-            tripLengthDays={tripLengthDays}
-            setTripLengthDays={setTripLengthDays}
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={handleStartDateChange}
+            onEndDateChange={handleEndDateChange}
             homeCountry={homeCountry}
             setHomeCountry={setHomeCountry}
             travelStyle={travelStyle}
@@ -223,7 +624,10 @@ export default function Home() {
         ) : (
           <ResultCard
             destinationCountry={destinationCountry}
+            destinationCity={destinationCity}
             homeCountry={homeCountry}
+            startDate={startDate}
+            endDate={endDate}
             tripLengthDays={tripLengthDays}
             budgetTotal={budgetTotal}
             result={result}
@@ -265,16 +669,23 @@ export default function Home() {
 function FormCard({
   destinationCountry,
   setDestinationCountry,
+  destinationCity,
+  setDestinationCity,
+  destinationOptions = [],
   budgetTotal,
   setBudgetTotal,
-  tripLengthDays,
-  setTripLengthDays,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
   homeCountry,
   setHomeCountry,
   travelStyle,
   setTravelStyle,
   onSubmit,
 }) {
+  const today = formatDateInput(new Date());
+  const destinationValue = encodeDestination(destinationCountry, destinationCity);
   return (
     <form
       className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-xl shadow-orange-200/60 backdrop-blur-sm space-y-6"
@@ -283,14 +694,17 @@ function FormCard({
         onSubmit();
       }}
     >
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="flex w-full flex-col gap-2 sm:basis-1/3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex w-full flex-col gap-2">
           <label className="text-sm font-medium text-neutral-500">Home</label>
           <select
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
-            value={homeCountry}
+            value={homeCountry || ''}
             onChange={(e) => setHomeCountry(e.target.value)}
           >
+            <option value="" disabled>
+              Select your country
+            </option>
             {EUROPE_COUNTRIES.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -298,30 +712,37 @@ function FormCard({
             ))}
           </select>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:basis-1/3">
+        <div className="flex w-full flex-col gap-2">
           <label className="text-sm font-medium text-neutral-500">
             Where do you want to go?
           </label>
-          <select
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
-            value={destinationCountry}
-            onChange={(e) => setDestinationCountry(e.target.value)}
-          >
-            {EUROPE_COUNTRIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <CascadingDestinationSelect
+            options={destinationOptions}
+            value={destinationValue}
+            onChange={(next) => {
+              const { country, city } = decodeDestination(next);
+              setDestinationCountry(country);
+              setDestinationCity(city);
+            }}
+          />
         </div>
-        <div className="flex w-full flex-col gap-2 sm:basis-1/3">
-          <label className="text-sm font-medium text-neutral-500">No. of days</label>
+        <div className="flex w-full flex-col gap-2">
+          <label className="text-sm font-medium text-neutral-500">Start date</label>
           <input
-            type="number"
-            min="1"
-            max="30"
-            value={tripLengthDays}
-            onChange={(e) => setTripLengthDays(parseInt(e.target.value, 10) || 1)}
+            type="date"
+            min={today}
+            value={startDate}
+            onChange={(e) => onStartDateChange(e.target.value)}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          />
+        </div>
+        <div className="flex w-full flex-col gap-2">
+          <label className="text-sm font-medium text-neutral-500">End date</label>
+          <input
+            type="date"
+            min={startDate || today}
+            value={endDate}
+            onChange={(e) => onEndDateChange(e.target.value)}
             className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
           />
         </div>
@@ -455,21 +876,43 @@ function ValueProps() {
 /* -------------------- Result Screen -------------------- */
 function ResultCard({
   destinationCountry,
+  destinationCity,
   homeCountry,
+  startDate,
+  endDate,
   tripLengthDays,
   budgetTotal,
   result,
   onBack,
   onRequest,
 }) {
-  const { perDay, bucket, accom, other, styleLabel, flight, totalLow, totalHigh, fits, suggestion } =
-    result;
+  const {
+    perDay,
+    bucket,
+    accom,
+    other,
+    styleLabel,
+    flight,
+    totalLow,
+    totalHigh,
+    fits,
+    suggestion,
+    seasonality = {},
+    weekend = {},
+  } = result;
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState('');
   const flightsEstimate = flight.high ?? flight.low ?? 0;
   const accommodationEstimate = accom * tripLengthDays;
   const activitiesEstimate = other * tripLengthDays;
   const totalEstimate = flightsEstimate + accommodationEstimate + activitiesEstimate;
+  const dateRangeLabel = formatDateRange(startDate, endDate);
+  const seasonLabel = seasonality.label ?? 'Standard season';
+  const weekendLabel = weekend.label ?? 'Weekday travel';
+  const seasonFactor = seasonality.factor ?? 1.0;
+  const weekendFactor = weekend.factor ?? 1.0;
+  const destinationLabel = destinationCity ? `${destinationCity}, ${destinationCountry}` : destinationCountry;
+  const destinationLabelShort = destinationLabel || destinationCountry;
 
   return (
     <section className="space-y-5">
@@ -478,7 +921,7 @@ function ResultCard({
           <div>
             <h2 className="text-lg font-semibold text-neutral-900">Your instant estimate</h2>
             <p className="text-sm text-neutral-500">
-              Based on your preferences for {destinationCountry}
+              {destinationLabelShort} • {dateRangeLabel}
             </p>
           </div>
           <button
@@ -493,7 +936,10 @@ function ResultCard({
           <p className="text-xs uppercase tracking-wide text-neutral-500">Estimated total cost</p>
           <p className="text-4xl font-semibold text-neutral-900">{euro(totalEstimate)}</p>
           <p className="text-sm text-neutral-500">
-            {bucket} • {tripLengthDays} day{tripLengthDays === 1 ? '' : 's'}
+            {dateRangeLabel} • {tripLengthDays} day{tripLengthDays === 1 ? '' : 's'} • {bucket}
+          </p>
+          <p className="text-xs text-neutral-500">
+            {seasonLabel} ({seasonFactor}×) • {weekendLabel} ({weekendFactor}×)
           </p>
         </div>
 
@@ -560,7 +1006,10 @@ function ResultCard({
               try {
                 onRequest?.({
                   destinationCountry,
+                  destinationCity,
                   homeCountry,
+                  startDate,
+                  endDate,
                   tripLengthDays,
                   budgetTotal,
                   result,
@@ -608,6 +1057,30 @@ function BudgetGauge({ budget, low, high }) {
       </div>
     </div>
   );
+}
+
+function formatDateRange(startValue, endValue) {
+  const start = toDate(startValue);
+  const end = toDate(endValue);
+  if (!start && !end) return 'Dates pending';
+  if (start && !end) {
+    return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  if (!start && end) {
+    return end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startLabel = start.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: sameYear ? undefined : 'numeric',
+  });
+  const endLabel = end.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  return `${startLabel} – ${endLabel}`;
 }
 
 function euro(n) { return '€' + Math.round(n); }
@@ -667,6 +1140,124 @@ function AuthOverlay({ children, onClose }) {
           {children}
         </div>
       </div>
+    </div>
+  );
+}
+
+function encodeDestination(country, city) {
+  return `${country}|||${city || ''}`;
+}
+
+function decodeDestination(value) {
+  if (!value) return { country: '', city: '' };
+  const [country, city] = value.split('|||');
+  return { country, city };
+}
+
+function buildDestinationList() {
+  return EUROPE_COUNTRIES.map((country) => {
+    const cities = DESTINATION_CITIES[country] ?? [];
+    return {
+      country,
+      options: cities.map((item) => ({
+        city: item.city,
+        value: encodeDestination(country, item.city),
+        label: `${item.city}, ${country}`,
+      })),
+    };
+  });
+}
+
+function CascadingDestinationSelect({ options = [], value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState('');
+  const { country, city } = decodeDestination(value);
+  const selectedLabel = labelForDestination(country, city) || 'Select destination';
+  const activeCountry = expanded;
+  const activeCities = options.find((opt) => opt.country === activeCountry)?.options ?? [];
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <span className="text-neutral-400 text-sm">▾</span>
+      </button>
+      {open ? (
+        <div
+          className="absolute z-30 mt-2 w-full sm:w-[520px] overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl shadow-orange-100"
+        >
+          <div className="flex max-h-64 overflow-hidden">
+            <div className="w-1/2 overflow-auto border-r border-slate-100 py-1">
+              {options.map((opt) => {
+                const hasCities = Array.isArray(opt.options) && opt.options.length > 0;
+                const isActive = activeCountry === opt.country;
+                return (
+                  <button
+                    key={opt.country}
+                    type="button"
+                    className={`flex w-full items-center justify-between px-4 py-2 text-left text-sm ${
+                      isActive ? 'bg-orange-50 text-neutral-900' : 'hover:bg-orange-50'
+                    }`}
+                    onClick={() => {
+                      if (hasCities) {
+                        setExpanded(opt.country);
+                        return;
+                      }
+                      onChange(encodeDestination(opt.country, ''));
+                      setOpen(false);
+                    }}
+                  >
+                    <span>{opt.country}</span>
+                    {hasCities ? (
+                      <span className="text-neutral-400 text-xs">▸</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="w-1/2 overflow-auto bg-slate-50 py-1">
+              {activeCountry ? (
+                <>
+                  <div className="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    {activeCountry}
+                  </div>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-orange-100"
+                    onClick={() => {
+                      onChange(encodeDestination(activeCountry, ''));
+                      setOpen(false);
+                      setExpanded('');
+                    }}
+                  >
+                    <span>All of {activeCountry}</span>
+                  </button>
+                  {activeCities.map((cityOpt) => (
+                    <button
+                      key={cityOpt.value}
+                      type="button"
+                      className="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-orange-100"
+                      onClick={() => {
+                        onChange(cityOpt.value);
+                        setOpen(false);
+                        setExpanded('');
+                      }}
+                    >
+                      <span>{cityOpt.city}</span>
+                    </button>
+                  ))}
+                </>
+              ) : (
+                <div className="px-4 py-2 text-sm text-neutral-500">Select a country</div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
