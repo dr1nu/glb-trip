@@ -45,10 +45,14 @@ export default function AppFooter() {
   }
 
   function handleTabPress(tab) {
-    if (tab.href) {
-      router.push(tab.href);
+    if (!tab.href) return;
+    if (tab.key === 'home' && pathname === '/') {
+      window.dispatchEvent(new Event('glb-nav-home'));
       closeOverlay();
+      return;
     }
+    router.push(tab.href);
+    closeOverlay();
   }
 
   return (

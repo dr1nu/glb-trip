@@ -468,6 +468,21 @@ export default function Home() {
   }, [supabase]);
 
   useEffect(() => {
+    function handleHomeNav() {
+      if (showResult) {
+        setShowResult(false);
+      }
+      if (typeof window !== 'undefined' && window.scrollTo) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+    window.addEventListener('glb-nav-home', handleHomeNav);
+    return () => {
+      window.removeEventListener('glb-nav-home', handleHomeNav);
+    };
+  }, [showResult]);
+
+  useEffect(() => {
     if (!user || homePrefilled) return;
     const profile = composeProfilePayload(user);
     if (profile.homeCountry) {
