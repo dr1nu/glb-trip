@@ -107,12 +107,12 @@ export default function AppFooter() {
 function Overlay({ children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex justify-center items-end pb-24 px-4">
-      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-4">
+      <div className="w-full max-w-md rounded-2xl bg-white/95 border border-orange-100 p-5 shadow-2xl shadow-orange-100/50 space-y-4">
         {children}
         <button
           type="button"
           onClick={onClose}
-          className="w-full text-sm font-medium py-2 rounded-xl border border-neutral-700 text-neutral-300 hover:text-white"
+          className="w-full text-sm font-semibold py-2 rounded-xl border border-orange-200 text-[#C2461E] hover:bg-[#FFE7DA]"
         >
           Close
         </button>
@@ -132,9 +132,9 @@ function renderOverlayContent({
 }) {
   if (overlay === 'trips') {
     return (
-      <div className="space-y-3 text-sm text-neutral-300">
+      <div className="space-y-3 text-sm text-[#4C5A6B]">
         <div>
-          <h3 className="text-lg font-semibold text-neutral-100">Sign in to view trips</h3>
+          <h3 className="text-lg font-semibold text-[#0F172A]">Sign in to view trips</h3>
           <p>
             Create an account to save itineraries and find them here. Once you&apos;re in, this
             tab will open your saved trips automatically.
@@ -143,14 +143,14 @@ function renderOverlayContent({
         <div className="space-y-2">
           <button
             type="button"
-            className="w-full rounded-xl bg-orange-500 py-2 font-semibold text-neutral-900"
+            className="w-full rounded-xl bg-gradient-to-r from-[#FF8B55] to-[#FF6B35] py-2 font-semibold text-white shadow-md shadow-orange-200"
             onClick={() => setOverlay('auth')}
           >
             Sign in
           </button>
           <button
             type="button"
-            className="w-full rounded-xl border border-neutral-700 py-2 font-semibold text-neutral-200 hover:text-white"
+            className="w-full rounded-xl border border-orange-200 py-2 font-semibold text-[#C2461E] hover:bg-[#FFE7DA]"
             onClick={() => {
               onClose();
               router.push('/account');

@@ -603,53 +603,55 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] text-neutral-900">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 pb-32 pt-12 sm:px-6 lg:px-8">
-        <header className="text-center space-y-2">
-          <p className="text-sm font-semibold uppercase tracking-wide text-orange-500">
-            Plan your perfect trip
-          </p>
-          <h1 className="text-3xl font-semibold text-neutral-900">
-            Get instant estimates and expert-crafted itineraries
-          </h1>
-          <p className="text-sm text-neutral-500">
-            Tell us the basics. We&apos;ll forecast costs and hand the rest to a travel specialist.
-          </p>
-        </header>
-
-        {!showResult ? (
-          <FormCard
-            destinationCountry={destinationCountry}
-            setDestinationCountry={setDestinationCountry}
-            destinationCity={destinationCity}
-            setDestinationCity={setDestinationCity}
-            destinationOptions={destinationOptions}
-            budgetTotal={budgetTotal}
-            setBudgetTotal={setBudgetTotal}
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={handleStartDateChange}
-            onEndDateChange={handleEndDateChange}
-            homeCountry={homeCountry}
-            setHomeCountry={setHomeCountry}
-            travelStyle={travelStyle}
-            setTravelStyle={setTravelStyle}
-            onSubmit={() => setShowResult(true)}
+    <main className="relative min-h-screen bg-[#FFF7F1] text-[#0F172A]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[360px] rounded-b-[48px] bg-gradient-to-r from-[#FF9B66] via-[#FF7B42] to-[#FF6B35] opacity-90 shadow-[0_26px_120px_-60px_rgba(255,107,53,0.35)]" />
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 pb-32 pt-20 sm:px-6 lg:px-8">
+        <section className="relative">
+          <div
+            className="absolute inset-x-6 -top-14 h-24 rounded-3xl bg-white/35 blur-3xl"
+            aria-hidden="true"
           />
-        ) : (
-          <ResultCard
-            destinationCountry={destinationCountry}
-            destinationCity={destinationCity}
-            homeCountry={homeCountry}
-            startDate={startDate}
-            endDate={endDate}
-            tripLengthDays={tripLengthDays}
-            budgetTotal={budgetTotal}
-            result={result}
-            onBack={() => setShowResult(false)}
-            onRequest={handleRequestTrip}
-          />
-        )}
+          <div className="relative z-20 mb-12 text-center text-white">
+            <h1 className="text-3xl font-semibold leading-tight drop-shadow-md sm:text-4xl">
+              Plan Your Next Holiday
+            </h1>
+          </div>
+          <div className="relative z-10 -mt-6 sm:-mt-10">
+            {!showResult ? (
+              <FormCard
+                destinationCountry={destinationCountry}
+                setDestinationCountry={setDestinationCountry}
+                destinationCity={destinationCity}
+                setDestinationCity={setDestinationCity}
+                destinationOptions={destinationOptions}
+                budgetTotal={budgetTotal}
+                setBudgetTotal={setBudgetTotal}
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={handleStartDateChange}
+                onEndDateChange={handleEndDateChange}
+                homeCountry={homeCountry}
+                setHomeCountry={setHomeCountry}
+                travelStyle={travelStyle}
+                setTravelStyle={setTravelStyle}
+                onSubmit={() => setShowResult(true)}
+              />
+            ) : (
+              <ResultCard
+                destinationCountry={destinationCountry}
+                destinationCity={destinationCity}
+                homeCountry={homeCountry}
+                startDate={startDate}
+                endDate={endDate}
+                tripLengthDays={tripLengthDays}
+                budgetTotal={budgetTotal}
+                result={result}
+                onBack={() => setShowResult(false)}
+                onRequest={handleRequestTrip}
+              />
+            )}
+          </div>
+        </section>
 
         {!showResult ? (
           <>
@@ -658,7 +660,7 @@ export default function Home() {
           </>
         ) : null}
 
-        <p className="text-xs text-neutral-500 text-center">
+        <p className="text-xs text-[#4C5A6B] text-center">
           Prototype. Prices are estimates; seasons and luggage can change totals.
         </p>
       </div>
@@ -703,7 +705,7 @@ function FormCard({
   const destinationValue = encodeDestination(destinationCountry, destinationCity);
   return (
     <form
-      className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-xl shadow-orange-200/60 backdrop-blur-sm space-y-6"
+      className="relative rounded-[32px] border border-[#E3E6EF] bg-white p-6 shadow-[0_24px_90px_-60px_rgba(15,23,42,0.35)] backdrop-blur-sm ring-1 ring-white/70 space-y-6 sm:p-7"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
@@ -711,9 +713,9 @@ function FormCard({
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex w-full flex-col gap-2">
-          <label className="text-sm font-medium text-neutral-500">Home</label>
+          <label className="text-sm font-medium text-[#4B5563]">Home</label>
           <select
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-2xl border border-[#E3E6EF] bg-white px-4 py-3 text-sm font-medium text-[#0F172A] shadow-sm focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
             value={homeCountry || ''}
             onChange={(e) => setHomeCountry(e.target.value)}
           >
@@ -728,7 +730,7 @@ function FormCard({
           </select>
         </div>
         <div className="flex w-full flex-col gap-2">
-          <label className="text-sm font-medium text-neutral-500">
+          <label className="text-sm font-medium text-[#4B5563]">
             Where do you want to go?
           </label>
           <CascadingDestinationSelect
@@ -742,29 +744,29 @@ function FormCard({
           />
         </div>
         <div className="flex w-full flex-col gap-2">
-          <label className="text-sm font-medium text-neutral-500">Start date</label>
+          <label className="text-sm font-medium text-[#4B5563]">Start date</label>
           <input
             type="date"
             min={today}
             value={startDate}
             onChange={(e) => onStartDateChange(e.target.value)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="rounded-2xl border border-[#E3E6EF] bg-white px-4 py-3 text-sm font-medium text-[#0F172A] shadow-sm focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
           />
         </div>
         <div className="flex w-full flex-col gap-2">
-          <label className="text-sm font-medium text-neutral-500">End date</label>
+          <label className="text-sm font-medium text-[#4B5563]">End date</label>
           <input
             type="date"
             min={startDate || today}
             value={endDate}
             onChange={(e) => onEndDateChange(e.target.value)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="rounded-2xl border border-[#E3E6EF] bg-white px-4 py-3 text-sm font-medium text-[#0F172A] shadow-sm focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
           />
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium flex justify-between text-neutral-500">
+        <label className="text-sm font-medium flex justify-between text-[#4B5563]">
           <span>Budget (total)</span>
           <span className="font-semibold text-neutral-800">€{budgetTotal}</span>
         </label>
@@ -777,20 +779,20 @@ function FormCard({
           onChange={(e) => setBudgetTotal(parseInt(e.target.value, 10))}
           className="w-full accent-[#FF6B35]"
         />
-        <div className="flex justify-between text-[11px] text-neutral-400">
+        <div className="flex justify-between text-[11px] text-[#4B5563]">
           <span>€100</span>
           <span>€2000</span>
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-neutral-500">Travel style</label>
+        <label className="text-sm font-medium text-[#4B5563]">Travel style</label>
         <StyleToggle value={travelStyle} onChange={setTravelStyle} />
       </div>
 
       <button
         type="submit"
-        className="w-full rounded-2xl bg-gradient-to-r from-[#FF8B55] to-[#FF6B35] py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:from-[#FF9B66] hover:to-[#FF5B24] focus:outline-none focus:ring-2 focus:ring-[#FFB08F]"
+        className="w-full rounded-2xl bg-gradient-to-r from-[#FF8A3C] via-[#FF6B35] to-[#FF5B24] py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:from-[#FF9B55] hover:via-[#FF6B35] hover:to-[#FF4A12] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
       >
         Get instant estimate
       </button>
@@ -815,8 +817,8 @@ function StyleToggle({ value, onChange }) {
             onClick={() => onChange(it.k)}
             className={`rounded-2xl px-3 py-2 text-sm font-semibold border transition ${
               active
-                ? 'border-[#FF6B35] bg-[#FFE7DA] text-[#C2461E] shadow-lg shadow-orange-100'
-                : 'border-slate-200 bg-white text-neutral-600 hover:text-neutral-900'
+                ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-lg shadow-orange-100'
+                : 'border-[#E3E6EF] bg-white text-[#4B5563] hover:text-[#0F172A]'
             }`}
             title={it.hint}
           >
@@ -854,7 +856,7 @@ function PopularDestinations({ images = [] }) {
               />
               <div className="space-y-1 p-3">
                 <p className="text-sm font-semibold text-neutral-900">{item.city}</p>
-                <p className="text-xs text-neutral-500">{item.country}</p>
+                <p className="text-xs text-[#4C5A6B]">{item.country}</p>
               </div>
             </div>
           );
@@ -880,7 +882,7 @@ function ValueProps() {
               <ValueIcon name={card.key} />
             </div>
             <p className="text-sm font-semibold text-neutral-900">{card.title}</p>
-            <p className="text-xs text-neutral-500">{card.body}</p>
+            <p className="text-xs text-[#4C5A6B]">{card.body}</p>
           </div>
         ))}
       </div>
@@ -935,12 +937,12 @@ function ResultCard({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-neutral-900">Your instant estimate</h2>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-[#4C5A6B]">
               {destinationLabelShort} • {dateRangeLabel}
             </p>
           </div>
           <button
-            className="text-xs font-medium text-neutral-400 hover:text-neutral-700 underline"
+            className="text-xs font-medium text-[#4C5A6B] hover:text-neutral-700 underline"
             onClick={onBack}
           >
             ← edit answers
@@ -948,12 +950,12 @@ function ResultCard({
         </div>
 
         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center space-y-2">
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Estimated total cost</p>
+          <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">Estimated total cost</p>
           <p className="text-4xl font-semibold text-neutral-900">{euro(totalEstimate)}</p>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-[#4C5A6B]">
             {dateRangeLabel} • {tripLengthDays} day{tripLengthDays === 1 ? '' : 's'} • {bucket}
           </p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-[#4C5A6B]">
             {seasonLabel} ({seasonFactor}×) • {weekendLabel} ({weekendFactor}×)
           </p>
         </div>
@@ -981,14 +983,14 @@ function ResultCard({
       <div className="rounded-[32px] border border-white/80 bg-white p-5 shadow-xl shadow-orange-100/50 space-y-4">
         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
           <div className="mb-2 flex justify-between">
-            <span className="text-neutral-500">Estimated total</span>
+            <span className="text-[#4C5A6B]">Estimated total</span>
             <span className="font-semibold text-neutral-900">
               {euro(totalLow)} – {euro(totalHigh)}
             </span>
           </div>
           <BudgetGauge budget={budgetTotal} low={totalLow} high={totalHigh} />
           <div className="mt-3 flex justify-between text-sm">
-            <span className="text-neutral-500">Your budget</span>
+            <span className="text-[#4C5A6B]">Your budget</span>
             <span className="font-semibold text-neutral-900">{euro(budgetTotal)}</span>
           </div>
           <div
@@ -1011,8 +1013,8 @@ function ResultCard({
           <button
             className={`mt-3 w-full rounded-2xl py-3 text-sm font-semibold transition ${
               isContinuing
-                ? 'cursor-not-allowed bg-slate-200 text-neutral-500'
-                : 'bg-gradient-to-r from-[#FF8B55] to-[#FF6B35] text-white shadow-lg shadow-orange-200 hover:from-[#FF9B66] hover:to-[#FF5B24]'
+                ? 'cursor-not-allowed bg-slate-200 text-[#4C5A6B]'
+                : 'bg-gradient-to-r from-[#FF8A3C] via-[#FF6B35] to-[#FF5B24] text-white shadow-lg shadow-orange-200 hover:from-[#FF9B55] hover:via-[#FF6B35] hover:to-[#FF4A12]'
             }`}
             onClick={() => {
               if (isContinuing) return;
@@ -1066,7 +1068,7 @@ function BudgetGauge({ budget, low, high }) {
           title="Your budget"
         />
       </div>
-      <div className="mt-1 flex justify-between text-[11px] text-neutral-400">
+      <div className="mt-1 flex justify-between text-[11px] text-[#4C5A6B]">
         <span>0</span>
         <span>max {euro(Math.round(max))}</span>
       </div>
@@ -1142,16 +1144,16 @@ function ValueIcon({ name }) {
 
 function AuthOverlay({ children, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
       <div className="relative w-full max-w-md">
         <button
           type="button"
-          className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white"
+          className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-white border border-orange-100 text-[#4C5A6B] shadow-lg shadow-orange-100 hover:text-[#C2461E]"
           onClick={onClose}
         >
           ×
         </button>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl">
+        <div className="rounded-2xl border border-orange-100 bg-white p-6 shadow-2xl shadow-orange-100/60">
           {children}
         </div>
       </div>
@@ -1199,7 +1201,7 @@ function CascadingDestinationSelect({ options = [], value, onChange }) {
         onClick={() => setOpen((o) => !o)}
       >
         <span className="truncate">{selectedLabel}</span>
-        <span className="text-neutral-400 text-sm">▾</span>
+        <span className="text-[#4C5A6B] text-sm">▾</span>
       </button>
       {open ? (
         <div
@@ -1228,7 +1230,7 @@ function CascadingDestinationSelect({ options = [], value, onChange }) {
                   >
                     <span>{opt.country}</span>
                     {hasCities ? (
-                      <span className="text-neutral-400 text-xs">▸</span>
+                      <span className="text-[#4C5A6B] text-xs">▸</span>
                     ) : null}
                   </button>
                 );
@@ -1237,7 +1239,7 @@ function CascadingDestinationSelect({ options = [], value, onChange }) {
             <div className="w-1/2 overflow-auto bg-slate-50 py-1">
               {activeCountry ? (
                 <>
-                  <div className="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  <div className="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-[#4C5A6B]">
                     {activeCountry}
                   </div>
                   <button
@@ -1267,7 +1269,7 @@ function CascadingDestinationSelect({ options = [], value, onChange }) {
                   ))}
                 </>
               ) : (
-                <div className="px-4 py-2 text-sm text-neutral-500">Select a country</div>
+                <div className="px-4 py-2 text-sm text-[#4C5A6B]">Select a country</div>
               )}
             </div>
           </div>

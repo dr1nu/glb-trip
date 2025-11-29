@@ -22,7 +22,7 @@ export default function DayCardPanel({ card, onFieldChange, isDirty }) {
   }
 
   return (
-    <article className="bg-neutral-950 border border-neutral-800 rounded-2xl p-5 space-y-4">
+    <article className="bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] border border-orange-100 rounded-2xl p-5 space-y-4">
       <header
         className="flex items-center justify-between gap-4 cursor-pointer select-none"
         onClick={() => setExpanded((prev) => !prev)}
@@ -40,17 +40,17 @@ export default function DayCardPanel({ card, onFieldChange, isDirty }) {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-neutral-100">{card.title}</p>
-            <p className="text-xs uppercase tracking-wide text-neutral-400">
+            <p className="text-sm font-semibold text-slate-900">{card.title}</p>
+            <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
               {subtitle}
             </p>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-sm font-semibold text-neutral-100">
+          <div className="text-sm font-semibold text-slate-900">
             {priceDisplay || 'Set daily cost'}
           </div>
-          <div className="text-xs text-neutral-500">
+          <div className="text-xs text-[#4C5A6B]">
             {expanded ? 'Hide details' : 'Expand details'}
           </div>
           {isDirty ? (
@@ -86,7 +86,7 @@ export default function DayCardPanel({ card, onFieldChange, isDirty }) {
             onChange={handleChange}
             placeholder="Louvre Museum, Seine cruise"
           />
-          <p className="text-[11px] text-neutral-500 text-right">
+          <p className="text-[11px] text-[#4C5A6B] text-right">
             Changes are saved when you click &ldquo;Save trip&rdquo; below.
           </p>
         </div>
@@ -98,14 +98,14 @@ export default function DayCardPanel({ card, onFieldChange, isDirty }) {
 function Field({ label, name, value, onChange, placeholder }) {
   return (
     <label className="flex flex-col gap-2 text-sm">
-      <span className="font-medium text-neutral-200">{label}</span>
+      <span className="font-medium text-[#4C5A6B]">{label}</span>
       <input
         type="text"
         name={name}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
       />
     </label>
   );

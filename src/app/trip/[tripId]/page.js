@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTrip } from '@/lib/db';
 import CreateItineraryButton from './_components/CreateItineraryButton';
+import ItinerarySummary from './_components/ItinerarySummary';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,27 +59,27 @@ export default async function TripPage({ params, searchParams }) {
   const showAdminCTA = itineraryReady && fromAdmin;
 
   return (
-    <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center">
+    <main className="min-h-screen bg-white text-slate-900 p-4 flex justify-center">
       <div className="w-full max-w-2xl space-y-6">
         <Link
           href={fromAdmin ? '/admin' : '/'}
-          className="inline-flex items-center gap-1 text-sm text-neutral-400 hover:text-neutral-200"
+          className="inline-flex items-center gap-1 text-sm text-[#4C5A6B] hover:text-[#4C5A6B]"
         >
           <span aria-hidden>←</span>
           {fromAdmin ? 'Back to admin' : 'Plan another trip'}
         </Link>
 
-        <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-6">
+        <section className="bg-orange-50 border border-orange-100 rounded-2xl p-6 space-y-6">
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="text-2xl font-semibold">
                 Trip to {destinationCountry}
               </h1>
-              <p className="text-sm text-neutral-400">
+              <p className="text-sm text-[#4C5A6B]">
                 Generated {createdLabel}
               </p>
             </div>
-            <span className="text-xs uppercase tracking-wide text-neutral-400 border border-neutral-700 rounded-lg px-3 py-1">
+            <span className="text-xs uppercase tracking-wide text-[#4C5A6B] border border-orange-100 rounded-lg px-3 py-1">
               ID {id}
             </span>
           </header>
@@ -92,22 +93,22 @@ export default async function TripPage({ params, searchParams }) {
             <Fact label="Daily spend" value={perDay ? `${euro(perDay)} / day` : 'Not captured'} />
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-4 space-y-3 text-sm">
+          <div className="bg-white border border-orange-100 rounded-xl p-4 space-y-3 text-sm">
             <div className="flex flex-wrap justify-between gap-2">
-              <span className="text-neutral-400">Estimated total</span>
+              <span className="text-[#4C5A6B]">Estimated total</span>
               <span className="font-semibold">
                 {euro(totalLow)} – {euro(totalHigh)}
               </span>
             </div>
-            <div className="flex flex-wrap justify-between gap-2 text-neutral-400">
+            <div className="flex flex-wrap justify-between gap-2 text-[#4C5A6B]">
               <span>Accommodation ({bucket ?? '—'})</span>
               <span>{accom ? euro(accom) : '—'}</span>
             </div>
-            <div className="flex flex-wrap justify-between gap-2 text-neutral-400">
+            <div className="flex flex-wrap justify-between gap-2 text-[#4C5A6B]">
               <span>Other daily costs</span>
               <span>{other ? euro(other) : '—'}</span>
             </div>
-            <div className="flex flex-wrap justify-between gap-2 text-neutral-400">
+            <div className="flex flex-wrap justify-between gap-2 text-[#4C5A6B]">
               <span>Flights</span>
               <span>
                 {flight.low ? euro(flight.low) : '—'} – {flight.high ? euro(flight.high) : '—'}
@@ -120,10 +121,10 @@ export default async function TripPage({ params, searchParams }) {
         </section>
 
         {contact || preferences ? (
-          <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-4">
+          <section className="bg-orange-50 border border-orange-100 rounded-2xl p-6 space-y-4">
             <header>
               <h2 className="text-lg font-semibold">Traveller details</h2>
-              <p className="text-sm text-neutral-400">
+              <p className="text-sm text-[#4C5A6B]">
                 Captured when the holiday request was submitted.
               </p>
             </header>
@@ -164,12 +165,12 @@ export default async function TripPage({ params, searchParams }) {
                 ) : null}
               </dl>
             ) : (
-              <p className="text-sm text-neutral-400">Traveller details were not captured.</p>
+              <p className="text-sm text-[#4C5A6B]">Traveller details were not captured.</p>
             )}
 
             {preferences ? (
-              <div className="pt-4 border-t border-neutral-700 space-y-3">
-                <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+              <div className="pt-4 border-t border-orange-100 space-y-3">
+                <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
                   Trip preferences
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -195,11 +196,19 @@ export default async function TripPage({ params, searchParams }) {
           </section>
         ) : null}
 
+        {itineraryReady ? (
+          <ItinerarySummary
+            cards={itinerary?.cards || []}
+            title="Day-by-day overview"
+            description="Quick view of your departure, stay, and daily highlights."
+          />
+        ) : null}
+
         {showTravellerCTA ? (
-          <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
+          <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
             <div>
               <h2 className="text-lg font-semibold">Your itinerary is live</h2>
-              <p className="text-sm text-neutral-400">
+              <p className="text-sm text-[#4C5A6B]">
                 Jump into the immersive view to explore day-by-day plans and booking links.
               </p>
             </div>
@@ -239,8 +248,8 @@ export default async function TripPage({ params, searchParams }) {
 
 function Fact({ label, value }) {
   return (
-    <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-3 space-y-1">
-      <div className="text-[11px] uppercase tracking-wide text-neutral-500">
+    <div className="bg-white border border-orange-100 rounded-lg p-3 space-y-1">
+      <div className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
         {label}
       </div>
       <div className="text-sm font-medium">{value ?? '—'}</div>
@@ -251,9 +260,9 @@ function Fact({ label, value }) {
 function Detail({ label, value, className = '' }) {
   return (
     <div
-      className={`bg-neutral-900 border border-neutral-700 rounded-lg p-3 space-y-1 ${className}`}
+      className={`bg-white border border-orange-100 rounded-lg p-3 space-y-1 ${className}`}
     >
-      <div className="text-[11px] uppercase tracking-wide text-neutral-500">
+      <div className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
         {label}
       </div>
       <div className="text-sm font-medium break-words">
@@ -265,9 +274,9 @@ function Detail({ label, value, className = '' }) {
 
 function ItineraryStatus({ fromAdmin }) {
   return (
-    <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-3">
+    <section className="bg-orange-50 border border-orange-100 rounded-2xl p-6 space-y-3">
       <h2 className="text-lg font-semibold">Itinerary status</h2>
-      <p className="text-sm text-neutral-400">
+      <p className="text-sm text-[#4C5A6B]">
         {fromAdmin
           ? 'Create the trip to generate departure, stay, daily, and budget cards.'
           : 'We are preparing your personalised itinerary. Stay tuned!'}

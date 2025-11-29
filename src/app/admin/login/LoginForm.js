@@ -40,23 +40,23 @@ export default function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-6 max-w-md mx-auto"
+      className="bg-white border border-orange-100 rounded-2xl p-6 space-y-6 max-w-md mx-auto"
     >
       <header>
         <h1 className="text-xl font-semibold">Admin login</h1>
-        <p className="text-sm text-neutral-400 mt-1">
+        <p className="text-sm text-[#4C5A6B] mt-1">
           Enter the admin password to view saved trips.
         </p>
       </header>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-neutral-200" htmlFor="password">
+        <label className="text-sm font-medium text-[#4C5A6B]" htmlFor="password">
           Password
         </label>
         <input
           id="password"
           type="password"
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="w-full bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] border border-orange-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="••••••••"
@@ -75,7 +75,7 @@ export default function LoginForm() {
         type="submit"
         className={`w-full text-sm font-semibold py-3 rounded-xl transition-colors ${
           isSubmitting
-            ? 'bg-neutral-800 text-neutral-400 cursor-not-allowed'
+            ? 'bg-orange-50 text-[#4C5A6B] cursor-not-allowed'
             : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
         }`}
         disabled={isSubmitting}

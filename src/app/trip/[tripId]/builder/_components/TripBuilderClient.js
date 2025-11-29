@@ -75,7 +75,7 @@ function prepareCards(rawCards, { resetDirty = false } = {}) {
 
 function MissingCardNotice({ label }) {
   return (
-    <div className="border border-dashed border-neutral-700 rounded-xl px-4 py-6 text-sm text-neutral-400 text-center">
+    <div className="border border-dashed border-orange-100 rounded-xl px-4 py-6 text-sm text-[#4C5A6B] text-center">
       {label} card missing. Recreate the itinerary to regenerate default cards.
     </div>
   );
@@ -185,10 +185,10 @@ export default function TripBuilderClient({ tripId, initialCards }) {
 
   return (
     <div className="space-y-6">
-      <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-5">
+      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
         <header>
           <h2 className="text-lg font-semibold">Flights</h2>
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-[#4C5A6B]">
             Add confirmed timings, baggage info, and booking links for each leg.
           </p>
         </header>
@@ -217,10 +217,10 @@ export default function TripBuilderClient({ tripId, initialCards }) {
         </div>
       </section>
 
-      <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-5">
+      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
         <header>
           <h2 className="text-lg font-semibold">Accommodation</h2>
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-[#4C5A6B]">
             Capture stay details so travellers know where they&apos;ll unwind.
           </p>
         </header>
@@ -235,10 +235,10 @@ export default function TripBuilderClient({ tripId, initialCards }) {
         )}
       </section>
 
-      <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-5">
+      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
         <header>
           <h2 className="text-lg font-semibold">Daily highlights</h2>
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-[#4C5A6B]">
             Outline each day&apos;s location, must-see experience, and costs.
           </p>
         </header>
@@ -265,11 +265,11 @@ export default function TripBuilderClient({ tripId, initialCards }) {
         />
       ) : null}
 
-      <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
+      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Save trip</h2>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-[#4C5A6B]">
               Review each section, then save once. Travellers will see the
               updated details instantly.
             </p>
@@ -280,7 +280,7 @@ export default function TripBuilderClient({ tripId, initialCards }) {
             disabled={saving || !hasDirty}
             className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
               saving || !hasDirty
-                ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
+                ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
                 : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
             }`}
           >
@@ -294,13 +294,13 @@ export default function TripBuilderClient({ tripId, initialCards }) {
                 ? 'bg-green-500/10 border-green-500/30 text-green-300'
                 : feedback.type === 'error'
                 ? 'bg-red-500/10 border-red-500/30 text-red-300'
-                : 'bg-neutral-800 border-neutral-700 text-neutral-300'
+                : 'bg-orange-50 border-orange-100 text-[#4C5A6B]'
             }`}
           >
             {feedback.message}
           </div>
         ) : (
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-[11px] text-[#4C5A6B]">
             {hasDirty
               ? 'Unsaved changes pending.'
               : 'All sections are up to date.'}

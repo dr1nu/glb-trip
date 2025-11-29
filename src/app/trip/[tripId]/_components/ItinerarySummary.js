@@ -11,13 +11,13 @@ export default function ItinerarySummary({
   if (safeCards.length === 0) {
     return (
       <section
-        className={`bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-3 ${className}`}
+        className={`bg-orange-50 border border-orange-100 rounded-2xl p-6 space-y-3 ${className}`}
       >
         <header>
           <h2 className="text-lg font-semibold">{title}</h2>
-          <p className="text-sm text-neutral-400">{description}</p>
+          <p className="text-sm text-[#4C5A6B]">{description}</p>
         </header>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-[#4C5A6B]">
           Itinerary cards will appear here once the trip is ready.
         </p>
       </section>
@@ -26,14 +26,14 @@ export default function ItinerarySummary({
 
   return (
     <section
-      className={`bg-neutral-800 border border-neutral-700 rounded-2xl p-6 space-y-4 ${className}`}
+      className={`bg-orange-50 border border-orange-100 rounded-2xl p-6 space-y-4 ${className}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{title}</h2>
-          <p className="text-sm text-neutral-400">{description}</p>
+          <p className="text-sm text-[#4C5A6B]">{description}</p>
         </div>
-        <span className="text-xs uppercase tracking-wide text-neutral-400 border border-neutral-700 rounded-lg px-3 py-1">
+        <span className="text-xs uppercase tracking-wide text-[#4C5A6B] border border-orange-100 rounded-lg px-3 py-1">
           {safeCards.length} card{safeCards.length === 1 ? '' : 's'}
         </span>
       </header>
@@ -77,7 +77,7 @@ function FlightDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 space-y-4">
+    <article className="bg-white border border-orange-100 rounded-2xl p-5 space-y-4">
       <HeaderWithIcon
         iconType={card.type === 'return' ? 'planeReturn' : 'plane'}
         title={card.type === 'return' ? 'Return flight' : 'Departure flight'}
@@ -111,7 +111,7 @@ function AccommodationDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 space-y-4">
+    <article className="bg-white border border-orange-100 rounded-2xl p-5 space-y-4">
       <HeaderWithIcon
         iconType="home"
         title="Accommodation"
@@ -135,7 +135,7 @@ function DayDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 space-y-4">
+    <article className="bg-white border border-orange-100 rounded-2xl p-5 space-y-4">
       <HeaderWithIcon
         iconType="pin"
         title={card.title}
@@ -156,13 +156,13 @@ function HeaderWithIcon({ iconType, title, subtitle, price }) {
       <div className="flex items-center gap-4">
         {icon}
         <div>
-          <p className="text-sm font-semibold text-neutral-100">{title}</p>
-          <p className="text-xs uppercase tracking-wide text-neutral-400">
+          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
             {subtitle ?? 'Details forthcoming'}
           </p>
         </div>
       </div>
-      <div className="text-sm font-semibold text-neutral-100">
+      <div className="text-sm font-semibold text-slate-900">
         {hasPrice ? price : 'Set soon'}
       </div>
     </div>
@@ -173,7 +173,7 @@ function DetailList({ details }) {
   const valid = details.filter((item) => item.value && `${item.value}`.trim());
   if (valid.length === 0) {
     return (
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-[#4C5A6B]">
         Details will be confirmed soon.
       </p>
     );
@@ -184,10 +184,10 @@ function DetailList({ details }) {
       {valid.map(({ label, value, isLink, linkLabel }) => (
         <div
           key={label}
-          className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-2 last:border-b-0 last:pb-0"
+          className="flex flex-wrap items-center justify-between gap-2 border-b border-orange-100 pb-2 last:border-b-0 last:pb-0"
         >
-          <dt className="text-neutral-400">{label}</dt>
-          <dd className="font-medium text-neutral-100">
+          <dt className="text-[#4C5A6B]">{label}</dt>
+          <dd className="font-medium text-slate-900">
             {isLink ? <BookingLink href={value} label={linkLabel} /> : value}
           </dd>
         </div>

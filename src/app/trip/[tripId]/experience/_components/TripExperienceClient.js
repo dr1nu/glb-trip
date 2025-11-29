@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ItinerarySummary from '../../_components/ItinerarySummary';
 
 export default function TripExperienceClient({
@@ -10,24 +10,131 @@ export default function TripExperienceClient({
   summaryCards,
   dayCards,
 }) {
+  const buildPlaceholderDays = (length) => {
+    const count = Math.max(1, Number.isFinite(length) && length > 0 ? Math.round(length) : 1);
+    return Array.from({ length: count }).map((_, idx) => ({
+      id: `placeholder-day-${idx + 1}`,
+      title: `Day ${idx + 1}`,
+      fields: {},
+      timeline: [],
+    }));
+  };
+
+  const isDayCard = (card = {}, index) => {
+    const type = typeof card.type === 'string' ? card.type.toLowerCase() : '';
+    const id = card.id ? String(card.id).toLowerCase() : '';
+    const title = typeof card.title === 'string' ? card.title : '';
+    if (
+      type === 'departure' ||
+      type === 'return' ||
+      type === 'flight' ||
+      type === 'budget' ||
+      type === 'summary' ||
+      type === 'cost'
+    ) {
+      return false;
+    }
+    if (
+      type === 'day' ||
+      type === 'daily' ||
+      type === 'day-card' ||
+      type === 'itinerary-day' ||
+      id.startsWith('day-') ||
+      /^day\s*\d+/i.test(title)
+    ) {
+      return true;
+    }
+    if (Array.isArray(card.timeline) && card.timeline.length > 0) return true;
+    if (card.fields?.city || card.fields?.dailyCost || card.fields?.highlightAttraction) return true;
+    return false;
+  };
+
   const tabDefinitions = useMemo(() => {
     const safeSummary = Array.isArray(summaryCards) ? summaryCards : [];
-    const safeDays = Array.isArray(dayCards) ? dayCards : [];
+    const safeDaysSource = Array.isArray(dayCards) ? dayCards : safeSummary;
+    const safeDays = safeDaysSource
+      .map((card, idx) => ({ card, idx }))
+      .filter(({ card, idx }) => isDayCard(card, idx))
+      .map(({ card }) => card);
+    const daysToRender = safeDays.length > 0 ? safeDays : buildPlaceholderDays(tripLengthDays);
+    const isFlightCard = (card) => {
+      const type = typeof card?.type === 'string' ? card.type.toLowerCase() : '';
+      return type === 'departure' || type === 'return' || type === 'flight';
+    };
+    const isBudgetCard = (card) => {
+      const type = typeof card?.type === 'string' ? card.type.toLowerCase() : '';
+      const id = typeof card?.id === 'string' ? card.id.toLowerCase() : '';
+      const title = typeof card?.title === 'string' ? card.title.toLowerCase() : '';
+      return (
+        type === 'budget' ||
+        id.includes('budget') ||
+        title.includes('budget') ||
+        type === 'cost' ||
+        type === 'summary'
+      );
+    };
+    const isAccommodationCard = (card) => {
+      const type = typeof card?.type === 'string' ? card.type.toLowerCase() : '';
+      const id = typeof card?.id === 'string' ? card.id.toLowerCase() : '';
+      const title = typeof card?.title === 'string' ? card.title.toLowerCase() : '';
+      return (
+        type === 'accommodation' ||
+        type === 'stay' ||
+        id.includes('accommodation') ||
+        title.includes('accommodation') ||
+        title.includes('hotel')
+      );
+    };
+    const looksLikeFlight = (card) => {
+      const title = typeof card?.title === 'string' ? card.title.toLowerCase() : '';
+      return (
+        isFlightCard(card) ||
+        title.includes('flight') ||
+        title.includes('departure') ||
+        title.includes('return') ||
+        title.includes('outbound') ||
+        title.includes('inbound')
+      );
+    };
     const tabs = [
+      {
+        id: 'flights',
+        label: 'Flights',
+        content: (
+          <ItinerarySummary
+            cards={safeSummary.filter((card) => looksLikeFlight(card) && !isBudgetCard(card))}
+            title="Flights"
+            description="Your outbound and return routes."
+          />
+        ),
+      },
+      {
+        id: 'accommodation',
+        label: 'Accommodation',
+        content: (
+          <ItinerarySummary
+            cards={safeSummary.filter((card) => isAccommodationCard(card) && !isBudgetCard(card))}
+            title="Accommodation"
+            description="Where you're staying each night."
+          />
+        ),
+      },
       {
         id: 'summary',
         label: 'Summary',
         content: (
           <ItinerarySummary
-            cards={safeSummary}
+            cards={safeSummary.filter(
+              (card) => !looksLikeFlight(card) && !isBudgetCard(card) && !isAccommodationCard(card)
+            )}
             title="Trip summary"
-            description="High-level overview of flights, stays, and daily costs."
+            description="High-level overview of stays and daily highlights."
           />
         ),
       },
     ];
 
-    safeDays.forEach((card, index) => {
+    daysToRender.forEach((card, index) => {
       tabs.push({
         id: card.id ?? `day-${index + 1}`,
         label: card.title ?? `Day ${index + 1}`,
@@ -39,21 +146,32 @@ export default function TripExperienceClient({
   }, [summaryCards, dayCards]);
 
   const [activeTab, setActiveTab] = useState(tabDefinitions[0]?.id);
+  useEffect(() => {
+    if (tabDefinitions.length === 0) return;
+    setActiveTab((prev) => (tabDefinitions.some((t) => t.id === prev) ? prev : tabDefinitions[0].id));
+  }, [tabDefinitions]);
+
   const activeContent = tabDefinitions.find((tab) => tab.id === activeTab);
 
   return (
-    <div className="relative pb-28">
+    <div className="space-y-4">
       <header className="space-y-2 text-center">
-        <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">
+        <p className="text-xs uppercase tracking-[0.3em] text-[#4C5A6B]">
           {homeCountry} → {destinationCountry}
         </p>
         <h1 className="text-3xl font-semibold">Your {tripLengthDays}-day escape</h1>
-        <p className="text-sm text-neutral-400">
+        <p className="text-sm text-[#4C5A6B]">
           Swipe through the summary or deep dive into each day&apos;s plans.
         </p>
       </header>
 
-      <div className="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-3xl p-4 min-h-[60vh]">
+      <TabBar
+        tabs={tabDefinitions}
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+      />
+
+      <div className="mt-6 bg-white/60 border border-orange-100 rounded-3xl p-4 min-h-[60vh]">
         {activeContent ? (
           <div className="overflow-y-auto max-h-full pr-1">
             {activeContent.content}
@@ -62,12 +180,6 @@ export default function TripExperienceClient({
           <EmptyState />
         )}
       </div>
-
-      <TabBar
-        tabs={tabDefinitions}
-        activeTab={activeTab}
-        onSelect={setActiveTab}
-      />
     </div>
   );
 }
@@ -75,8 +187,8 @@ export default function TripExperienceClient({
 function TabBar({ tabs, activeTab, onSelect }) {
   if (!tabs.length) return null;
   return (
-    <nav className="fixed bottom-6 left-0 right-0 flex justify-center px-4">
-      <div className="inline-flex items-center gap-2 bg-neutral-900/90 border border-neutral-800 rounded-full px-3 py-2 shadow-2xl backdrop-blur">
+    <nav className="flex justify-center">
+      <div className="inline-flex flex-wrap items-center gap-2 bg-white border border-orange-100 rounded-full px-3 py-2 shadow-sm">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -84,8 +196,8 @@ function TabBar({ tabs, activeTab, onSelect }) {
             onClick={() => onSelect(tab.id)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               tab.id === activeTab
-                ? 'bg-orange-500 text-neutral-900'
-                : 'text-neutral-400 hover:text-neutral-100'
+                ? 'bg-orange-500 text-neutral-900 shadow-sm'
+                : 'text-[#4C5A6B] hover:text-slate-900'
             }`}
           >
             {tab.label}
@@ -106,17 +218,17 @@ function DayItineraryDetail({ card }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-5 space-y-3">
+      <div className="bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] border border-orange-100 rounded-2xl p-5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+            <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
               City
             </p>
             <p className="text-lg font-semibold">{city}</p>
           </div>
           {cost ? (
             <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+              <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
                 Est. spend
               </p>
               <p className="text-lg font-semibold">{cost}</p>
@@ -124,20 +236,20 @@ function DayItineraryDetail({ card }) {
           ) : null}
         </div>
         {highlight ? (
-          <p className="text-sm text-neutral-300">
+          <p className="text-sm text-[#4C5A6B]">
             {highlight}
           </p>
         ) : (
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-[#4C5A6B]">
             Add a headline highlight from the day planner.
           </p>
         )}
       </div>
 
-      <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-5 space-y-4">
+      <div className="bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] border border-orange-100 rounded-2xl p-5 space-y-4">
         <h3 className="text-base font-semibold">Detailed itinerary</h3>
         {timeline.length === 0 ? (
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-[#4C5A6B]">
             Detailed plans will appear here once your travel specialist completes this day.
           </p>
         ) : (
@@ -148,9 +260,9 @@ function DayItineraryDetail({ card }) {
           </div>
         )}
         {notes ? (
-          <p className="text-sm text-neutral-300">Notes: {notes}</p>
+          <p className="text-sm text-[#4C5A6B]">Notes: {notes}</p>
         ) : (
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-[#4C5A6B]">
             Add planning notes to the card to display them here.
           </p>
         )}
@@ -161,7 +273,7 @@ function DayItineraryDetail({ card }) {
 
 function EmptyState() {
   return (
-    <div className="text-center text-sm text-neutral-500">
+    <div className="text-center text-sm text-[#4C5A6B]">
       No itinerary details to show yet.
     </div>
   );
@@ -185,7 +297,7 @@ const ENTRY_META = {
 function TimelineEntry({ entry, index }) {
   const meta = ENTRY_META[entry?.type] ?? {
     label: 'Plan',
-    iconColor: 'bg-neutral-800 border-neutral-700 text-neutral-300',
+    iconColor: 'bg-orange-50 border-orange-100 text-[#4C5A6B]',
   };
   const fields = entry?.fields ?? {};
   const title =
@@ -199,7 +311,7 @@ function TimelineEntry({ entry, index }) {
   const name = fields.name;
 
   return (
-    <article className="border border-neutral-800 rounded-2xl p-4 space-y-3">
+    <article className="border border-orange-100 rounded-2xl p-4 space-y-3">
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
@@ -208,30 +320,30 @@ function TimelineEntry({ entry, index }) {
             <ExperienceIcon type={entry?.type} />
           </span>
           <div>
-            <p className="text-base font-semibold text-neutral-100">{title}</p>
+            <p className="text-base font-semibold text-slate-900">{title}</p>
             {name && entry?.type === 'food' ? (
-              <p className="text-sm text-neutral-400">{name}</p>
+              <p className="text-sm text-[#4C5A6B]">{name}</p>
             ) : null}
           </div>
         </div>
         <div className="flex flex-wrap justify-end gap-2 text-sm">
           {time ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-neutral-700 px-3 py-1 text-neutral-200">
+            <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 px-3 py-1 text-[#4C5A6B]">
               <ClockIcon /> {time}
             </span>
           ) : null}
           {price ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-neutral-700 px-3 py-1 text-neutral-200">
+            <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 px-3 py-1 text-[#4C5A6B]">
               <TagIcon /> {price}
             </span>
           ) : null}
         </div>
       </header>
-      <div className="text-sm text-neutral-300 space-y-2">
+      <div className="text-sm text-[#4C5A6B] space-y-2">
         {description ? (
           <p>{description}</p>
         ) : (
-          <p className="text-neutral-500 text-xs">
+          <p className="text-[#4C5A6B] text-xs">
             Details will be added soon.
           </p>
         )}
