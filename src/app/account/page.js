@@ -207,9 +207,8 @@ export default function AccountPage() {
   }
 
   const showAuthCard = !initializing && !user;
-  const mainClassName = showAuthCard
-    ? 'min-h-screen bg-gradient-to-b from-slate-50 via-white to-orange-50 text-neutral-800 px-4 py-10'
-    : 'min-h-screen bg-neutral-900 text-neutral-100 px-4 py-10';
+  const mainClassName =
+    'min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-slate-900 px-4 py-10';
 
   return (
     <main className={mainClassName}>
@@ -233,8 +232,8 @@ export default function AccountPage() {
               </svg>
             </div>
             <div className="space-y-1">
-              <h1 className="text-2xl font-semibold text-neutral-900">Welcome Back</h1>
-              <p className="text-sm text-neutral-500">
+              <h1 className="text-2xl font-semibold text-[#0F172A]">Welcome Back</h1>
+              <p className="text-sm text-[#374151]">
                 Sign in to access your trips and account
               </p>
             </div>
@@ -245,14 +244,14 @@ export default function AccountPage() {
               <div className="mb-6 grid grid-cols-2 gap-2 rounded-full bg-neutral-100 p-1 text-sm font-semibold">
                 <button
                   type="button"
-                  className={`rounded-full py-2 transition ${authMode === 'signin' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-800'}`}
+                  className={`rounded-full py-2 transition ${authMode === 'signin' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-[#374151] hover:text-neutral-800'}`}
                   onClick={() => setAuthMode('signin')}
                 >
                   Sign In
                 </button>
                 <button
                   type="button"
-                  className={`rounded-full py-2 transition ${authMode === 'signup' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-800'}`}
+                  className={`rounded-full py-2 transition ${authMode === 'signup' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-[#374151] hover:text-neutral-800'}`}
                   onClick={() => setAuthMode('signup')}
                 >
                   Sign Up
@@ -278,24 +277,24 @@ export default function AccountPage() {
               My Account
             </p>
             <h1 className="text-3xl font-semibold">Manage your details</h1>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-[#374151]">
               Update your profile and travel preferences. We&apos;ll use these to pre-fill future
               trip requests.
             </p>
           </header>
 
           {initializing || loadingProfile ? (
-            <div className="rounded-3xl border border-neutral-800 bg-neutral-800/60 p-8 text-center text-sm text-neutral-400">
+            <div className="rounded-3xl border border-[#E3E6EF] bg-white p-8 text-center text-sm text-[#374151] shadow-lg shadow-orange-100/60">
               Loading your account…
             </div>
           ) : null}
 
           {user ? (
-            <section className="rounded-3xl border border-neutral-800 bg-neutral-800/70 p-6">
+            <section className="rounded-3xl border border-[#E3E6EF] bg-white p-6 shadow-xl shadow-orange-100/60">
               <form className="space-y-6" onSubmit={handleSave}>
                 <div className="space-y-2">
                   <h2 className="text-2xl font-semibold">Profile</h2>
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-sm text-[#374151]">
                     Keep this info up to date so we can tailor your itineraries faster.
                   </p>
                 </div>
@@ -311,7 +310,7 @@ export default function AccountPage() {
                       onChange={(event) =>
                         setProfile((prev) => ({ ...prev, firstName: event.target.value }))
                       }
-                      className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="rounded-xl border border-[#E3E6EF] bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                       placeholder="Jane"
                     />
                   </label>
@@ -325,7 +324,7 @@ export default function AccountPage() {
                       onChange={(event) =>
                         setProfile((prev) => ({ ...prev, lastName: event.target.value }))
                       }
-                      className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="rounded-xl border border-[#E3E6EF] bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                       placeholder="Doe"
                     />
                   </label>
@@ -337,9 +336,9 @@ export default function AccountPage() {
                     type="email"
                     value={profile.email}
                     disabled
-                    className="cursor-not-allowed rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2 text-neutral-500"
+                    className="cursor-not-allowed rounded-xl border border-[#E3E6EF] bg-white px-3 py-2 text-[#374151]"
                   />
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-xs text-[#374151]">
                     Email updates require assistance from support (coming soon).
                   </span>
                 </label>
@@ -354,7 +353,7 @@ export default function AccountPage() {
                       onChange={(event) =>
                         setProfile((prev) => ({ ...prev, homeCountry: event.target.value }))
                       }
-                      className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="rounded-xl border border-[#E3E6EF] bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                     >
                       <option value="" disabled>
                         Select
@@ -376,7 +375,7 @@ export default function AccountPage() {
                       onChange={(event) =>
                         setProfile((prev) => ({ ...prev, nearestAirport: event.target.value }))
                       }
-                      className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="rounded-xl border border-[#E3E6EF] bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                       placeholder="e.g. Lisbon"
                     />
                   </label>
@@ -385,22 +384,22 @@ export default function AccountPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-xl font-semibold">Travel preferences</h3>
-                    <p className="text-sm text-neutral-400">
+                    <p className="text-sm text-[#374151]">
                       These will populate each trip request automatically. Update anytime.
                     </p>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="space-y-2 rounded-2xl border border-neutral-700 p-4">
-                      <span className="text-sm font-medium text-neutral-200">Interests</span>
+                    <div className="space-y-2 rounded-2xl border border-[#E3E6EF] bg-white/60 p-4">
+                      <span className="text-sm font-medium text-[#0F172A]">Interests</span>
                       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                         {TRAVEL_INTERESTS.map((interest) => (
                           <label
                             key={interest}
                             className={`cursor-pointer rounded-xl border px-3 py-2 ${
                               preferences.interests.includes(interest)
-                                ? 'border-orange-500 text-orange-300'
-                                : 'border-neutral-700 text-neutral-300'
+                                ? 'border-[#FF6B35] bg-white text-[#C2461E] shadow-sm shadow-orange-100'
+                                : 'border-orange-100 text-[#374151] hover:border-orange-200'
                             }`}
                           >
                             <input
@@ -420,12 +419,12 @@ export default function AccountPage() {
                 </div>
 
                 {error ? (
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  <div className="rounded-xl border border-red-500/30 bg-red-50 px-3 py-2 text-sm text-red-700">
                     {error}
                   </div>
                 ) : null}
                 {message ? (
-                  <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-200">
+                  <div className="rounded-xl border border-green-500/30 bg-green-50 px-3 py-2 text-sm text-green-700">
                     {message}
                   </div>
                 ) : null}
@@ -436,15 +435,15 @@ export default function AccountPage() {
                     disabled={saving}
                     className={`inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold transition sm:w-auto ${
                       saving
-                        ? 'cursor-not-allowed bg-neutral-700 text-neutral-400'
-                        : 'bg-orange-500 text-neutral-900 hover:bg-orange-600'
+                        ? 'cursor-not-allowed bg-orange-100 text-[#374151]'
+                        : 'bg-gradient-to-r from-[#FF8A3C] via-[#FF6B35] to-[#FF5B24] text-white shadow-md shadow-orange-200 hover:from-[#FF9B66] hover:to-[#FF5B24]'
                     }`}
                   >
                     {saving ? 'Saving…' : 'Save changes'}
                   </button>
                   <button
                     type="button"
-                    className="inline-flex w-full items-center justify-center rounded-2xl border border-neutral-700 px-5 py-3 text-sm font-semibold text-neutral-200 transition hover:text-white sm:w-auto"
+                    className="inline-flex w-full items-center justify-center rounded-2xl border border-orange-200 px-5 py-3 text-sm font-semibold text-[#C2461E] transition hover:bg-[#FFE7DA] sm:w-auto"
                     onClick={handleSignOut}
                   >
                     Sign out

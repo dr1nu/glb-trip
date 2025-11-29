@@ -25,8 +25,8 @@ export default function LogoutButton() {
       onClick={handleLogout}
       className={`text-sm font-medium px-3 py-2 rounded-lg border ${
         isLoading
-          ? 'border-neutral-700 text-neutral-500 cursor-not-allowed'
-          : 'border-neutral-700 text-neutral-300 hover:border-neutral-500'
+          ? 'border-orange-100 text-[#4C5A6B] cursor-not-allowed'
+          : 'border-orange-100 text-[#4C5A6B] hover:border-neutral-500'
       }`}
       disabled={isLoading}
     >

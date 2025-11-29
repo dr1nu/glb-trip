@@ -152,7 +152,7 @@ function TripCard({ trip, index }) {
             <h2 className="text-xl font-semibold text-neutral-900">
               {trip.destinationCountry || 'Destination TBD'}
             </h2>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-[#4C5A6B]">
               {trip.homeCountry
                 ? `Departing from ${trip.homeCountry}`
                 : 'Origin pending'}
@@ -256,7 +256,7 @@ export default async function MyTripsPage() {
             <h2 className="text-xl font-semibold text-neutral-900">
               No trips yet
             </h2>
-            <p className="mt-2 text-sm text-neutral-500">
+            <p className="mt-2 text-sm text-[#4C5A6B]">
               Plan your first adventure to see it appear here.
             </p>
             <Link
@@ -281,7 +281,7 @@ export default async function MyTripsPage() {
 function CalendarIcon() {
   return (
     <svg
-      className="h-5 w-5 text-neutral-400"
+      className="h-5 w-5 text-[#4C5A6B]"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -299,7 +299,7 @@ function CalendarIcon() {
 function ClockIcon() {
   return (
     <svg
-      className="h-5 w-5 text-neutral-400"
+      className="h-5 w-5 text-[#4C5A6B]"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -317,7 +317,7 @@ function ClockIcon() {
 function UsersIcon() {
   return (
     <svg
-      className="h-5 w-5 text-neutral-400"
+      className="h-5 w-5 text-[#4C5A6B]"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

@@ -25,15 +25,15 @@ export default async function TripBuilderPage({ params }) {
   }`;
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6 flex justify-center">
+    <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-slate-900 p-6 flex justify-center">
       <div className="w-full max-w-4xl space-y-6">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">Trip builder</h1>
-            <p className="text-sm text-neutral-400 mt-1">
+            <p className="text-sm text-[#4C5A6B] mt-1">
               Refine flights and core logistics before sharing with the client.
             </p>
-            <p className="text-xs text-neutral-500 mt-2 uppercase tracking-wide">
+            <p className="text-xs text-[#4C5A6B] mt-2 uppercase tracking-wide">
               {origin} → {destination} · {lengthLabel}
             </p>
           </div>

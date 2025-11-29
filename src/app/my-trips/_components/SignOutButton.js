@@ -24,7 +24,7 @@ export default function SignOutButton() {
       disabled={loading}
       className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition ${
         loading
-          ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-neutral-400'
+          ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-[#4C5A6B]'
           : 'border-orange-100 bg-white text-orange-600 hover:bg-orange-50'
       }`}
     >

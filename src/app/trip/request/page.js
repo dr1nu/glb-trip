@@ -191,8 +191,8 @@ export default function TripRequestPage() {
 
   if (!trip) {
     return (
-      <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex items-center justify-center">
-        <div className="text-sm text-neutral-400">Loading your trip…</div>
+      <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-[#0F172A] p-4 flex items-center justify-center">
+        <div className="text-sm text-[#4B5563]">Loading your trip…</div>
       </main>
     );
   }
@@ -219,16 +219,16 @@ export default function TripRequestPage() {
   } = result;
 
   return (
-    <main className="min-h-screen bg-neutral-900 text-neutral-100 p-4 flex justify-center">
+    <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-[#0F172A] p-4 flex justify-center">
       <div className="w-full max-w-3xl space-y-6">
-        <section className="bg-neutral-800 border border-neutral-700 rounded-2xl p-6">
+        <section className="bg-white border border-[#E3E6EF] rounded-3xl p-6 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.35)]">
           {!authReady ? (
-            <div className="text-sm text-neutral-400">Checking your account…</div>
+            <div className="text-sm text-[#4B5563]">Checking your account…</div>
           ) : user ? (
             <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <h2 className="text-xl font-semibold">Tell us about you</h2>
-              <p className="text-sm text-neutral-400 mt-1">
+              <p className="text-sm text-[#4B5563] mt-1">
                 We use these details to lock in dates, find the best routes, and
                 get back to you with a tailored itinerary.
               </p>
@@ -243,7 +243,7 @@ export default function TripRequestPage() {
                   name="firstName"
                   value={form.firstName}
                   onChange={handleInputChange}
-                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                   placeholder="Jane"
                 />
               </label>
@@ -255,7 +255,7 @@ export default function TripRequestPage() {
                   name="lastName"
                   value={form.lastName}
                   onChange={handleInputChange}
-                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                   placeholder="Doe"
                 />
               </label>
@@ -269,7 +269,7 @@ export default function TripRequestPage() {
                 name="email"
                 value={form.email}
                 onChange={handleInputChange}
-                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                 placeholder="jane@example.com"
               />
             </label>
@@ -282,7 +282,7 @@ export default function TripRequestPage() {
                   name="homeCountry"
                   value={form.homeCountry}
                   onChange={handleInputChange}
-                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                 >
                   <option value="" disabled>
                     Select your country
@@ -302,7 +302,7 @@ export default function TripRequestPage() {
                   name="nearestAirport"
                   value={form.nearestAirport}
                   onChange={handleInputChange}
-                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                   placeholder="e.g. Lisbon"
                 />
               </label>
@@ -317,7 +317,7 @@ export default function TripRequestPage() {
                   name="adults"
                   value={form.adults}
                   onChange={handleInputChange}
-                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                 />
               </label>
               <label className="flex flex-col gap-2 text-sm">
@@ -328,21 +328,21 @@ export default function TripRequestPage() {
                   name="children"
                   value={form.children}
                   onChange={handleInputChange}
-                  className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                 />
               </label>
             </div>
 
-            <div className="border border-neutral-700 rounded-xl p-4 space-y-3">
+            <div className="border border-[#E3E6EF] rounded-xl p-4 bg-white space-y-3">
               <span className="block text-sm font-medium">Baggage preference</span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                 {BAGGAGE_OPTIONS.map((option) => (
                   <label
                     key={option.key}
-                    className={`rounded-xl border px-3 py-2 text-center cursor-pointer ${
+                    className={`rounded-xl border px-3 py-2 text-center cursor-pointer transition ${
                       form.baggage === option.key
-                        ? 'border-orange-500 text-orange-300'
-                        : 'border-neutral-700 text-neutral-300'
+                        ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
+                        : 'border-[#E5E7EF] text-[#0F172A] bg-white hover:border-[#D8DFEC]'
                     }`}
                   >
                     <input
@@ -359,16 +359,16 @@ export default function TripRequestPage() {
               </div>
             </div>
 
-            <div className="space-y-3 border border-neutral-700 rounded-xl p-4">
+            <div className="space-y-3 border border-[#E3E6EF] rounded-xl p-4 bg-white">
               <span className="block text-sm font-medium">When do you want to travel?</span>
               <div className="flex flex-wrap gap-3 text-sm">
                 {TRAVEL_WINDOW_OPTIONS.map((option) => (
                   <label
                     key={option.key}
-                    className={`rounded-xl border px-3 py-2 cursor-pointer ${
+                    className={`rounded-xl border px-3 py-2 cursor-pointer transition ${
                       form.travelWindow === option.key
-                        ? 'border-orange-500 text-orange-300'
-                        : 'border-neutral-700 text-neutral-300'
+                        ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
+                        : 'border-[#E5E7EF] text-[#0F172A] bg-white hover:border-[#D8DFEC]'
                     }`}
                   >
                     <input
@@ -385,36 +385,36 @@ export default function TripRequestPage() {
               </div>
               {form.travelWindow === 'flexible' ? (
                 <div className="flex flex-col gap-2">
-                  <span className="text-sm text-neutral-400">Preferred month</span>
+                  <span className="text-sm text-[#4B5563]">Preferred month</span>
                   <input
                     type="month"
                     name="flexibleMonth"
                     value={form.flexibleMonth}
                     onChange={handleInputChange}
-                    className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                   />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-neutral-400">From</span>
+                    <span className="text-[#4B5563]">From</span>
                     <input
                       type="date"
                       name="dateFrom"
                       value={form.dateFrom}
                       onChange={handleInputChange}
-                      className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                       required={form.travelWindow !== 'flexible'}
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-neutral-400">To</span>
+                    <span className="text-[#4B5563]">To</span>
                     <input
                       type="date"
                       name="dateTo"
                       value={form.dateTo}
                       onChange={handleInputChange}
-                      className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                       required={form.travelWindow !== 'flexible'}
                     />
                   </label>
@@ -422,16 +422,16 @@ export default function TripRequestPage() {
               )}
             </div>
 
-            <div className="border border-neutral-700 rounded-xl p-4 space-y-2">
+            <div className="border border-[#E3E6EF] rounded-xl p-4 bg-white space-y-2">
               <span className="text-sm font-medium">Accommodation preference</span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                 {ACCOMMODATION_OPTIONS.map((option) => (
                   <label
                     key={option.key}
-                    className={`rounded-xl border px-3 py-2 cursor-pointer ${
+                    className={`rounded-xl border px-3 py-2 cursor-pointer transition ${
                       form.accommodation === option.key
-                        ? 'border-orange-500 text-orange-300'
-                        : 'border-neutral-700 text-neutral-300'
+                        ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
+                        : 'border-[#E5E7EF] text-[#0F172A] bg-white hover:border-[#D8DFEC]'
                     }`}
                   >
                     <input
@@ -454,10 +454,10 @@ export default function TripRequestPage() {
                 {TRAVEL_INTERESTS.map((interest) => (
                   <label
                     key={interest}
-                    className={`rounded-xl border px-3 py-2 cursor-pointer ${
+                    className={`rounded-xl border px-3 py-2 cursor-pointer transition ${
                       form.interests.includes(interest)
-                        ? 'border-orange-500 text-orange-300'
-                        : 'border-neutral-700 text-neutral-300'
+                        ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
+                        : 'border-[#E5E7EF] text-[#0F172A] bg-white hover:border-[#D8DFEC]'
                     }`}
                   >
                     <input
@@ -488,18 +488,21 @@ export default function TripRequestPage() {
                 value={form.details}
                 onChange={handleInputChange}
                 rows={4}
-                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A] resize-none"
                 placeholder="Dietary needs, accessibility, must-see experiences..."
               />
             </label>
 
-            <div className="rounded-xl border border-yellow-400/30 bg-yellow-500/5 text-sm text-yellow-200 p-3">
-              After submitting, our travel experts will review your request and send a personalised
-              itinerary within 24–48 hours.
+            <div className="rounded-xl border border-[#E3E6EF] bg-[#F4F6FB] text-sm text-[#0F172A] p-3 flex gap-3">
+              <span className="mt-0.5 text-[#FF6B35]">•</span>
+              <span>
+                After submitting, our travel experts will review your request and send a personalised
+                itinerary within 24–48 hours.
+              </span>
             </div>
 
             {error && (
-              <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2">
+              <div className="text-sm text-red-500 bg-red-50 border border-red-500/30 rounded-xl px-3 py-2">
                 {error}
               </div>
             )}
@@ -507,10 +510,10 @@ export default function TripRequestPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full font-semibold text-sm py-3 rounded-xl transition-colors ${
+              className={`w-full font-semibold text-sm py-3 rounded-xl transition ${
                 isSubmitting
-                  ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                  : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
+                  ? 'bg-slate-100 text-[#4B5563] cursor-not-allowed'
+                  : 'bg-gradient-to-r from-[#FF8A3C] via-[#FF6B35] to-[#FF5B24] text-white shadow-md shadow-orange-200 hover:from-[#FF9B55] hover:via-[#FF6B35] hover:to-[#FF4A12]'
               }`}
             >
               {isSubmitting ? 'Submitting…' : 'Request My Holiday!'}
@@ -541,7 +544,7 @@ export default function TripRequestPage() {
           )}
         </section>
 
-        <section className="text-center text-sm text-neutral-500">
+        <section className="text-center text-sm text-[#4B5563]">
           <p>
             Already booked some trips?{' '}
             <Link className="text-orange-400 hover:text-orange-300" href="/my-trips">
