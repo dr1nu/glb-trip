@@ -126,9 +126,11 @@ function TripCard({ trip, index }) {
     IMAGE_PLACEHOLDERS[index % IMAGE_PLACEHOLDERS.length] ??
     IMAGE_PLACEHOLDERS[0];
   const status = getTripStatus(trip);
+  const travelWindow = trip.preferences?.travelWindow;
   const dateRange = formatTripDates(trip);
   const duration = formatDuration(trip);
   const travelers = formatTravelers(trip);
+  const showDuration = travelWindow === 'flexible';
 
   return (
     <article className="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
@@ -167,7 +169,7 @@ function TripCard({ trip, index }) {
 
         <div className="flex flex-wrap gap-5 text-sm text-neutral-600">
           <TripInfoItem icon={<CalendarIcon />} label={dateRange} />
-          <TripInfoItem icon={<ClockIcon />} label={duration} />
+          {showDuration && <TripInfoItem icon={<ClockIcon />} label={duration} />}
           <TripInfoItem icon={<UsersIcon />} label={travelers} />
         </div>
       </div>
