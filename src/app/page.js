@@ -904,7 +904,6 @@ function ResultCard({
   onRequest,
 }) {
   const {
-    perDay,
     bucket,
     accom,
     other,
@@ -914,8 +913,6 @@ function ResultCard({
     totalHigh,
     fits,
     suggestion,
-    seasonality = {},
-    weekend = {},
   } = result;
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState('');
@@ -924,124 +921,139 @@ function ResultCard({
   const activitiesEstimate = other * tripLengthDays;
   const totalEstimate = flightsEstimate + accommodationEstimate + activitiesEstimate;
   const dateRangeLabel = formatDateRange(startDate, endDate);
-  const seasonLabel = seasonality.label ?? 'Standard season';
-  const weekendLabel = weekend.label ?? 'Weekday travel';
-  const seasonFactor = seasonality.factor ?? 1.0;
-  const weekendFactor = weekend.factor ?? 1.0;
   const destinationLabel = destinationCity ? `${destinationCity}, ${destinationCountry}` : destinationCountry;
   const destinationLabelShort = destinationLabel || destinationCountry;
+  const handleContinue = () => {
+    if (isContinuing) return;
+    setIsContinuing(true);
+    setContinueError('');
+    try {
+      onRequest?.({
+        destinationCountry,
+        destinationCity,
+        homeCountry,
+        startDate,
+        endDate,
+        tripLengthDays,
+        budgetTotal,
+        result,
+      });
+    } catch (err) {
+      console.error('Failed to continue', err);
+      setContinueError(err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setIsContinuing(false);
+    }
+  };
 
   return (
     <section className="space-y-5">
       <div className="rounded-[32px] border border-white/80 bg-white p-6 shadow-xl shadow-orange-100/50 space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Your instant estimate</h2>
-            <p className="text-sm text-[#4C5A6B]">
-              {destinationLabelShort} • {dateRangeLabel}
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#FF6B35]">
+              Instant estimate
             </p>
+            <h2 className="text-xl font-semibold text-neutral-900">{destinationLabelShort}</h2>
+            <p className="text-sm text-[#4C5A6B]">{dateRangeLabel}</p>
           </div>
           <button
-            className="text-xs font-medium text-[#4C5A6B] hover:text-neutral-700 underline"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
             onClick={onBack}
           >
-            ← edit answers
+            <span className="text-sm">✎</span>
+            <span>Edit answers</span>
           </button>
         </div>
 
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center space-y-2">
-          <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">Estimated total cost</p>
-          <p className="text-4xl font-semibold text-neutral-900">{euro(totalEstimate)}</p>
-          <p className="text-sm text-[#4C5A6B]">
-            {dateRangeLabel} • {tripLengthDays} day{tripLengthDays === 1 ? '' : 's'} • {bucket}
-          </p>
-          <p className="text-xs text-[#4C5A6B]">
-            {seasonLabel} ({seasonFactor}×) • {weekendLabel} ({weekendFactor}×)
-          </p>
+        <div className="rounded-2xl border border-orange-50 bg-gradient-to-br from-[#FFF4E8] via-white to-[#FFF9F3] p-5 shadow-inner shadow-orange-100/50">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-wide text-[#C2461E]">Estimated total</p>
+              <p className="text-4xl font-semibold text-neutral-900">{euro(totalEstimate)}</p>
+              <p className="text-sm text-[#4C5A6B]">
+                {tripLengthDays} day{tripLengthDays === 1 ? '' : 's'} • {bucket}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <span className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-[#C2461E]">
+                Travel style: {styleLabel}
+              </span>
+              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-[#4C5A6B]">
+                Pricing auto-adjusts for your dates
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3">
-          <EstimateRow label="Flights" value={euro(flightsEstimate)} color="text-sky-500" />
           <EstimateRow
+            icon="flight"
+            label="Flights"
+            value={euro(flightsEstimate)}
+            color="text-sky-600"
+          />
+          <EstimateRow
+            icon="stay"
             label="Accommodation"
             value={euro(accommodationEstimate)}
-            color="text-purple-500"
+            color="text-indigo-600"
           />
           <EstimateRow
+            icon="fun"
             label="Activities & experiences"
             value={euro(activitiesEstimate)}
-            color="text-emerald-500"
+            color="text-emerald-600"
           />
         </div>
+
+        {continueError && <div className="text-sm text-red-500">{continueError}</div>}
+        <button
+          className={`w-full rounded-2xl py-3 text-sm font-semibold transition ${
+            isContinuing
+              ? 'cursor-not-allowed bg-slate-200 text-[#4C5A6B]'
+              : 'bg-gradient-to-r from-[#FF8A3C] via-[#FF6B35] to-[#FF5B24] text-white shadow-lg shadow-orange-200 hover:from-[#FF9B55] hover:via-[#FF6B35] hover:to-[#FF4A12]'
+          }`}
+          onClick={handleContinue}
+          disabled={isContinuing}
+        >
+          {isContinuing ? 'Opening form…' : 'Request itinerary →'}
+        </button>
 
         <div className="rounded-2xl border border-blue-100 bg-blue-50 text-blue-700 text-sm p-3">
           This is an estimated range. Final pricing will be refined once we review your dates and
           must-haves.
         </div>
-      </div>
 
-      <div className="rounded-[32px] border border-white/80 bg-white p-5 shadow-xl shadow-orange-100/50 space-y-4">
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
-          <div className="mb-2 flex justify-between">
-            <span className="text-[#4C5A6B]">Estimated total</span>
-            <span className="font-semibold text-neutral-900">
-              {euro(totalLow)} – {euro(totalHigh)}
+        <div className="rounded-2xl border border-white/80 bg-white p-4 shadow-inner shadow-orange-50 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">Budget check</p>
+              <p className="text-lg font-semibold text-neutral-900">
+                {euro(totalLow)} – {euro(totalHigh)}
+              </p>
+              <p className="text-sm text-[#4C5A6B]">Your budget: {euro(budgetTotal)}</p>
+            </div>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                fits
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                  : 'bg-rose-50 text-rose-700 border border-rose-100'
+              }`}
+            >
+              {fits ? 'Within budget' : 'Needs tweaks'}
             </span>
           </div>
+
           <BudgetGauge budget={budgetTotal} low={totalLow} high={totalHigh} />
-          <div className="mt-3 flex justify-between text-sm">
-            <span className="text-[#4C5A6B]">Your budget</span>
-            <span className="font-semibold text-neutral-900">{euro(budgetTotal)}</span>
-          </div>
+
           <div
-            className={`mt-3 text-center text-sm font-semibold ${
-              fits ? 'text-emerald-600' : 'text-rose-600'
+            className={`text-sm font-semibold ${
+              fits ? 'text-emerald-700' : 'text-rose-700'
             }`}
           >
             {fits ? 'This fits your budget.' : `Over budget. ${suggestion}`}
           </div>
-        </div>
-
-        <div className="text-center text-[13px] text-neutral-600">
-          <div className="mb-1 font-semibold text-neutral-900">
-            Ready to turn this into a personalised itinerary?
-          </div>
-          <div>
-            Add your dates & specifics next—your travel specialist will take it from there.
-          </div>
-          {continueError && <div className="mt-3 text-sm text-red-500">{continueError}</div>}
-          <button
-            className={`mt-3 w-full rounded-2xl py-3 text-sm font-semibold transition ${
-              isContinuing
-                ? 'cursor-not-allowed bg-slate-200 text-[#4C5A6B]'
-                : 'bg-gradient-to-r from-[#FF8A3C] via-[#FF6B35] to-[#FF5B24] text-white shadow-lg shadow-orange-200 hover:from-[#FF9B55] hover:via-[#FF6B35] hover:to-[#FF4A12]'
-            }`}
-            onClick={() => {
-              if (isContinuing) return;
-              setIsContinuing(true);
-              setContinueError('');
-              try {
-                onRequest?.({
-                  destinationCountry,
-                  destinationCity,
-                  homeCountry,
-                  startDate,
-                  endDate,
-                  tripLengthDays,
-                  budgetTotal,
-                  result,
-                });
-              } catch (err) {
-                console.error('Failed to continue', err);
-                setContinueError(err instanceof Error ? err.message : 'Please try again.');
-              } finally {
-                setIsContinuing(false);
-              }
-            }}
-            disabled={isContinuing}
-          >
-            {isContinuing ? 'Opening form…' : 'Continue →'}
-          </button>
         </div>
       </div>
     </section>
@@ -1103,11 +1115,78 @@ function formatDateRange(startValue, endValue) {
 function euro(n) { return '€' + Math.round(n); }
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
-function EstimateRow({ label, value, color }) {
+const BREAKDOWN_ICONS = {
+  flight: (props) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+    </svg>
+  ),
+  stay: (props) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M10 22v-6.57" />
+      <path d="M12 11h.01" />
+      <path d="M12 7h.01" />
+      <path d="M14 15.43V22" />
+      <path d="M15 16a5 5 0 0 0-6 0" />
+      <path d="M16 11h.01" />
+      <path d="M16 7h.01" />
+      <path d="M8 11h.01" />
+      <path d="M8 7h.01" />
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+    </svg>
+  ),
+  fun: (props) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+      <path d="M13 5v2" />
+      <path d="M13 17v2" />
+      <path d="M13 11v2" />
+    </svg>
+  ),
+};
+
+function BreakdownIcon({ name, className }) {
+  const Icon = BREAKDOWN_ICONS[name];
+  if (!Icon) return null;
+  return <Icon className={className} aria-hidden="true" />;
+}
+
+function EstimateRow({ label, value, color, icon }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white/80 px-4 py-3 shadow">
-      <div className="flex items-center gap-3 text-sm font-semibold text-neutral-700">
-        <span className={`text-lg ${color}`}>•</span>
+    <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white/80 px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-3 text-sm font-semibold text-neutral-800">
+        <div
+          className={`flex h-11 w-11 items-center justify-center rounded-xl bg-slate-50 ${color}`}
+        >
+          {icon ? <BreakdownIcon name={icon} className="h-5 w-5" /> : <span>•</span>}
+        </div>
         <span>{label}</span>
       </div>
       <div className="text-sm font-semibold text-neutral-900">{value}</div>
