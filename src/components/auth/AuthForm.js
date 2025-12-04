@@ -166,7 +166,6 @@ export default function AuthForm({
         });
         if (authError) throw authError;
         const { data } = await supabase.auth.getUser();
-        await persistProfile();
         const payload = composeProfilePayload(data?.user ?? null);
         onSuccess?.(payload);
       }
