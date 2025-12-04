@@ -43,7 +43,15 @@ export default async function AdminPage() {
               : `Showing ${trips.length} trip${trips.length === 1 ? '' : 's'}.`}
           </p>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/templates"
+            className="text-sm font-medium text-neutral-300 hover:text-white"
+          >
+            Templates →
+          </Link>
+          <LogoutButton />
+        </div>
       </header>
 
       {trips.length === 0 ? (

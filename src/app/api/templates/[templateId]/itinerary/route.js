@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getTrip, updateTrip } from '@/lib/db';
 import {
   applyCardFieldUpdates,
   normalizeFieldUpdates,
   sanitizeTimeline,
 } from '@/lib/itinerary';
+import { getTemplate, updateTemplate } from '@/lib/templates';
+
+export const dynamic = 'force-dynamic';
 
 export async function PATCH(request, context) {
   const params = context?.params ? await context.params : {};
-  const tripId = params.tripId ?? extractTripIdFromUrl(request.url);
-
-  if (!tripId) {
+  const templateId = params.templateId ?? extractTemplateIdFromUrl(request.url);
+  if (!templateId) {
     return NextResponse.json(
-      { error: 'Trip identifier is required.' },
+      { error: 'Template identifier is required.' },
       { status: 400 }
     );
   }
@@ -36,10 +37,10 @@ export async function PATCH(request, context) {
   }
 
   try {
-    const trip = await getTrip(tripId);
-    if (!trip?.itinerary?.cards?.length) {
+    const template = await getTemplate(templateId);
+    if (!template?.itinerary?.cards?.length) {
       return NextResponse.json(
-        { error: 'Itinerary not found for trip.' },
+        { error: 'Itinerary not found for template.' },
         { status: 404 }
       );
     }
@@ -68,7 +69,7 @@ export async function PATCH(request, context) {
       );
     }
 
-    const nextCards = trip.itinerary.cards.map((card) => {
+    const nextCards = template.itinerary.cards.map((card) => {
       if (!cardsMap.has(card.id)) return card;
       const updates = cardsMap.get(card.id);
       let nextCard = card;
@@ -84,13 +85,12 @@ export async function PATCH(request, context) {
       return nextCard;
     });
 
-    const updated = await updateTrip(tripId, {
+    const updated = await updateTemplate(templateId, {
       itinerary: {
-        ...trip.itinerary,
+        ...template.itinerary,
         updatedAt: new Date().toISOString(),
         cards: nextCards,
       },
-      published: true,
     });
 
     if (!updated?.itinerary?.cards) {
@@ -105,23 +105,23 @@ export async function PATCH(request, context) {
       { status: 200 }
     );
   } catch (err) {
-    console.error('Failed to update itinerary', err);
+    console.error('Failed to update template itinerary', err);
     return NextResponse.json(
-      { error: 'Failed to update itinerary.' },
+      { error: 'Failed to update template itinerary.' },
       { status: 500 }
     );
   }
 }
 
-function extractTripIdFromUrl(url) {
+function extractTemplateIdFromUrl(url) {
   try {
     const { pathname } = new URL(url, 'http://localhost');
     const parts = pathname.split('/').filter(Boolean);
-    const tripIndex = parts.indexOf('trips');
-    if (tripIndex === -1 || tripIndex + 1 >= parts.length) {
+    const templateIndex = parts.indexOf('templates');
+    if (templateIndex === -1 || templateIndex + 1 >= parts.length) {
       return null;
     }
-    return parts[tripIndex + 1] ?? null;
+    return parts[templateIndex + 1] ?? null;
   } catch {
     return null;
   }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getTrip } from '@/lib/db';
+import { listTemplates } from '@/lib/templates';
 import TripBuilderClient from './_components/TripBuilderClient';
 
 export const runtime = 'nodejs';
@@ -23,6 +24,9 @@ export default async function TripBuilderPage({ params }) {
   const lengthLabel = `${trip.tripLengthDays} day${
     trip.tripLengthDays === 1 ? '' : 's'
   }`;
+  const templates = await listTemplates({
+    destinationCountry: trip.destinationCountry,
+  });
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-slate-900 p-6 flex justify-center">
@@ -45,7 +49,13 @@ export default async function TripBuilderPage({ params }) {
           </Link>
         </header>
 
-        <TripBuilderClient tripId={tripId} initialCards={itinerary.cards} />
+        <TripBuilderClient
+          tripId={tripId}
+          initialCards={itinerary.cards}
+          destinationCountry={trip.destinationCountry}
+          tripLengthDays={trip.tripLengthDays}
+          templates={templates}
+        />
       </div>
     </main>
   );
