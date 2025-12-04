@@ -9,6 +9,7 @@ import {
   mergeTravelPreferences,
   TRAVEL_INTERESTS,
 } from '@/lib/travel-preferences';
+import { getAirportsForCountry } from '@/lib/airports-by-country';
 
 export default function AccountPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -30,6 +31,10 @@ export default function AccountPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [authMode, setAuthMode] = useState('signin');
+  const airportsForCountry = useMemo(
+    () => getAirportsForCountry(profile.homeCountry),
+    [profile.homeCountry]
+  );
 
   useEffect(() => {
     let active = true;
@@ -103,6 +108,26 @@ export default function AccountPage() {
       active = false;
     };
   }, [supabase, user]);
+
+  useEffect(() => {
+    if (!profile.homeCountry) {
+      setProfile((prev) =>
+        prev.nearestAirport ? { ...prev, nearestAirport: '' } : prev
+      );
+      return;
+    }
+
+    if (airportsForCountry.length === 0) {
+      return;
+    }
+
+    setProfile((prev) => {
+      if (prev.nearestAirport && airportsForCountry.includes(prev.nearestAirport)) {
+        return prev;
+      }
+      return { ...prev, nearestAirport: airportsForCountry[0] };
+    });
+  }, [airportsForCountry, profile.homeCountry]);
 
   function handlePreferenceChange(name, value) {
     setPreferences((prev) => ({ ...prev, [name]: value }));
@@ -367,17 +392,28 @@ export default function AccountPage() {
                   </label>
                   <label className="flex flex-col gap-2 text-sm">
                     <span className="font-medium">Nearest Airport</span>
-                    <input
+                    <select
                       required
-                      type="text"
                       name="nearestAirport"
                       value={profile.nearestAirport}
+                      disabled={!profile.homeCountry || airportsForCountry.length === 0}
                       onChange={(event) =>
                         setProfile((prev) => ({ ...prev, nearestAirport: event.target.value }))
                       }
-                      className="rounded-xl border border-[#E3E6EF] bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                      placeholder="e.g. Lisbon"
-                    />
+                      className="rounded-xl border border-[#E3E6EF] bg-white px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A] disabled:cursor-not-allowed disabled:bg-neutral-50"
+                    >
+                      <option value="" disabled>
+                        {profile.homeCountry ? 'Select an airport' : 'Select your home country first'}
+                      </option>
+                      {airportsForCountry.map((airport) => (
+                        <option key={airport} value={airport}>
+                          {airport}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-xs text-[#374151]">
+                      We pre-fill major international airports based on your home country.
+                    </span>
                   </label>
                 </div>
 
@@ -390,16 +426,21 @@ export default function AccountPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="space-y-2 rounded-2xl border border-[#E3E6EF] bg-white/60 p-4">
-                      <span className="text-sm font-medium text-[#0F172A]">Interests</span>
+                  <div className="space-y-2 rounded-2xl border border-[#E3E6EF] bg-white/60 p-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-[#0F172A]">Interests</span>
+                        <span className="text-xs text-[#6B7280]">
+                          Tap to select (toggle on/off)
+                        </span>
+                      </div>
                       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                         {TRAVEL_INTERESTS.map((interest) => (
                           <label
                             key={interest}
-                            className={`cursor-pointer rounded-xl border px-3 py-2 ${
+                            className={`flex min-h-[56px] items-center rounded-xl border px-3 py-2 transition ${
                               preferences.interests.includes(interest)
-                                ? 'border-[#FF6B35] bg-white text-[#C2461E] shadow-sm shadow-orange-100'
-                                : 'border-orange-100 text-[#374151] hover:border-orange-200'
+                                ? 'border-[#FF6B35] bg-gradient-to-br from-white via-[#FFF4EC] to-white text-[#C2461E] shadow-sm shadow-orange-100'
+                                : 'border-orange-100 text-[#374151] hover:border-orange-200 hover:bg-orange-50/50'
                             }`}
                           >
                             <input
@@ -409,7 +450,18 @@ export default function AccountPage() {
                               onChange={(event) => toggleInterest(interest, event.target.checked)}
                               className="hidden"
                             />
-                            {interest}
+                            <div className="flex w-full items-center justify-between gap-2">
+                              <span>{interest}</span>
+                              <span
+                                className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold leading-none shrink-0 ${
+                                  preferences.interests.includes(interest)
+                                    ? 'bg-[#FF6B35] text-white'
+                                    : 'border border-orange-200 text-[#C2461E]'
+                                }`}
+                              >
+                                {preferences.interests.includes(interest) ? '✓' : '+'}
+                              </span>
+                            </div>
                           </label>
                         ))}
                       </div>
