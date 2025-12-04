@@ -8,6 +8,7 @@ create table if not exists public.trips (
   home_country text,
   trip_length_days integer,
   budget_total integer,
+  image_path text,
   result jsonb,
   contact jsonb,
   preferences jsonb,

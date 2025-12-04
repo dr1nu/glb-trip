@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTrip } from '@/lib/db';
 import CreateItineraryButton from './_components/CreateItineraryButton';
 import ItinerarySummary from './_components/ItinerarySummary';
+import TripImagePicker from './_components/TripImagePicker';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,7 @@ export default async function TripPage({ params, searchParams }) {
     contact = null,
     itinerary = null,
     preferences = null,
+    imagePath = null,
   } = trip;
 
   const {
@@ -92,6 +94,14 @@ export default async function TripPage({ params, searchParams }) {
             <Fact label="Budget" value={euro(budgetTotal)} />
             <Fact label="Daily spend" value={perDay ? `${euro(perDay)} / day` : 'Not captured'} />
           </div>
+
+          {fromAdmin ? (
+            <TripImagePicker
+              tripId={id}
+              destinationCountry={destinationCountry}
+              initialImagePath={imagePath ?? ''}
+            />
+          ) : null}
 
           <div className="bg-white border border-orange-100 rounded-xl p-4 space-y-3 text-sm">
             <div className="flex flex-wrap justify-between gap-2">

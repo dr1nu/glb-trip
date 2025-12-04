@@ -24,6 +24,18 @@ const IMAGE_PLACEHOLDERS = [
   'from-blue-200 via-cyan-200 to-emerald-200',
 ];
 
+const TRIP_IMAGE_BUCKET = 'trip-country-images';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+function buildPublicStorageUrl(path) {
+  if (!path || !SUPABASE_URL) return null;
+  const encoded = path
+    .split('/')
+    .map((part) => encodeURIComponent(part))
+    .join('/');
+  return `${SUPABASE_URL}/storage/v1/object/public/${TRIP_IMAGE_BUCKET}/${encoded}`;
+}
+
 function parseDate(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -131,15 +143,24 @@ function TripCard({ trip, index }) {
   const duration = formatDuration(trip);
   const travelers = formatTravelers(trip);
   const showDuration = travelWindow === 'flexible';
+  const imageUrl = trip.imageUrl ?? null;
 
   return (
     <article className="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
       <div className="w-full overflow-hidden rounded-2xl sm:w-48">
-        <div
-          className={`relative h-36 w-full bg-gradient-to-br ${gradient}`}
-        >
+        <div className="relative h-36 w-full overflow-hidden rounded-2xl bg-gradient-to-br" style={!imageUrl ? { backgroundImage: undefined } : undefined}>
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={trip.destinationCountry ? `Trip to ${trip.destinationCountry}` : 'Trip image'}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className={`h-full w-full bg-gradient-to-br ${gradient}`} />
+          )}
           <div className="absolute inset-0 bg-black/15" />
-          <div className="relative flex h-full w-full flex-col justify-end p-4 text-white">
+          <div className="absolute inset-0 flex flex-col justify-end p-4 text-white">
             <p className="text-xs uppercase tracking-wide opacity-80">Explore</p>
             <p className="text-lg font-semibold truncate">
               {trip.destinationCountry || 'Destination TBD'}
@@ -231,6 +252,16 @@ export default async function MyTripsPage() {
   }
 
   const trips = await listTripsByOwner(user.id);
+  const storage = supabase.storage.from(TRIP_IMAGE_BUCKET);
+  const tripsWithImages = trips.map((trip) => {
+    if (trip.imagePath) {
+      const directUrl = buildPublicStorageUrl(trip.imagePath);
+      const { data } = storage.getPublicUrl(trip.imagePath);
+      const publicUrl = data?.publicUrl || directUrl;
+      return { ...trip, imageUrl: publicUrl };
+    }
+    return { ...trip, imageUrl: null };
+  });
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] text-neutral-900">
@@ -270,7 +301,7 @@ export default async function MyTripsPage() {
           </div>
         ) : (
           <div className="space-y-5">
-            {trips.map((trip, index) => (
+            {tripsWithImages.map((trip, index) => (
               <TripCard key={trip.id} trip={trip} index={index} />
             ))}
           </div>
