@@ -43,11 +43,19 @@ export default async function AdminPage() {
               : `Showing ${trips.length} trip${trips.length === 1 ? '' : 's'}.`}
           </p>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/templates"
+            className="text-sm font-medium text-neutral-300 hover:text-white"
+          >
+            Templates →
+          </Link>
+          <LogoutButton />
+        </div>
       </header>
 
       {trips.length === 0 ? (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 text-center text-sm text-neutral-400">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 text-center text-sm text-neutral-300">
           Generate a trip from the homepage to see it appear here.
         </div>
       ) : (
@@ -74,7 +82,7 @@ export default async function AdminPage() {
                     <h2 className="text-lg font-semibold">
                       {homeCountry} → {destinationCountry}
                     </h2>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-neutral-400">
                       Generated {formatDate(createdAt)} · {tripLengthDays} day
                       {tripLengthDays === 1 ? '' : 's'}
                     </p>
@@ -82,14 +90,14 @@ export default async function AdminPage() {
                   <div className="flex items-center gap-4">
                     <Link
                       href={`/trip/${id}?from=admin`}
-                      className="text-sm font-medium text-orange-400 hover:text-orange-300"
+                      className="text-sm font-medium text-orange-300 hover:text-orange-200"
                     >
                       View trip →
                     </Link>
                     {itinerary?.cards?.length ? (
                       <Link
                         href={`/trip/${id}/builder?from=admin`}
-                        className="text-sm font-medium text-orange-400 hover:text-orange-300"
+                        className="text-sm font-medium text-orange-300 hover:text-orange-200"
                       >
                         Open builder →
                       </Link>
@@ -138,8 +146,8 @@ export default async function AdminPage() {
                 </dl>
 
                 {trip.contact ? (
-                  <div className="mt-4 bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-sm">
-                    <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+                  <div className="mt-4 bg-neutral-800 border border-neutral-700 rounded-xl p-4 text-sm">
+                    <p className="text-[11px] uppercase tracking-wide text-neutral-400">
                       Traveller account
                     </p>
                     <div className="text-neutral-100 font-medium">
@@ -149,13 +157,13 @@ export default async function AdminPage() {
                           .join(' ') ||
                         '—'}
                     </div>
-                    <div className="text-neutral-400">{trip.contact.email || '—'}</div>
-                    <div className="text-neutral-500 text-xs mt-1">
+                    <div className="text-neutral-300">{trip.contact.email || '—'}</div>
+                    <div className="text-neutral-400 text-xs mt-1">
                       Home:{' '}
                       {trip.contact.homeCountry || trip.contact.city || '—'} • Airport:{' '}
                       {trip.contact.nearestAirport || '—'}
                     </div>
-                    <div className="text-neutral-500 text-xs mt-1">
+                    <div className="text-neutral-400 text-xs mt-1">
                       Adults: {trip.contact.adults ?? '—'} • Children:{' '}
                       {trip.contact.children ?? '—'}
                     </div>
@@ -178,11 +186,11 @@ export default async function AdminPage() {
 
 function Fact({ label, value }) {
   return (
-    <div className="bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3">
-      <dt className="text-[11px] uppercase tracking-wide text-neutral-500">
+    <div className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3">
+      <dt className="text-[11px] uppercase tracking-wide text-neutral-400">
         {label}
       </dt>
-      <dd className="text-sm font-medium text-neutral-200 mt-1">{value}</dd>
+      <dd className="text-sm font-medium text-neutral-100 mt-1">{value}</dd>
     </div>
   );
 }

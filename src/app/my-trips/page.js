@@ -24,6 +24,18 @@ const IMAGE_PLACEHOLDERS = [
   'from-blue-200 via-cyan-200 to-emerald-200',
 ];
 
+const TRIP_IMAGE_BUCKET = 'trip-country-images';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+function buildPublicStorageUrl(path) {
+  if (!path || !SUPABASE_URL) return null;
+  const encoded = path
+    .split('/')
+    .map((part) => encodeURIComponent(part))
+    .join('/');
+  return `${SUPABASE_URL}/storage/v1/object/public/${TRIP_IMAGE_BUCKET}/${encoded}`;
+}
+
 function parseDate(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -126,18 +138,29 @@ function TripCard({ trip, index }) {
     IMAGE_PLACEHOLDERS[index % IMAGE_PLACEHOLDERS.length] ??
     IMAGE_PLACEHOLDERS[0];
   const status = getTripStatus(trip);
+  const travelWindow = trip.preferences?.travelWindow;
   const dateRange = formatTripDates(trip);
   const duration = formatDuration(trip);
   const travelers = formatTravelers(trip);
+  const showDuration = travelWindow === 'flexible';
+  const imageUrl = trip.imageUrl ?? null;
 
   return (
     <article className="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
       <div className="w-full overflow-hidden rounded-2xl sm:w-48">
-        <div
-          className={`relative h-36 w-full bg-gradient-to-br ${gradient}`}
-        >
+        <div className="relative h-36 w-full overflow-hidden rounded-2xl bg-gradient-to-br" style={!imageUrl ? { backgroundImage: undefined } : undefined}>
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={trip.destinationCountry ? `Trip to ${trip.destinationCountry}` : 'Trip image'}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className={`h-full w-full bg-gradient-to-br ${gradient}`} />
+          )}
           <div className="absolute inset-0 bg-black/15" />
-          <div className="relative flex h-full w-full flex-col justify-end p-4 text-white">
+          <div className="absolute inset-0 flex flex-col justify-end p-4 text-white">
             <p className="text-xs uppercase tracking-wide opacity-80">Explore</p>
             <p className="text-lg font-semibold truncate">
               {trip.destinationCountry || 'Destination TBD'}
@@ -152,7 +175,7 @@ function TripCard({ trip, index }) {
             <h2 className="text-xl font-semibold text-neutral-900">
               {trip.destinationCountry || 'Destination TBD'}
             </h2>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-[#4C5A6B]">
               {trip.homeCountry
                 ? `Departing from ${trip.homeCountry}`
                 : 'Origin pending'}
@@ -167,7 +190,7 @@ function TripCard({ trip, index }) {
 
         <div className="flex flex-wrap gap-5 text-sm text-neutral-600">
           <TripInfoItem icon={<CalendarIcon />} label={dateRange} />
-          <TripInfoItem icon={<ClockIcon />} label={duration} />
+          {showDuration && <TripInfoItem icon={<ClockIcon />} label={duration} />}
           <TripInfoItem icon={<UsersIcon />} label={travelers} />
         </div>
       </div>
@@ -192,27 +215,53 @@ export default async function MyTripsPage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] px-4 py-12 text-neutral-900">
-        <div className="mx-auto w-full max-w-md rounded-[32px] border border-white/80 bg-white p-10 text-center shadow-xl shadow-orange-100/40">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-2xl text-orange-500">
-            🔒
+      <main className="min-h-screen bg-gradient-to-b from-[#f7faff] via-white to-[#fff7ef] px-4 py-14 text-neutral-900">
+        <div className="mx-auto flex min-h-[70vh] w-full max-w-4xl items-center justify-center">
+          <div className="w-full rounded-[28px] border border-neutral-200 bg-white px-6 py-12 text-center shadow-xl shadow-orange-100/60 sm:px-10">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-7 w-7"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.5 10.5V8.25a4.5 4.5 0 1 0-9 0v2.25m-.75 0h10.5a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5v-6a1.5 1.5 0 0 1 1.5-1.5Z"
+                />
+              </svg>
+            </div>
+            <h1 className="text-xl font-semibold text-neutral-900">Sign in to view your trips</h1>
+            <p className="mt-3 text-sm text-neutral-600">
+              Create an account or sign in to access your personalized travel itineraries and
+              bookings.
+            </p>
+            <Link
+              href="/account"
+              className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow shadow-orange-200 transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
+            >
+              Sign In
+            </Link>
           </div>
-          <h1 className="text-3xl font-semibold">Sign in to view your trips</h1>
-          <p className="mt-3 text-sm text-neutral-500">
-            Create an account or sign in to access your personalised travel itineraries and bookings.
-          </p>
-          <Link
-            href="/"
-            className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow shadow-orange-200 hover:bg-orange-600"
-          >
-            Sign in
-          </Link>
         </div>
       </main>
     );
   }
 
   const trips = await listTripsByOwner(user.id);
+  const storage = supabase.storage.from(TRIP_IMAGE_BUCKET);
+  const tripsWithImages = trips.map((trip) => {
+    if (trip.imagePath) {
+      const directUrl = buildPublicStorageUrl(trip.imagePath);
+      const { data } = storage.getPublicUrl(trip.imagePath);
+      const publicUrl = data?.publicUrl || directUrl;
+      return { ...trip, imageUrl: publicUrl };
+    }
+    return { ...trip, imageUrl: null };
+  });
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] text-neutral-900">
@@ -240,7 +289,7 @@ export default async function MyTripsPage() {
             <h2 className="text-xl font-semibold text-neutral-900">
               No trips yet
             </h2>
-            <p className="mt-2 text-sm text-neutral-500">
+            <p className="mt-2 text-sm text-[#4C5A6B]">
               Plan your first adventure to see it appear here.
             </p>
             <Link
@@ -252,7 +301,7 @@ export default async function MyTripsPage() {
           </div>
         ) : (
           <div className="space-y-5">
-            {trips.map((trip, index) => (
+            {tripsWithImages.map((trip, index) => (
               <TripCard key={trip.id} trip={trip} index={index} />
             ))}
           </div>
@@ -265,7 +314,7 @@ export default async function MyTripsPage() {
 function CalendarIcon() {
   return (
     <svg
-      className="h-5 w-5 text-neutral-400"
+      className="h-5 w-5 text-[#4C5A6B]"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -283,7 +332,7 @@ function CalendarIcon() {
 function ClockIcon() {
   return (
     <svg
-      className="h-5 w-5 text-neutral-400"
+      className="h-5 w-5 text-[#4C5A6B]"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -301,7 +350,7 @@ function ClockIcon() {
 function UsersIcon() {
   return (
     <svg
-      className="h-5 w-5 text-neutral-400"
+      className="h-5 w-5 text-[#4C5A6B]"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

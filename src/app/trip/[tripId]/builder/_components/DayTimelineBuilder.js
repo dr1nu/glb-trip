@@ -219,8 +219,8 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
 
   if (!activeDay) {
     return (
-      <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-        <p className="text-sm text-neutral-400">
+      <section className="bg-white border border-orange-100 rounded-2xl p-6">
+        <p className="text-sm text-[#4C5A6B]">
           Add day cards in the summary builder to enable timeline editing.
         </p>
       </section>
@@ -228,12 +228,12 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
   }
 
   return (
-    <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-5">
+    <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
       <header className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Day-by-day builder</h2>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-[#4C5A6B]">
               Drag items into a day to craft transport, attractions, and dining plans.
             </p>
           </div>
@@ -248,7 +248,7 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   card.id === activeDayId
                     ? 'bg-orange-500 text-neutral-900'
-                    : 'bg-neutral-800 text-neutral-400 hover:text-neutral-100'
+                    : 'bg-orange-50 text-[#4C5A6B] hover:text-slate-900'
                 }`}
               >
                 {card.title}
@@ -256,7 +256,7 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
             ))}
           </div>
         </div>
-        <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
           {activeDay.subtitle}
         </p>
       </header>
@@ -269,7 +269,7 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
         onDrop={(event) => handleDrop(event, activeTimeline.length)}
       >
         {activeTimeline.length === 0 ? (
-          <div className="border border-dashed border-neutral-700 rounded-2xl p-6 text-center text-sm text-neutral-500">
+          <div className="border border-dashed border-orange-100 rounded-2xl p-6 text-center text-sm text-[#4C5A6B]">
             Drag cards here or click a card above to start building {activeDay.title}.
           </div>
         ) : (
@@ -294,7 +294,7 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
         )}
       </div>
 
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-[#4C5A6B]">
         Changes are tracked automatically—remember to save the entire trip.
       </p>
     </section>
@@ -317,16 +317,16 @@ function Palette({ onAdd }) {
             event.dataTransfer.effectAllowed = 'copy';
           }}
           onClick={() => onAdd(item.type)}
-          className="text-left border border-neutral-800 rounded-2xl p-4 bg-neutral-950 hover:border-orange-500/50 transition-colors space-y-3"
+          className="text-left border border-orange-100 rounded-2xl p-4 bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] hover:border-orange-500/50 transition-colors space-y-3"
         >
           <div className={`h-10 w-10 rounded-full border ${item.iconColor} flex items-center justify-center`}>
             <TypeIcon type={item.type} />
           </div>
           <div>
             <p className="font-semibold">{item.title}</p>
-            <p className="text-xs text-neutral-400">{item.description}</p>
+            <p className="text-xs text-[#4C5A6B]">{item.description}</p>
           </div>
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-[11px] text-[#4C5A6B]">
             Drag to the day timeline or click to append.
           </p>
         </button>
@@ -352,7 +352,7 @@ function TimelineCard({
       : null;
   return (
     <div
-      className="border border-neutral-800 rounded-2xl bg-neutral-950 p-4 space-y-3"
+      className="border border-orange-100 rounded-2xl bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] p-4 space-y-3"
       draggable
       onDragStart={onDragStart}
       onDragOver={onDragOverCard}
@@ -361,16 +361,16 @@ function TimelineCard({
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
-            className={`h-11 w-11 rounded-full border ${paletteMeta?.iconColor ?? 'bg-neutral-800 text-neutral-300 border-neutral-700'} flex items-center justify-center`}
+            className={`h-11 w-11 rounded-full border ${paletteMeta?.iconColor ?? 'bg-orange-50 text-[#4C5A6B] border-orange-100'} flex items-center justify-center`}
           >
             <TypeIcon type={entry.type} />
           </div>
           <div>
-            <p className="text-sm font-semibold capitalize text-neutral-100">
+            <p className="text-sm font-semibold capitalize text-slate-900">
               {titleValue ?? entry.type}
             </p>
             {titleValue ? (
-              <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+              <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
                 {entry.type}
               </p>
             ) : null}
@@ -379,7 +379,7 @@ function TimelineCard({
         <button
           type="button"
           onClick={() => onDelete(entry.id)}
-          className="text-xs text-neutral-400 hover:text-red-300"
+          className="text-xs text-[#4C5A6B] hover:text-red-300"
         >
           Remove
         </button>
@@ -387,7 +387,7 @@ function TimelineCard({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {fields.map((field) => (
           <label key={field.name} className="flex flex-col gap-1 text-sm">
-            <span className="text-neutral-400">{field.label}</span>
+            <span className="text-[#4C5A6B]">{field.label}</span>
             {field.multiline ? (
               <textarea
                 value={entry.fields?.[field.name] ?? ''}
@@ -395,7 +395,7 @@ function TimelineCard({
                   onFieldChange(entry.id, field.name, event.target.value)
                 }
                 rows={3}
-                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder={field.placeholder}
               />
             ) : (
@@ -405,7 +405,7 @@ function TimelineCard({
                 onChange={(event) =>
                   onFieldChange(entry.id, field.name, event.target.value)
                 }
-                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder={field.placeholder}
               />
             )}

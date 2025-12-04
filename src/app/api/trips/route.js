@@ -22,6 +22,7 @@ function normalizePayload(data) {
     result,
     contact,
     preferences,
+    imagePath,
   } = data;
 
   if (!destinationCountry || typeof destinationCountry !== 'string') {
@@ -77,6 +78,10 @@ function normalizePayload(data) {
     Number.isFinite(childrenRaw) && childrenRaw >= 0 ? Math.floor(childrenRaw) : 0;
   const details =
     typeof contact.details === 'string' ? contact.details.trim() : '';
+  const imagePathClean =
+    typeof imagePath === 'string' && imagePath.trim().length > 0
+      ? imagePath.trim()
+      : null;
 
   return {
     destinationCountry,
@@ -97,6 +102,7 @@ function normalizePayload(data) {
     },
     preferences:
       typeof preferences === 'object' && preferences !== null ? preferences : null,
+    imagePath: imagePathClean,
   };
 }
 

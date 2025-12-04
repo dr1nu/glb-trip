@@ -21,7 +21,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-900 text-neutral-100`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased text-slate-900`}
       >
         <div className="min-h-screen pb-24">{children}</div>
         <FooterSlot />

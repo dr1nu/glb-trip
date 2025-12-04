@@ -40,7 +40,7 @@ export default function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-6 max-w-md mx-auto"
+      className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-6 max-w-md mx-auto text-neutral-100"
     >
       <header>
         <h1 className="text-xl font-semibold">Admin login</h1>
@@ -50,13 +50,13 @@ export default function LoginForm() {
       </header>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-neutral-200" htmlFor="password">
+        <label className="text-sm font-medium text-neutral-300" htmlFor="password">
           Password
         </label>
         <input
           id="password"
           type="password"
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="••••••••"
@@ -66,7 +66,7 @@ export default function LoginForm() {
       </div>
 
       {error && (
-        <div className="text-sm text-red-400 border border-red-500/40 bg-red-500/10 rounded-xl px-3 py-2">
+        <div className="text-sm text-red-300 border border-red-500/40 bg-red-500/10 rounded-xl px-3 py-2">
           {error}
         </div>
       )}
@@ -75,7 +75,7 @@ export default function LoginForm() {
         type="submit"
         className={`w-full text-sm font-semibold py-3 rounded-xl transition-colors ${
           isSubmitting
-            ? 'bg-neutral-800 text-neutral-400 cursor-not-allowed'
+            ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
             : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
         }`}
         disabled={isSubmitting}

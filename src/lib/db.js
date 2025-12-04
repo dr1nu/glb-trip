@@ -18,6 +18,7 @@ function mapRowToTrip(row) {
     homeCountry: row.home_country,
     tripLengthDays: row.trip_length_days,
     budgetTotal: row.budget_total,
+    imagePath: row.image_path ?? null,
     result: row.result ?? {},
     contact: row.contact ?? null,
     preferences: row.preferences ?? null,
@@ -40,6 +41,9 @@ function serializeTripPayload(payload) {
   }
   if (payload.budgetTotal !== undefined) {
     serialized.budget_total = payload.budgetTotal;
+  }
+  if (payload.imagePath !== undefined) {
+    serialized.image_path = payload.imagePath;
   }
   if (payload.result !== undefined) {
     serialized.result = payload.result;

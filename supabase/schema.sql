@@ -8,6 +8,7 @@ create table if not exists public.trips (
   home_country text,
   trip_length_days integer,
   budget_total integer,
+  image_path text,
   result jsonb,
   contact jsonb,
   preferences jsonb,
@@ -61,3 +62,30 @@ before update on public.profiles
 for each row execute procedure public.set_profiles_updated_at();
 
 alter table public.profiles disable row level security;
+
+create table if not exists public.trip_templates (
+  id text primary key,
+  name text not null,
+  destination_country text not null,
+  trip_length_days integer,
+  source_trip_id text,
+  notes text,
+  itinerary jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create or replace function public.set_trip_templates_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists set_trip_templates_updated_at on public.trip_templates;
+create trigger set_trip_templates_updated_at
+before update on public.trip_templates
+for each row execute procedure public.set_trip_templates_updated_at();
+
+alter table public.trip_templates disable row level security;

@@ -3,6 +3,28 @@ import { notFound, redirect } from 'next/navigation';
 import { getTrip } from '@/lib/db';
 import TripExperienceClient from './_components/TripExperienceClient';
 
+function isDayCard(card, index) {
+  if (!card) return false;
+  const type = typeof card.type === 'string' ? card.type.toLowerCase() : '';
+  const title = typeof card.title === 'string' ? card.title : '';
+  const id = typeof card.id === 'string' ? card.id : '';
+  if (type === 'departure' || type === 'return' || type === 'flight') return false;
+  if (type === 'budget' || type === 'summary' || type === 'cost') return false;
+  if (
+    type === 'day' ||
+    type === 'daily' ||
+    type === 'day-card' ||
+    type === 'itinerary-day' ||
+    /^day\\s*\\d+/i.test(title) ||
+    /^day[-_]/i.test(id)
+  ) {
+    return true;
+  }
+  if (Array.isArray(card.timeline) && card.timeline.length > 0) return true;
+  if (card.fields?.city || card.fields?.dailyCost || card.fields?.highlightAttraction) return true;
+  return false;
+}
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -22,14 +44,14 @@ export default async function TripExperiencePage({ params, searchParams }) {
     redirect(fallback);
   }
 
-  const dayCards = itinerary.cards.filter((card) => card.type === 'day');
+  const dayCards = itinerary.cards.filter((card, idx) => isDayCard(card, idx));
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100">
+    <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-slate-900">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <Link
           href={fromAdmin ? `/trip/${tripId}?from=admin` : `/trip/${tripId}`}
-          className="inline-flex items-center gap-1 text-sm text-neutral-400 hover:text-neutral-200"
+          className="inline-flex items-center gap-1 text-sm text-[#4C5A6B] hover:text-[#4C5A6B]"
         >
           <span aria-hidden>←</span>
           Back to trip

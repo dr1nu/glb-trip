@@ -72,11 +72,13 @@ export function haversine(lat1, lon1, lat2, lon2) {
 
 // Distance → return fare range (hand-luggage, low-season-ish) with light multipliers
 export function estimateReturnFare(homeCountry, destCountry, opts = {}) {
-  const seasonFactor  = opts.seasonFactor  ?? 1.0; // 0.9 off, 1.0 shoulder, 1.2 peak
+  const seasonFactor  = opts.seasonFactor  ?? 1.0; // 0.9 off, 1.0 shoulder, 1.2+ peak
   const weekendFactor = opts.weekendFactor ?? 1.0; // 1.1 if Fri/Sun heavy
+  const homeOverride = opts.homeHubOverride;
+  const destOverride = opts.destHubOverride;
 
-  const home = COUNTRY_HUBS[homeCountry];
-  const dest = COUNTRY_HUBS[destCountry];
+  const home = homeOverride ?? COUNTRY_HUBS[homeCountry];
+  const dest = destOverride ?? COUNTRY_HUBS[destCountry];
   if (!home || !dest) {
     // Fallback: safe midrange if a country is missing
     return { low: 120, high: 220, from: "N/A", to: "N/A", distanceKm: 0 };
@@ -98,7 +100,13 @@ export function estimateReturnFare(homeCountry, destCountry, opts = {}) {
   const low  = Math.round(mid * 0.8);
   const high = Math.round(mid * 1.2);
 
-  return { low, high, from: home.iata, to: dest.iata, distanceKm: Math.round(distanceKm) };
+  return {
+    low,
+    high,
+    from: home.iata,
+    to: dest.iata,
+    distanceKm: Math.round(distanceKm),
+  };
 }
 
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
