@@ -842,16 +842,16 @@ function PopularDestinations({ images = [] }) {
         {POPULAR_DESTINATIONS.map((item, index) => {
           const imageUrl = hasImages ? images[index % images.length] : null;
           const backgroundClass = imageUrl
-            ? 'h-24 bg-cover bg-center'
-            : `h-24 bg-gradient-to-r ${item.color}`;
+            ? 'h-48 bg-cover bg-center'
+            : `h-48 bg-gradient-to-r ${item.color}`;
 
           return (
             <div
               key={item.city}
-              className="overflow-hidden rounded-2xl border border-white/70 bg-white shadow-lg shadow-slate-100"
+              className="group overflow-hidden rounded-2xl border border-white/70 bg-white shadow-lg shadow-slate-100 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100"
             >
               <div
-                className={backgroundClass}
+                className={`${backgroundClass} transition-transform duration-300 group-hover:scale-105`}
                 style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
               />
               <div className="space-y-1 p-3">
