@@ -11,7 +11,7 @@ export default function ItinerarySummary({
   if (safeCards.length === 0) {
     return (
       <section
-        className={`bg-orange-50 border border-orange-100 rounded-2xl p-6 space-y-3 ${className}`}
+        className={`bg-[#fff7ef] border border-[#ffd9b3] rounded-2xl p-6 space-y-3 ${className}`}
       >
         <header>
           <h2 className="text-lg font-semibold">{title}</h2>
@@ -26,14 +26,14 @@ export default function ItinerarySummary({
 
   return (
     <section
-      className={`bg-orange-50 border border-orange-100 rounded-2xl p-6 space-y-4 ${className}`}
+      className={`bg-[#fff7ef] border border-[#ffd9b3] rounded-2xl p-6 space-y-4 ${className}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="text-sm text-[#4C5A6B]">{description}</p>
         </div>
-        <span className="text-xs uppercase tracking-wide text-[#4C5A6B] border border-orange-100 rounded-lg px-3 py-1">
+        <span className="text-xs uppercase tracking-wide text-[#c25a00] border border-[#ffd9b3] rounded-lg px-3 py-1 bg-white/70">
           {safeCards.length} card{safeCards.length === 1 ? '' : 's'}
         </span>
       </header>
@@ -77,7 +77,7 @@ function FlightDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-white border border-orange-100 rounded-2xl p-5 space-y-4">
+    <article className="bg-white border border-[#ffd9b3] rounded-2xl p-5 space-y-4 shadow-sm shadow-[#ff8a00]/10">
       <HeaderWithIcon
         iconType={card.type === 'return' ? 'planeReturn' : 'plane'}
         title={card.type === 'return' ? 'Return flight' : 'Departure flight'}
@@ -111,7 +111,7 @@ function AccommodationDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-white border border-orange-100 rounded-2xl p-5 space-y-4">
+    <article className="bg-white border border-[#ffd9b3] rounded-2xl p-5 space-y-4 shadow-sm shadow-[#ff8a00]/10">
       <HeaderWithIcon
         iconType="home"
         title="Accommodation"
@@ -135,7 +135,7 @@ function DayDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-white border border-orange-100 rounded-2xl p-5 space-y-4">
+    <article className="bg-white border border-[#ffd9b3] rounded-2xl p-5 space-y-4 shadow-sm shadow-[#ff8a00]/10">
       <HeaderWithIcon
         iconType="pin"
         title={card.title}
@@ -184,7 +184,7 @@ function DetailList({ details }) {
       {valid.map(({ label, value, isLink, linkLabel }) => (
         <div
           key={label}
-          className="flex flex-wrap items-center justify-between gap-2 border-b border-orange-100 pb-2 last:border-b-0 last:pb-0"
+          className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ffd9b3] pb-2 last:border-b-0 last:pb-0"
         >
           <dt className="text-[#4C5A6B]">{label}</dt>
           <dd className="font-medium text-slate-900">
@@ -203,7 +203,7 @@ function BookingLink({ href, label = 'Book now' }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-orange-400 transition-colors"
+      className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#ff7a00] transition-colors shadow-sm shadow-[#ff8a00]/20"
     >
       {label}
     </a>
@@ -213,40 +213,12 @@ function BookingLink({ href, label = 'Book now' }) {
 function getIcon(type) {
   const baseClass =
     'h-12 w-12 rounded-full border flex items-center justify-center';
-  if (type === 'planeReturn') {
-    return (
-      <div
-        className={`${baseClass} bg-purple-500/10 border-purple-400/40 text-purple-200`}
-      >
-        <PlaneIcon />
-      </div>
-    );
-  }
-  if (type === 'plane') {
-    return (
-      <div
-        className={`${baseClass} bg-sky-500/10 border-sky-400/40 text-sky-200`}
-      >
-        <PlaneIcon />
-      </div>
-    );
-  }
-  if (type === 'home') {
-    return (
-      <div
-        className={`${baseClass} bg-emerald-500/10 border-emerald-400/40 text-emerald-200`}
-      >
-        <HomeIcon />
-      </div>
-    );
-  }
-  return (
-    <div
-      className={`${baseClass} bg-rose-500/10 border-rose-400/40 text-rose-200`}
-    >
-      <PinIcon />
-    </div>
-  );
+  const colorClass = 'bg-[#e1eaff] border-[#a8baf5] text-[#0f1f49]';
+
+  const icon =
+    type === 'home' ? <HomeIcon /> : type === 'planeReturn' || type === 'plane' ? <PlaneIcon /> : <PinIcon />;
+
+  return <div className={`${baseClass} ${colorClass}`}>{icon}</div>;
 }
 
 function PlaneIcon() {
