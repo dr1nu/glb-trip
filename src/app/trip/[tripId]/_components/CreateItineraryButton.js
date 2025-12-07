@@ -41,7 +41,7 @@ export default function CreateItineraryButton({ tripId, hasItinerary, cardCount 
   }
 
   return (
-    <div className="bg-orange-50 border border-orange-100 rounded-2xl p-5 space-y-3">
+    <div className="bg-[#f0f4ff] border border-[#dfe7ff] rounded-2xl p-5 space-y-3 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Trip builder</h2>
@@ -55,8 +55,8 @@ export default function CreateItineraryButton({ tripId, hasItinerary, cardCount 
           disabled={disabled}
           className={`inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
             disabled
-              ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
-              : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
+              ? 'bg-[#ffd9b3] text-[#9a5b00] cursor-not-allowed'
+              : 'bg-[#ff8a00] hover:bg-[#ff7a00] text-white shadow shadow-[#ff8a00]/30'
           }`}
         >
           {hasItinerary
