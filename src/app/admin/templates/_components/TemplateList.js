@@ -1,6 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
+
 export default function TemplateList({ templates }) {
+  const router = useRouter();
+  const [deletingId, setDeletingId] = useState('');
+  const [error, setError] = useState('');
+  const [isPending, startTransition] = useTransition();
+
   if (!templates?.length) {
     return (
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 text-sm text-neutral-300 text-center">
@@ -9,8 +17,43 @@ export default function TemplateList({ templates }) {
     );
   }
 
+  async function handleDelete(template) {
+    if (!template?.id || deletingId) return;
+    const confirmed = window.confirm(`Delete template “${template.name}”?`);
+    if (!confirmed) return;
+    setError('');
+    setDeletingId(template.id);
+    try {
+      const response = await fetch(`/api/templates/${template.id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message =
+          typeof data?.error === 'string'
+            ? data.error
+            : `Failed with status ${response.status}.`;
+        throw new Error(message);
+      }
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (err) {
+      console.error('Failed to delete template', err);
+      setError(err instanceof Error ? err.message : 'Unable to delete template.');
+    } finally {
+      setDeletingId('');
+    }
+  }
+
   return (
     <div className="space-y-4">
+      {error ? (
+        <div className="bg-red-500/10 border border-red-500/30 text-red-200 text-sm rounded-xl px-3 py-2">
+          {error}
+        </div>
+      ) : null}
+
       {templates.map((template) => (
         <article
           key={template.id}
@@ -26,12 +69,26 @@ export default function TemplateList({ templates }) {
                   : 'Length not set'}
               </p>
             </div>
-            <a
-              href={`/admin/templates/${template.id}`}
-              className="text-sm font-medium text-orange-300 hover:text-orange-200"
-            >
-              Open builder →
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href={`/admin/templates/${template.id}`}
+                className="text-sm font-medium text-orange-300 hover:text-orange-200"
+              >
+                Open builder →
+              </a>
+              <button
+                type="button"
+                onClick={() => handleDelete(template)}
+                disabled={deletingId === template.id || isPending}
+                className={`text-sm font-medium rounded-lg border px-3 py-1 transition-colors ${
+                  deletingId === template.id || isPending
+                    ? 'border-red-800 text-red-400 cursor-not-allowed'
+                    : 'border-red-700 text-red-300 hover:border-red-500 hover:text-red-200'
+                }`}
+              >
+                {deletingId === template.id ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
           </div>
 
           <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">

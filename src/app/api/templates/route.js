@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getTrip } from '@/lib/db';
-import { buildDefaultItinerary } from '@/lib/itinerary';
+import { buildDefaultItinerary, extractDayCards } from '@/lib/itinerary';
 import { createTemplate, listTemplates } from '@/lib/templates';
 
 export const dynamic = 'force-dynamic';
@@ -73,13 +73,20 @@ export async function POST(request) {
       });
     }
 
+    const dayCards = extractDayCards(itinerary);
+    const dayOnlyItinerary = {
+      createdAt: itinerary.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      cards: dayCards,
+    };
+
     const template = await createTemplate({
       name,
       destinationCountry,
       tripLengthDays:
-        resolvedTripLength || countDayCards(itinerary) || itinerary?.cards?.length || null,
+        resolvedTripLength || dayCards.length || countDayCards(itinerary) || itinerary?.cards?.length || null,
       sourceTripId,
-      itinerary,
+      itinerary: dayOnlyItinerary,
       notes,
     });
 

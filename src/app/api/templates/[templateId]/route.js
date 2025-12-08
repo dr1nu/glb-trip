@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTemplate, updateTemplate } from '@/lib/templates';
+import { deleteTemplate, getTemplate, updateTemplate } from '@/lib/templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,5 +77,23 @@ function extractTemplateIdFromUrl(url) {
     return parts[idx + 1];
   } catch {
     return null;
+  }
+}
+
+export async function DELETE(request, context) {
+  const params = context?.params ? await context.params : {};
+  const templateId = params.templateId ?? extractTemplateIdFromUrl(request.url);
+  if (!templateId) {
+    return NextResponse.json({ error: 'Template ID missing.' }, { status: 400 });
+  }
+  try {
+    await deleteTemplate(templateId);
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error('Failed to delete template', err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Unable to delete template.' },
+      { status: 500 }
+    );
   }
 }

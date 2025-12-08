@@ -38,7 +38,10 @@ export async function PATCH(request, context) {
 
   try {
     const template = await getTemplate(templateId);
-    if (!template?.itinerary?.cards?.length) {
+    const templateDayCards = Array.isArray(template?.itinerary?.cards)
+      ? template.itinerary.cards.filter((card) => card?.type === 'day')
+      : [];
+    if (!templateDayCards.length) {
       return NextResponse.json(
         { error: 'Itinerary not found for template.' },
         { status: 404 }
@@ -69,7 +72,7 @@ export async function PATCH(request, context) {
       );
     }
 
-    const nextCards = template.itinerary.cards.map((card) => {
+    const nextCards = templateDayCards.map((card) => {
       if (!cardsMap.has(card.id)) return card;
       const updates = cardsMap.get(card.id);
       let nextCard = card;

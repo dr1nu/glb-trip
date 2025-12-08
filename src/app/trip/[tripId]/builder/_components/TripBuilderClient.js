@@ -143,10 +143,14 @@ export default function TripBuilderClient({
   }
 
   function serializeItineraryForTemplate() {
-    return {
-      cards: cards.map(({ isDirty, ...card }) => ({
+    const dayCardsOnly = cards
+      .filter((card) => card.type === 'day')
+      .map(({ isDirty, ...card }) => ({
         ...card,
-      })),
+      }));
+    return {
+      cards: dayCardsOnly,
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
   }
@@ -156,10 +160,47 @@ export default function TripBuilderClient({
     setTemplateFeedback({ type: '', message: '' });
     setApplyingTemplate(true);
     try {
+      const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+      const templateDayCards = Array.isArray(selectedTemplate?.itinerary?.cards)
+        ? selectedTemplate.itinerary.cards.filter((card) => card?.type === 'day')
+        : [];
+      const tripDayCount = dayCards.length || tripLengthDays || 0;
+      if (templateDayCards.length === 0) {
+        throw new Error('Selected template has no day cards to apply.');
+      }
+
+      let dayIdsToApply = templateDayCards.map((card) => card.id);
+      if (templateDayCards.length > tripDayCount && tripDayCount > 0) {
+        const defaultSelection = templateDayCards
+          .slice(0, tripDayCount)
+          .map((_, index) => String(index + 1))
+          .join(',');
+        const labelList = templateDayCards
+          .map((card, index) => `${index + 1}. ${card.title || `Day ${index + 1}`}`)
+          .join('\n');
+        const input = window.prompt(
+          `Template has ${templateDayCards.length} days, but this trip has ${tripDayCount}. Enter the day numbers to import (comma-separated):\n${labelList}`,
+          defaultSelection
+        );
+        if (input === null) {
+          setApplyingTemplate(false);
+          return;
+        }
+        const selections = input
+          .split(/[,\\s]+/)
+          .map((part) => Number(part))
+          .filter((num) => Number.isFinite(num) && num >= 1 && num <= templateDayCards.length);
+        const uniqueSelections = Array.from(new Set(selections));
+        if (uniqueSelections.length === 0) {
+          throw new Error('No valid day numbers selected.');
+        }
+        dayIdsToApply = uniqueSelections.map((dayNumber) => templateDayCards[dayNumber - 1].id);
+      }
+
       const response = await fetch(`/api/trips/${tripId}/template`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateId: selectedTemplateId }),
+        body: JSON.stringify({ templateId: selectedTemplateId, dayIds: dayIdsToApply }),
       });
       const data = await response.json().catch(() => null);
       if (!response.ok) {
@@ -298,61 +339,65 @@ export default function TripBuilderClient({
 
   return (
     <div className="space-y-6">
-      {templates?.length ? (
-        <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
-          <header className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold">Load from template</h2>
-              <p className="text-sm text-[#4C5A6B]">
-                Prefill this builder with a saved plan for{' '}
-                {destinationCountry || 'this destination'}.
-              </p>
-            </div>
-            <span className="text-xs uppercase tracking-wide text-[#4C5A6B]">
-              {templates.length} available
-            </span>
-          </header>
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={selectedTemplateId}
-              onChange={(e) => setSelectedTemplateId(e.target.value)}
-              className="rounded-xl border border-orange-100 px-3 py-2 text-sm text-slate-900 bg-white min-w-[220px]"
-            >
-              <option value="">Choose a template</option>
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name} · {template.destinationCountry}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleApplyTemplate}
-              disabled={!selectedTemplateId || applyingTemplate}
-              className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
-                !selectedTemplateId || applyingTemplate
-                  ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
-                  : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
-              }`}
-            >
-              {applyingTemplate ? 'Applying…' : 'Apply template'}
-            </button>
+      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Load from template</h2>
+            <p className="text-sm text-[#4C5A6B]">
+              Prefill this builder with a saved plan for{' '}
+              {destinationCountry || 'this destination'}.
+            </p>
           </div>
-          {templateFeedback.message ? (
-            <div
-              className={`text-sm rounded-xl px-3 py-2 border ${
-                templateFeedback.type === 'success'
-                  ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                  : templateFeedback.type === 'error'
-                  ? 'bg-red-500/10 border-red-500/30 text-red-300'
-                  : 'bg-orange-50 border-orange-100 text-[#4C5A6B]'
-              }`}
-            >
-              {templateFeedback.message}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+          <span className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+            {templates?.length ? `${templates.length} available` : 'No templates yet'}
+          </span>
+        </header>
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={selectedTemplateId}
+            onChange={(e) => setSelectedTemplateId(e.target.value)}
+            className="rounded-xl border border-orange-100 px-3 py-2 text-sm text-slate-900 bg-white min-w-[220px]"
+            disabled={!templates?.length}
+          >
+            <option value="">{templates?.length ? 'Choose a template' : 'No templates'}</option>
+            {templates?.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name} · {template.destinationCountry}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleApplyTemplate}
+            disabled={!selectedTemplateId || applyingTemplate || !templates?.length}
+            className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+              !selectedTemplateId || applyingTemplate || !templates?.length
+                ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
+                : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
+            }`}
+          >
+            {applyingTemplate ? 'Applying…' : 'Apply template'}
+          </button>
+        </div>
+        {templateFeedback.message ? (
+          <div
+            className={`text-sm rounded-xl px-3 py-2 border ${
+              templateFeedback.type === 'success'
+                ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                : templateFeedback.type === 'error'
+                ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                : 'bg-orange-50 border-orange-100 text-[#4C5A6B]'
+            }`}
+          >
+            {templateFeedback.message}
+          </div>
+        ) : null}
+        {!templates?.length ? (
+          <p className="text-xs text-[#4C5A6B]">
+            Create a template in the admin area to enable importing into trips.
+          </p>
+        ) : null}
+      </section>
 
       <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
         <header>

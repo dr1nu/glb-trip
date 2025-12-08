@@ -24,9 +24,14 @@ export default async function TripBuilderPage({ params }) {
   const lengthLabel = `${trip.tripLengthDays} day${
     trip.tripLengthDays === 1 ? '' : 's'
   }`;
-  const templates = await listTemplates({
-    destinationCountry: trip.destinationCountry,
-  });
+  const templates = await listTemplates();
+  const sortedTemplates = Array.isArray(templates)
+    ? templates.sort((a, b) => {
+        const aMatch = a.destinationCountry === trip.destinationCountry ? 1 : 0;
+        const bMatch = b.destinationCountry === trip.destinationCountry ? 1 : 0;
+        return bMatch - aMatch;
+      })
+    : [];
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-slate-900 p-6 flex justify-center">
@@ -54,7 +59,7 @@ export default async function TripBuilderPage({ params }) {
           initialCards={itinerary.cards}
           destinationCountry={trip.destinationCountry}
           tripLengthDays={trip.tripLengthDays}
-          templates={templates}
+          templates={sortedTemplates}
         />
       </div>
     </main>
