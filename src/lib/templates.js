@@ -135,3 +135,14 @@ export async function listTemplates(filters = {}) {
 
   return (data ?? []).map(mapRowToTemplate);
 }
+
+export async function deleteTemplate(id) {
+  if (!id) throw new Error('Template ID is required to delete.');
+  const supabase = getSupabaseAdminClient();
+  const { error } = await supabase.from(TABLE).delete().eq('id', id);
+  if (error) {
+    console.error('Failed to delete template', error);
+    throw new Error('Unable to delete template.');
+  }
+  return true;
+}

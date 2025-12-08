@@ -646,6 +646,7 @@ export default function Home() {
                 tripLengthDays={tripLengthDays}
                 budgetTotal={budgetTotal}
                 result={result}
+                travelStyle={travelStyle}
                 onBack={() => setShowResult(false)}
                 onRequest={handleRequestTrip}
               />
@@ -900,6 +901,7 @@ function ResultCard({
   tripLengthDays,
   budgetTotal,
   result,
+  travelStyle,
   onBack,
   onRequest,
 }) {
@@ -936,6 +938,7 @@ function ResultCard({
         endDate,
         tripLengthDays,
         budgetTotal,
+        travelStyle,
         result,
       });
     } catch (err) {

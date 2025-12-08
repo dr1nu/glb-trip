@@ -1,8 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import FlightCardPanel from '@/app/trip/[tripId]/builder/_components/FlightCardPanel';
-import AccommodationCardPanel from '@/app/trip/[tripId]/builder/_components/AccommodationCardPanel';
 import DayCardPanel from '@/app/trip/[tripId]/builder/_components/DayCardPanel';
 import DayTimelineBuilder from '@/app/trip/[tripId]/builder/_components/DayTimelineBuilder';
 import { applyCardFieldUpdates } from '@/lib/itinerary';
@@ -64,13 +62,15 @@ function hydrateCardFields(card) {
 }
 
 function prepareCards(rawCards, { resetDirty = false } = {}) {
-  return (rawCards ?? []).map((card) => {
-    const { card: hydratedCard, mutated } = hydrateCardFields(card);
-    return {
-      ...hydratedCard,
-      isDirty: resetDirty ? false : Boolean(card.isDirty) || mutated,
-    };
-  });
+  return (rawCards ?? [])
+    .filter((card) => card?.type === 'day')
+    .map((card) => {
+      const { card: hydratedCard, mutated } = hydrateCardFields(card);
+      return {
+        ...hydratedCard,
+        isDirty: resetDirty ? false : Boolean(card.isDirty) || mutated,
+      };
+    });
 }
 
 function MissingCardNotice({ label }) {
@@ -86,18 +86,6 @@ export default function TemplateBuilderClient({ templateId, initialCards }) {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-  const departureCard = useMemo(
-    () => cards.find((card) => card.id === 'departure-flight') ?? null,
-    [cards]
-  );
-  const returnCard = useMemo(
-    () => cards.find((card) => card.id === 'return-flight') ?? null,
-    [cards]
-  );
-  const accommodationCard = useMemo(
-    () => cards.find((card) => card.type === 'accommodation') ?? null,
-    [cards]
-  );
   const dayCards = useMemo(
     () => cards.filter((card) => card.type === 'day'),
     [cards]
@@ -185,56 +173,6 @@ export default function TemplateBuilderClient({ templateId, initialCards }) {
 
   return (
     <div className="space-y-6">
-      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-        <header>
-          <h2 className="text-lg font-semibold">Flights</h2>
-          <p className="text-sm text-[#4C5A6B]">
-            Add confirmed timings, baggage info, and booking links for each leg.
-          </p>
-        </header>
-
-        <div className="space-y-4">
-          {departureCard ? (
-            <FlightCardPanel
-              card={departureCard}
-              direction="departure"
-              onFieldChange={handleFieldChange}
-              isDirty={departureCard.isDirty}
-            />
-          ) : (
-            <MissingCardNotice label="Departure flight" />
-          )}
-          {returnCard ? (
-            <FlightCardPanel
-              card={returnCard}
-              direction="return"
-              onFieldChange={handleFieldChange}
-              isDirty={returnCard.isDirty}
-            />
-          ) : (
-            <MissingCardNotice label="Return flight" />
-          )}
-        </div>
-      </section>
-
-      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-        <header>
-          <h2 className="text-lg font-semibold">Accommodation</h2>
-          <p className="text-sm text-[#4C5A6B]">
-            Capture stay details so travel specialists can reuse this plan quickly.
-          </p>
-        </header>
-        {accommodationCard ? (
-          <AccommodationCardPanel
-            card={accommodationCard}
-            onFieldChange={handleFieldChange}
-            isDirty={accommodationCard.isDirty}
-          />
-        ) : (
-          <MissingCardNotice label="Accommodation" />
-        )}
-      </section>
-
       <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
         <header>
           <h2 className="text-lg font-semibold">Daily highlights</h2>

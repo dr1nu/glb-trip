@@ -1,10 +1,53 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+
+function parseCsv(text) {
+  const rows = [];
+  const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length === 0) return rows;
+  const headers = splitCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+  for (let i = 1; i < lines.length; i += 1) {
+    const values = splitCsvLine(lines[i]);
+    const row = {};
+    headers.forEach((header, idx) => {
+      row[header] = values[idx] ?? '';
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function splitCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    if (char === '"' && (i === 0 || line[i - 1] !== '\\')) {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function toNumber(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
 
 export default function TemplateCreator({ trips = [] }) {
   const router = useRouter();
+  const fileInputRef = useRef(null);
   const [name, setName] = useState('');
   const [destinationCountry, setDestinationCountry] = useState('');
   const [tripLengthDays, setTripLengthDays] = useState('');
@@ -13,6 +56,7 @@ export default function TemplateCreator({ trips = [] }) {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [createdTemplateId, setCreatedTemplateId] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [importing, setImporting] = useState(false);
 
   const tripOptions = useMemo(
     () =>
@@ -181,6 +225,158 @@ export default function TemplateCreator({ trips = [] }) {
           </button>
         </div>
       </form>
+
+      <div className="flex flex-wrap items-center gap-3 justify-between border-t border-neutral-800 pt-4">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-neutral-200">Or import from CSV</p>
+          <p className="text-xs text-neutral-500">
+            Uses the name/destination above; CSV rows should include day, time, title, type, price, description, link.
+          </p>
+          {importing ? (
+            <p className="text-xs text-neutral-400">Importing…</p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (isPending || importing) return;
+              if (!name.trim() || !destinationCountry.trim()) {
+                setMessage({
+                  type: 'error',
+                  text: 'Enter name and destination before importing.',
+                });
+                return;
+              }
+              fileInputRef.current?.click();
+            }}
+            disabled={isPending || importing}
+            className={`inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-colors border ${
+              isPending || importing
+                ? 'bg-neutral-900 text-neutral-500 border-neutral-800 cursor-not-allowed'
+                : 'bg-neutral-900 text-orange-300 border-orange-400 hover:border-orange-300'
+            }`}
+          >
+            {importing ? 'Importing…' : 'Import CSV'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={async (event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (!file) return;
+              setMessage({ type: '', text: '' });
+              setCreatedTemplateId('');
+              setImporting(true);
+              try {
+                const text = await file.text();
+                const rows = parseCsv(text);
+                if (!rows.length) {
+                  throw new Error('CSV is empty or unreadable.');
+                }
+
+                const dayGroups = new Map();
+                rows.forEach((row) => {
+                  const day = toNumber(row.day);
+                  if (!day) return;
+                  const itemType = (row.type || 'attraction').toString().trim().toLowerCase();
+                  const title = row.title || row.activity || row.place || '';
+                  const timelineItem = {
+                    type: itemType,
+                    fields: {
+                      title,
+                      name: title,
+                      time: row.time || '',
+                      price: row.price || '',
+                      link: row.link || '',
+                      description: row.description || row.notes || '',
+                    },
+                  };
+                  dayGroups.set(day, [...(dayGroups.get(day) || []), timelineItem]);
+                });
+
+                const sortedDays = Array.from(dayGroups.keys()).sort((a, b) => a - b);
+                if (!sortedDays.length) {
+                  throw new Error('No rows with a valid "day" column were found.');
+                }
+
+                const dayCards = sortedDays.map((day) => {
+                  const timeline = dayGroups.get(day) || [];
+                  return {
+                    id: `day-${day}`,
+                    type: 'day',
+                    title: `Day ${day}`,
+                    subtitle: destinationCountry,
+                    priceLabel: '',
+                    summary: '',
+                    fields: {
+                      city: destinationCountry,
+                      highlightAttraction: timeline[0]?.fields?.title || '',
+                      dailyCost: '',
+                    },
+                    timeline,
+                    notes: '',
+                  };
+                });
+
+                const parsedLength = Number(tripLengthDays);
+                const lengthFromInput =
+                  Number.isFinite(parsedLength) && parsedLength > 0
+                    ? Math.round(parsedLength)
+                    : null;
+
+                const payload = {
+                  name: name.trim(),
+                  destinationCountry: destinationCountry.trim(),
+                  tripLengthDays: lengthFromInput || dayCards.length,
+                  notes: notes || undefined,
+                  itinerary: {
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    cards: dayCards,
+                  },
+                };
+
+                const response = await fetch('/api/templates', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                });
+
+                const data = await response.json().catch(() => null);
+                if (!response.ok) {
+                  const message =
+                    typeof data?.error === 'string'
+                      ? data.error
+                      : `Failed with status ${response.status}.`;
+                  throw new Error(message);
+                }
+
+                const templateId = data?.template?.id;
+                setCreatedTemplateId(templateId || '');
+                setMessage({
+                  type: 'success',
+                  text: 'Template imported from CSV. You can refine it in the builder.',
+                });
+                startTransition(() => {
+                  router.refresh();
+                });
+              } catch (err) {
+                console.error('Failed to import template', err);
+                setMessage({
+                  type: 'error',
+                  text: err instanceof Error ? err.message : 'Unable to import template.',
+                });
+              } finally {
+                setImporting(false);
+              }
+            }}
+          />
+        </div>
+      </div>
 
       {message.text ? (
         <div

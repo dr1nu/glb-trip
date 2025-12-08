@@ -48,7 +48,6 @@ export async function POST(request, context) {
 }
 
 function buildItinerary(trip) {
-function buildItinerary(trip) {
   return buildDefaultItinerary(trip);
 }
 

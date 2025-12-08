@@ -11,13 +11,9 @@ export const TRAVEL_WINDOW_OPTIONS = [
 ];
 
 export const ACCOMMODATION_OPTIONS = [
-  { key: 'budget', label: 'Budget hotel' },
+  { key: 'hostel', label: 'Hostel' },
   { key: 'hotel', label: 'Hotel' },
-  { key: 'b&b', label: 'Bed & breakfast' },
   { key: 'luxury', label: 'Luxury hotel' },
-  { key: 'flat', label: 'Flat' },
-  { key: 'airbnb', label: 'Airbnb' },
-  { key: 'none', label: 'No preference' },
 ];
 
 export const TRAVEL_INTERESTS = [
@@ -37,7 +33,12 @@ export const DEFAULT_TRAVEL_PREFERENCES = {
   dateFrom: '',
   dateTo: '',
   flexibleMonth: '',
+  flexibleDays: '',
+  rangeDays: '',
   accommodation: 'hotel',
+  accommodationBreakfast: 'either',
+  accommodationBathroom: 'either',
+  accommodationLocation: 'either',
   interests: [],
   details: '',
 };

@@ -297,6 +297,16 @@ export function sanitizeTimeline(input) {
     .filter(Boolean);
 }
 
+export const extractDayCards = (itinerary) => {
+  if (!itinerary || !Array.isArray(itinerary.cards)) return [];
+  return itinerary.cards
+    .filter((card) => card?.type === 'day')
+    .map((card) => ({
+      ...card,
+      timeline: sanitizeTimeline(card.timeline),
+    }));
+};
+
 function normalizeTimelineItem(item) {
   if (typeof item !== 'object' || item === null) return null;
   const type = item.type;
