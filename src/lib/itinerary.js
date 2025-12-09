@@ -284,11 +284,36 @@ function formatPriceRange(low, high) {
   return null;
 }
 
-const TIMELINE_FIELDS = {
-  transport: ['title', 'time', 'price', 'link', 'description'],
-  attraction: ['title', 'time', 'price', 'link', 'description'],
-  food: ['title', 'name', 'description'],
-};
+const COMMON_TIMELINE_FIELDS = [
+  'title',
+  'time',
+  'price',
+  'link',
+  'description',
+  'travelMode',
+  'travelDuration',
+  'tag',
+];
+
+const TIMELINE_TYPES = [
+  'attraction',
+  'photo',
+  'rest',
+  'food',
+  'accommodation',
+  'flight',
+  'transport',
+  'train',
+  'walk',
+  'tube',
+  'taxi',
+  'activity',
+];
+
+const TIMELINE_FIELDS = TIMELINE_TYPES.reduce((acc, type) => {
+  acc[type] = COMMON_TIMELINE_FIELDS;
+  return acc;
+}, {});
 
 export function sanitizeTimeline(input) {
   if (!Array.isArray(input)) return [];
@@ -309,10 +334,10 @@ export const extractDayCards = (itinerary) => {
 
 function normalizeTimelineItem(item) {
   if (typeof item !== 'object' || item === null) return null;
-  const type = item.type;
-  if (!Object.prototype.hasOwnProperty.call(TIMELINE_FIELDS, type)) {
-    return null;
-  }
+  const rawType = typeof item.type === 'string' ? item.type.trim().toLowerCase() : '';
+  const type = Object.prototype.hasOwnProperty.call(TIMELINE_FIELDS, rawType)
+    ? rawType
+    : 'attraction';
 
   const id =
     typeof item.id === 'string' && item.id.trim()

@@ -453,7 +453,7 @@ export default function TripBuilderClient({
         <header>
           <h2 className="text-lg font-semibold">Daily highlights</h2>
           <p className="text-sm text-[#4C5A6B]">
-            Outline each day&apos;s location, must-see experience, and costs.
+            Outline each day&apos;s must-see experience and costs.
           </p>
         </header>
         <div className="space-y-4">
