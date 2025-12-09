@@ -5,8 +5,8 @@ import { buildDefaultItinerary } from '@/lib/itinerary';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request, context) {
-  const params = context?.params ?? {};
-  const tripId = params.tripId ?? extractTripIdFromUrl(request.url);
+  const params = context?.params ? await context.params : {};
+  const tripId = params?.tripId ?? extractTripIdFromUrl(request.url);
   if (!tripId) {
     return NextResponse.json(
       { error: 'Trip ID missing from request.' },

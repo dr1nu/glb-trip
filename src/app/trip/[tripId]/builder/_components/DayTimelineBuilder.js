@@ -114,6 +114,8 @@ const FIELD_DEFS_BY_TYPE = {
   ],
 };
 
+export const TIMELINE_TYPE_OPTIONS = TYPE_OPTIONS;
+
 const TYPE_META = TYPE_OPTIONS.reduce((acc, option) => {
   acc[option.value] = option;
   return acc;
@@ -131,7 +133,7 @@ function getTypeMeta(type) {
   );
 }
 
-function TypeIcon({ type }) {
+export function TypeIcon({ type }) {
   const className = 'h-5 w-5';
   switch (type) {
     case 'attraction':

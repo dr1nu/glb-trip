@@ -249,6 +249,7 @@ export function buildDefaultItinerary(trip = {}) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     cards,
+    unassignedActivities: [],
   };
 }
 
@@ -322,6 +323,10 @@ export function sanitizeTimeline(input) {
     .filter(Boolean);
 }
 
+export function sanitizeActivities(input) {
+  return sanitizeTimeline(input);
+}
+
 export const extractDayCards = (itinerary) => {
   if (!itinerary || !Array.isArray(itinerary.cards)) return [];
   return itinerary.cards
@@ -330,6 +335,11 @@ export const extractDayCards = (itinerary) => {
       ...card,
       timeline: sanitizeTimeline(card.timeline),
     }));
+};
+
+export const extractUnassignedActivities = (itinerary) => {
+  if (!itinerary) return [];
+  return sanitizeActivities(itinerary.unassignedActivities);
 };
 
 function normalizeTimelineItem(item) {

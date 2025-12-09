@@ -2,7 +2,11 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { ADMIN_COOKIE_NAME, verifySession } from '@/lib/auth';
-import { buildDefaultItinerary, extractDayCards } from '@/lib/itinerary';
+import {
+  buildDefaultItinerary,
+  extractDayCards,
+  extractUnassignedActivities,
+} from '@/lib/itinerary';
 import { getTemplate } from '@/lib/templates';
 import TemplateBuilderClient from './_components/TemplateBuilderClient';
 
@@ -24,6 +28,7 @@ export default async function TemplateBuilderPage({ params }) {
 
   const itinerary = template.itinerary ?? buildDefaultItinerary(template);
   const cards = extractDayCards(itinerary);
+  const unassignedActivities = extractUnassignedActivities(itinerary);
 
   const lengthLabel = template.tripLengthDays
     ? `${template.tripLengthDays} day${template.tripLengthDays === 1 ? '' : 's'}`
@@ -50,7 +55,11 @@ export default async function TemplateBuilderPage({ params }) {
           </Link>
         </header>
 
-        <TemplateBuilderClient templateId={templateId} initialCards={cards} />
+        <TemplateBuilderClient
+          templateId={templateId}
+          initialCards={cards}
+          initialActivities={unassignedActivities}
+        />
       </div>
     </main>
   );

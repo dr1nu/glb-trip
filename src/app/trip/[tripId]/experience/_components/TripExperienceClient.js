@@ -9,6 +9,7 @@ export default function TripExperienceClient({
   tripLengthDays,
   summaryCards,
   dayCards,
+  otherActivities = [],
 }) {
   const buildPlaceholderDays = (length) => {
     const count = Math.max(1, Number.isFinite(length) && length > 0 ? Math.round(length) : 1);
@@ -52,6 +53,7 @@ export default function TripExperienceClient({
   const tabDefinitions = useMemo(() => {
     const safeSummary = Array.isArray(summaryCards) ? summaryCards : [];
     const safeDaysSource = Array.isArray(dayCards) ? dayCards : safeSummary;
+    const safeOther = Array.isArray(otherActivities) ? otherActivities : [];
     const safeDays = safeDaysSource
       .map((card, idx) => ({ card, idx }))
       .filter(({ card, idx }) => isDayCard(card, idx))
@@ -142,8 +144,16 @@ export default function TripExperienceClient({
       });
     });
 
+    if (safeOther.length > 0) {
+      tabs.push({
+        id: 'other-activities',
+        label: 'Other Activities',
+        content: <OtherActivitiesList activities={safeOther} />,
+      });
+    }
+
     return tabs;
-  }, [summaryCards, dayCards]);
+  }, [summaryCards, dayCards, otherActivities, tripLengthDays]);
 
   const [activeTab, setActiveTab] = useState(tabDefinitions[0]?.id);
   useEffect(() => {
@@ -270,6 +280,30 @@ function DayItineraryDetail({ card }) {
             Add planning notes to the card to display them here.
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function OtherActivitiesList({ activities }) {
+  if (!activities?.length) {
+    return <EmptyState />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-[#4C5A6B]">
+        Ideas we like that aren&apos;t locked to a specific day. Use them as backups or spontaneous
+        additions.
+      </p>
+      <div className="space-y-3">
+        {activities.map((entry, index) => (
+          <TimelineEntry
+            key={entry.id ?? index}
+            entry={entry}
+            isLast={index === activities.length - 1}
+          />
+        ))}
       </div>
     </div>
   );

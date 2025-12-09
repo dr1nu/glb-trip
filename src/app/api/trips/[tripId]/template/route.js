@@ -52,6 +52,7 @@ export async function POST(request, context) {
     const templateDayCards = Array.isArray(template?.itinerary?.cards)
       ? template.itinerary.cards.filter((card) => card?.type === 'day')
       : [];
+    const templateUnassigned = sanitizeTimeline(template?.itinerary?.unassignedActivities);
     if (!templateDayCards.length) {
       return NextResponse.json(
         { error: 'Template does not contain day cards to apply.' },
@@ -102,6 +103,7 @@ export async function POST(request, context) {
         ...trip.itinerary,
         updatedAt: new Date().toISOString(),
         cards: tripCards,
+        unassignedActivities: templateUnassigned,
       },
       published: false,
     });

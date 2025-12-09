@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getTrip } from '@/lib/db';
+import { extractUnassignedActivities } from '@/lib/itinerary';
 import TripExperienceClient from './_components/TripExperienceClient';
 
 function isDayCard(card, index) {
@@ -45,6 +46,7 @@ export default async function TripExperiencePage({ params, searchParams }) {
   }
 
   const dayCards = itinerary.cards.filter((card, idx) => isDayCard(card, idx));
+  const otherActivities = extractUnassignedActivities(itinerary);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-slate-900">
@@ -65,6 +67,7 @@ export default async function TripExperiencePage({ params, searchParams }) {
           tripLengthDays={trip.tripLengthDays}
           summaryCards={itinerary.cards}
           dayCards={dayCards}
+          otherActivities={otherActivities}
         />
       </div>
     </main>
