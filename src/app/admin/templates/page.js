@@ -1,8 +1,7 @@
-import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { listTrips } from '@/lib/db';
-import { ADMIN_COOKIE_NAME, verifySession } from '@/lib/auth';
+import { getAdminUser } from '@/lib/auth';
 import { listTemplates } from '@/lib/templates';
 import TemplateCreator from './_components/TemplateCreator';
 import TemplateList from './_components/TemplateList';
@@ -12,9 +11,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export default async function TemplatesPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value ?? null;
-  if (!verifySession(token)) {
+  const adminUser = await getAdminUser();
+  if (!adminUser) {
     redirect('/admin/login');
   }
 

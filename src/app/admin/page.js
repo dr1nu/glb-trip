@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { listTrips } from '@/lib/db';
-import { ADMIN_COOKIE_NAME, verifySession } from '@/lib/auth';
+import { getAdminUser } from '@/lib/auth';
 import LogoutButton from './_components/LogoutButton';
 
 export const runtime = 'nodejs';
@@ -24,9 +23,8 @@ function euro(value) {
 }
 
 export default async function AdminPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value ?? null;
-  if (!verifySession(token)) {
+  const adminUser = await getAdminUser();
+  if (!adminUser) {
     redirect('/admin/login');
   }
 

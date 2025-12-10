@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { ADMIN_COOKIE_NAME, verifySession } from '@/lib/auth';
+import { getAdminUser } from '@/lib/auth';
 import {
   buildDefaultItinerary,
   extractDayCards,
@@ -15,9 +14,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function TemplateBuilderPage({ params }) {
   const { templateId } = await params;
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value ?? null;
-  if (!verifySession(token)) {
+  const adminUser = await getAdminUser();
+  if (!adminUser) {
     redirect('/admin/login');
   }
 
