@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getTrip } from '@/lib/db';
+import { COUNTRY_HUBS } from '@/lib/airfare';
 import CreateItineraryButton from './_components/CreateItineraryButton';
 import ItinerarySummary from './_components/ItinerarySummary';
 import TripImagePicker from './_components/TripImagePicker';
@@ -111,9 +112,13 @@ export default async function TripPage({ params, searchParams }) {
           <AdminActions
             tripId={id}
             destinationCountry={destinationCountry}
+            homeCountry={homeCountry}
             imagePath={imagePath ?? ''}
             itineraryReady={itineraryReady}
             cardCount={itinerary?.cards?.length ?? 0}
+            preferences={preferences}
+            contact={contact}
+            result={result}
           />
         ) : null}
       </div>
@@ -406,8 +411,25 @@ function ConfirmedTripOverview({
   );
 }
 
-function AdminActions({ tripId, destinationCountry, imagePath, itineraryReady, cardCount }) {
+function AdminActions({
+  tripId,
+  destinationCountry,
+  homeCountry,
+  imagePath,
+  itineraryReady,
+  cardCount,
+  preferences,
+  contact,
+  result,
+}) {
   if (!tripId) return null;
+  const { flightsUrl, accommodationUrl } = buildQuickSearchLinks({
+    homeCountry,
+    destinationCountry,
+    preferences,
+    contact,
+    result,
+  });
   return (
     <section className="rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] p-5 sm:p-6 space-y-4 shadow-sm shadow-[#ff8a00]/10">
       <div className="flex items-start justify-between gap-3">
@@ -426,6 +448,41 @@ function AdminActions({ tripId, destinationCountry, imagePath, itineraryReady, c
         >
           {itineraryReady ? 'Itinerary created' : 'Pending build'}
         </span>
+      </div>
+
+      <div className="rounded-xl border border-[#ffd9b3] bg-white/80 p-3 flex flex-wrap items-center gap-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-[#c25a00]">
+          Quick search
+        </span>
+        {flightsUrl ? (
+          <a
+            href={flightsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ff9f43] via-[#ff8a00] to-[#ff6f00] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#ff8a00]/30 hover:brightness-105 transition"
+          >
+            ✈ Search flights
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-full bg-[#f3e5d8] px-4 py-2 text-xs font-semibold text-[#a07955] cursor-not-allowed"
+            title="Add valid airports and dates to enable flight search"
+            disabled
+          >
+            ✈ Search flights
+          </button>
+        )}
+        {accommodationUrl ? (
+          <a
+            href={accommodationUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-[#0c2a52] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0c2a52]/20 hover:bg-[#0a2344] transition"
+          >
+            🏨 Search accommodation
+          </a>
+        ) : null}
       </div>
 
       <CreateItineraryButton
@@ -552,6 +609,63 @@ function formatBudgetLabel(budgetTotal) {
     return euro(budgetTotal);
   }
   return 'Budget not set';
+}
+
+function buildQuickSearchLinks({ homeCountry, destinationCountry, preferences, contact, result }) {
+  const parseIata = (value) => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(trimmed)) return trimmed;
+    const match = trimmed.match(/\b([A-Z]{3})\b/);
+    return match ? match[1] : null;
+  };
+  const formatSkyScannerDate = (value) => {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${dd}${mm}${yy}`;
+  };
+  const formatBookingDate = (value) => {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 10);
+  };
+
+  const homeHub = COUNTRY_HUBS[homeCountry] ?? {};
+  const destHub = COUNTRY_HUBS[destinationCountry] ?? {};
+  const originIata =
+    parseIata(contact?.nearestAirport) ||
+    parseIata(result?.flight?.from) ||
+    parseIata(homeHub.iata);
+  const destinationIata =
+    parseIata(result?.flight?.to) ||
+    parseIata(destHub.iata);
+
+  const outbound = formatSkyScannerDate(preferences?.dateFrom);
+  const inbound = formatSkyScannerDate(preferences?.dateTo);
+  const flightsUrl =
+    originIata && destinationIata && outbound && inbound
+      ? `https://www.skyscanner.net/transport/flights/${originIata.toLowerCase()}/${destinationIata.toLowerCase()}/${outbound}/${inbound}/`
+      : '';
+
+  const checkin = formatBookingDate(preferences?.dateFrom);
+  const checkout = formatBookingDate(preferences?.dateTo);
+  const destinationLabel =
+    (typeof result?.destinationLabel === 'string' && result.destinationLabel) ||
+    destinationCountry ||
+    '';
+  const adults =
+    Number.isFinite(contact?.adults) && contact.adults > 0 ? contact.adults : 2;
+  const children =
+    Number.isFinite(contact?.children) && contact.children >= 0 ? contact.children : 0;
+  const accommodationUrl =
+    destinationLabel && checkin && checkout
+      ? `https://www.booking.com/searchresults.en-gb.html?ss=${encodeURIComponent(destinationLabel)}&checkin=${checkin}&checkout=${checkout}&group_adults=${adults}&group_children=${children}&no_rooms=1`
+      : '';
+
+  return { flightsUrl, accommodationUrl };
 }
 
 function formatTravelDates(preferences) {
