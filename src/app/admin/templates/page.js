@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { listTrips } from '@/lib/db';
 import { getAdminUser } from '@/lib/auth';
@@ -6,6 +5,7 @@ import { listTemplates } from '@/lib/templates';
 import TemplateCreator from './_components/TemplateCreator';
 import TemplateList from './_components/TemplateList';
 import LogoutButton from '../_components/LogoutButton';
+import AdminNav from '../_components/AdminNav';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,13 +30,8 @@ export default async function TemplatesPage() {
             Build reusable day-by-day plans keyed to each destination.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin"
-            className="text-sm font-medium text-neutral-300 hover:text-white"
-          >
-            ← Trips dashboard
-          </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <AdminNav />
           <LogoutButton />
         </div>
       </header>
