@@ -837,7 +837,24 @@ function PopularDestinations({ images = [] }) {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
-        <span className="text-orange-500">↗</span> Popular Destinations
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5"
+            aria-hidden="true"
+          >
+            <path d="M11 5h8v8" />
+            <path d="M19 5l-9 9" />
+            <path d="M5 19h8" />
+          </svg>
+        </span>
+        Popular Destinations
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {POPULAR_DESTINATIONS.map((item, index) => {
@@ -871,7 +888,22 @@ function ValueProps() {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
-        <span className="text-orange-500">◎</span> Why travel with us?
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5"
+            aria-hidden="true"
+          >
+            <path d="M12 3l2.2 4.5L19 8l-3.5 3.4.8 4.8L12 14.8 7.7 16.2l.8-4.8L5 8l4.8-.5L12 3z" />
+          </svg>
+        </span>
+        Why travel with us?
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {VALUE_CARDS.map((card) => (

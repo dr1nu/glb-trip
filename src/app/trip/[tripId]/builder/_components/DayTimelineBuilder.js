@@ -135,53 +135,85 @@ function getTypeMeta(type) {
 
 export function TypeIcon({ type }) {
   const className = 'h-5 w-5';
+  const strokeProps = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.6,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  };
   switch (type) {
     case 'attraction':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-          <path d="M12 2l8 4v2h-2l-1 12H7L6 8H4V6l8-4zm0 3.118L9.197 6.5h5.606L12 5.118zM9 8l.667 10h4.666L15 8H9z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M4 10h16" />
+          <path d="M4 20h16" />
+          <path d="M5 10V9l7-4 7 4v1" />
+          <path d="M7 10v8" />
+          <path d="M10.5 10v8" />
+          <path d="M14 10v8" />
+          <path d="M17 10v8" />
         </svg>
       );
     case 'photo':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-          <path d="M4 6a2 2 0 012-2h2.172a2 2 0 001.414-.586l.828-.828A2 2 0 0111.828 2h.344a2 2 0 011.414.586l.828.828A2 2 0 0015.828 4H18a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm5 6a3 3 0 106 0 3 3 0 00-6 0z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <rect x="3" y="7" width="18" height="12" rx="2" />
+          <path d="M8 7l1.5-2h5L16 7" />
+          <circle cx="12" cy="13" r="3" />
+          <circle cx="17" cy="10" r="1" />
         </svg>
       );
     case 'rest':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-          <path d="M3 5.5A1.5 1.5 0 014.5 4h6A1.5 1.5 0 0112 5.5V9h8a2 2 0 012 2v6h-2v-2H4v2H2V9a3.5 3.5 0 011-2.449V5.5zM4 11v2h16v-2H4z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M21 13a8 8 0 11-8-10 6 6 0 008 10z" />
+          <path d="M16.5 7.5h.01" />
         </svg>
       );
     case 'food':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-          <path d="M4 2h2v9a2 2 0 104 0V2h2v9a4 4 0 11-8 0V2zm12 0h2v8h2v12h-2v-6h-2V2z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M5 6h9v7a4 4 0 01-4 4H9a4 4 0 01-4-4V6z" />
+          <path d="M14 8h2a3 3 0 010 6h-2" />
+          <path d="M7 4h5" />
         </svg>
       );
     case 'accommodation':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-          <path d="M3 11l9-7 9 7v10a1 1 0 01-1 1h-6v-6H10v6H4a1 1 0 01-1-1V11z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M4 20V6a2 2 0 012-2h12a2 2 0 012 2v14" />
+          <path d="M9 20v-3a3 3 0 013-3h0a3 3 0 013 3v3" />
+          <rect x="7" y="7.5" width="2" height="2" rx="0.4" />
+          <rect x="15" y="7.5" width="2" height="2" rx="0.4" />
+          <rect x="7" y="11" width="2" height="2" rx="0.4" />
+          <rect x="15" y="11" width="2" height="2" rx="0.4" />
         </svg>
       );
     case 'flight':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-          <path d="M2 13l1-2 8 1.5V5.5A1.5 1.5 0 0112.5 4 1.5 1.5 0 0114 5.5V12L21 13l1 2-8-1.5v4L16 19v1l-4-.5L8 20v-1l2-1.5v-4L2 13z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M2.5 15.5l8.5-3V5a2 2 0 014 0v7.5l8.5 3" />
+          <path d="M10.5 12.5v7l1.5-1 1.5 1v-7" />
         </svg>
       );
     case 'transport':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-          <path d="M5 4a3 3 0 013-3h8a3 3 0 013 3v14a3 3 0 01-3 3l1.5 1.5V23h-2l-2-2h-3l-2 2H5.5v-.5L7 21a3 3 0 01-2-3V4zm2 6h10V4a1 1 0 00-1-1H8a1 1 0 00-1 1v6zm0 2v3a1 1 0 001 1h8a1 1 0 001-1v-3H7z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M6 7a4 4 0 014-4h4a4 4 0 014 4v8a3 3 0 01-3 3H9a3 3 0 01-3-3V7z" />
+          <path d="M8 7h8" />
+          <path d="M8 11h8" />
+          <circle cx="10" cy="15" r="1" />
+          <circle cx="14" cy="15" r="1" />
+          <path d="M9 18l-2 2" />
+          <path d="M15 18l2 2" />
         </svg>
       );
     default:
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-          <path d="M12 2a5 5 0 015 5c0 2.5-1.5 4.5-3 6l-2 3-2-3c-1.5-1.5-3-3.5-3-6a5 5 0 015-5zm0 7a2 2 0 100-4 2 2 0 000 4z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M12 22s7-7 7-13a7 7 0 10-14 0c0 6 7 13 7 13z" />
+          <circle cx="12" cy="9" r="2.5" />
         </svg>
       );
   }
@@ -189,46 +221,78 @@ export function TypeIcon({ type }) {
 
 function TravelModeIcon({ mode }) {
   const className = 'h-4 w-4';
+  const strokeProps = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.6,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  };
   switch (mode) {
     case 'walk':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
-          <path d="M13 5a2 2 0 10-2-2 2 2 0 002 2zM9 22l1-4-2.5-3.5L5 18v4H3v-6l3-4 2-4 2.5 1 1.5-2.5L15 7l2 1-3 5 2 2v7h-2v-5l-2-2-1 4-2 3H9z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <circle cx="12" cy="5" r="2" />
+          <path d="M8 22l2-5-2-3 2-4 4 1 2 3" />
+          <path d="M14 10l-1 4 3 3" />
+          <path d="M6 15l-2 3" />
         </svg>
       );
     case 'train':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
-          <path d="M7 3a5 5 0 00-5 5v8a3 3 0 003 3L3 21v1h2l3-2h8l3 2h2v-1l-2-2a3 3 0 003-3V8a5 5 0 00-5-5H7zm0 2h10a3 3 0 013 3v5H4V8a3 3 0 013-3zm0 12a1 1 0 110-2 1 1 0 010 2zm10 0a1 1 0 110-2 1 1 0 010 2z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M7 4h10a4 4 0 014 4v7a3 3 0 01-3 3H6a3 3 0 01-3-3V8a4 4 0 014-4z" />
+          <path d="M7 8h10" />
+          <path d="M7 11h10" />
+          <circle cx="9" cy="16" r="1" />
+          <circle cx="15" cy="16" r="1" />
+          <path d="M8 19l-2 2" />
+          <path d="M16 19l2 2" />
         </svg>
       );
     case 'tube':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
-          <path d="M12 2a7 7 0 017 7v4a7 7 0 01-14 0V9a7 7 0 017-7zm-9 8h2v4H3v-4zm15 7l1.5 3h-2.2l-.8-1.5H7.5L6.7 20H4.5L6 17h12zm3-3h-2v-4h2v4z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <rect x="5" y="3" width="14" height="16" rx="5" />
+          <path d="M8 9h8" />
+          <path d="M8 12h8" />
+          <circle cx="9" cy="16" r="1" />
+          <circle cx="15" cy="16" r="1" />
+          <path d="M8 19l-2 2" />
+          <path d="M16 19l2 2" />
         </svg>
       );
     case 'taxi':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
-          <path d="M7 4l1-2h8l1 2h3a2 2 0 012 2v4l-2 8h-2a2 2 0 01-4 0H10a2 2 0 01-4 0H4L2 10V6a2 2 0 012-2h3zm-3 6h16V6H4v4zm3 6a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11" />
+          <path d="M4 11h16a2 2 0 012 2v3" />
+          <path d="M4 16v-3a2 2 0 012-2" />
+          <circle cx="8" cy="17" r="1.5" />
+          <circle cx="16" cy="17" r="1.5" />
+          <path d="M10 5h4" />
         </svg>
       );
     case 'car':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
-          <path d="M4 11l1.5-4.5A2 2 0 017.4 5h9.2a2 2 0 011.9 1.5L20 11v7h-2a2 2 0 01-4 0H10a2 2 0 01-4 0H4v-7zm2.4-4l-.9 3h13l-.9-3H6.4zM7 17a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11" />
+          <path d="M4 11h16a2 2 0 012 2v3" />
+          <path d="M4 16v-3a2 2 0 012-2" />
+          <circle cx="8" cy="17" r="1.5" />
+          <circle cx="16" cy="17" r="1.5" />
         </svg>
       );
     case 'flight':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
-          <path d="M2 13l1-2 8 1.5V5.5A1.5 1.5 0 0112.5 4 1.5 1.5 0 0114 5.5V12L21 13l1 2-8-1.5v4L16 19v1l-4-.5L8 20v-1l2-1.5v-4L2 13z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M2.5 15.5l8.5-3V5a2 2 0 014 0v7.5l8.5 3" />
+          <path d="M10.5 12.5v7l1.5-1 1.5 1v-7" />
         </svg>
       );
     default:
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className={className}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
           <circle cx="12" cy="12" r="2" />
         </svg>
       );
