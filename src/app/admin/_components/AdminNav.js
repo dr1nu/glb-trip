@@ -7,6 +7,7 @@ const items = [
   { href: '/admin', label: 'Trips' },
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/templates', label: 'Templates' },
+  { href: '/admin/homepage', label: 'Homepage' },
 ];
 
 export default function AdminNav() {
