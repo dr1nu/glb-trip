@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { listTripsByOwner } from '@/lib/db';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import SignOutButton from './_components/SignOutButton';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -265,7 +264,7 @@ export default async function MyTripsPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#E9F2FF] via-white to-[#FFF6ED] text-neutral-900">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-28 pt-10 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-24 pt-10 sm:px-6 lg:px-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-neutral-900">My Trips</h1>
@@ -276,11 +275,10 @@ export default async function MyTripsPage() {
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href="/"
-                className="text-sm font-semibold text-neutral-700 hover:text-neutral-900"
+                className="rounded-2xl border border-orange-100 bg-white px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-50"
               >
                 New search
               </Link>
-              <SignOutButton />
             </div>
         </header>
 

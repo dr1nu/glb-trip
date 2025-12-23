@@ -33,6 +33,12 @@ function deriveAccommodationFromStyle(style) {
   return 'hotel';
 }
 
+function deriveBathroomPreference(style) {
+  const normalized = (style || '').toLowerCase();
+  if (normalized.includes('shoe') || normalized.includes('budget')) return 'no';
+  return 'yes';
+}
+
 function normalizeAccommodationChoice(value, fallback = '') {
   const allowed = new Set(['hostel', 'hotel', 'luxury']);
   if (allowed.has(value)) return value;
@@ -166,6 +172,9 @@ export default function TripRequestPage() {
       const styleAccommodation = deriveAccommodationFromStyle(
         trip.travelStyle || trip.result?.styleLabel
       );
+      const defaultBathroom = deriveBathroomPreference(
+        trip.travelStyle || trip.result?.styleLabel
+      );
       const derivedAccommodation = normalizeAccommodationChoice(
         prev.accommodation,
         styleAccommodation
@@ -179,6 +188,10 @@ export default function TripRequestPage() {
         flexibleDays: prev.flexibleDays || trip.tripLengthDays || '',
         rangeDays: prev.rangeDays || trip.tripLengthDays || '',
         accommodation: derivedAccommodation,
+        accommodationBathroom:
+          prev.accommodationBathroom && prev.accommodationBathroom !== 'either'
+            ? prev.accommodationBathroom
+            : defaultBathroom,
       };
     });
   }, [trip]);
@@ -189,6 +202,10 @@ export default function TripRequestPage() {
     const styleAccommodation = deriveAccommodationFromStyle(
       trip?.travelStyle || trip?.result?.styleLabel
     );
+    const defaultBathroom = deriveBathroomPreference(
+      trip?.travelStyle || trip?.result?.styleLabel
+    );
+    const profileBathroom = profile.travelPreferences.accommodationBathroom;
     setForm((prev) => ({
       ...prev,
       firstName: profile.firstName || profile.fullName || prev.firstName || '',
@@ -219,7 +236,11 @@ export default function TripRequestPage() {
       accommodationBreakfast:
         prev.accommodationBreakfast || profile.travelPreferences.accommodationBreakfast || 'either',
       accommodationBathroom:
-        prev.accommodationBathroom || profile.travelPreferences.accommodationBathroom || 'either',
+        profileBathroom && profileBathroom !== 'either'
+          ? profileBathroom
+          : prev.accommodationBathroom && prev.accommodationBathroom !== 'either'
+            ? prev.accommodationBathroom
+            : defaultBathroom,
       accommodationLocation:
         prev.accommodationLocation || profile.travelPreferences.accommodationLocation || 'either',
       interests:
@@ -839,34 +860,6 @@ export default function TripRequestPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 text-sm">
-                <span className="font-medium text-[#0F172A]">Location preferences</span>
-                <div className="mt-1 flex w-full flex-nowrap gap-3 overflow-x-auto">
-                  {[
-                    { value: 'central', label: 'Central & walkable' },
-                    { value: 'either', label: 'Flexible' },
-                    { value: 'quiet', label: 'Quieter / residential' },
-                  ].map((opt) => {
-                    const active = form.accommodationLocation === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() =>
-                          setForm((prev) => ({ ...prev, accommodationLocation: opt.value }))
-                        }
-                        className={`flex-1 rounded-xl border px-3 py-2 whitespace-nowrap transition ${
-                          active
-                            ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
-                            : 'border-orange-100 text-[#0F172A] bg-white hover:border-orange-200 hover:bg-orange-50/60'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
 
             <div className="space-y-2">
@@ -919,7 +912,7 @@ export default function TripRequestPage() {
                 onChange={handleInputChange}
                 rows={4}
                 className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A] resize-none"
-                placeholder="Dietary needs, accessibility, must-see experiences..."
+                placeholder="Tell us about any other information not mentioned in the form... Must see experiences, travel style, what you want to do, location preferences, do you already have flights booked and just want an itinerary etc... The more detail the better the result!"
               />
             </label>
 

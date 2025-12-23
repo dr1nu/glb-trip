@@ -317,11 +317,20 @@ export default function AccountPage() {
           {user ? (
             <section className="rounded-3xl border border-[#E3E6EF] bg-white p-6 shadow-xl shadow-orange-100/60">
               <form className="space-y-6" onSubmit={handleSave}>
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-semibold">Profile</h2>
-                  <p className="text-sm text-[#374151]">
-                    Keep this info up to date so we can tailor your itineraries faster.
-                  </p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-semibold">Profile</h2>
+                    <p className="text-sm text-[#374151]">
+                      Keep this info up to date so we can tailor your itineraries faster.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center rounded-2xl border border-orange-200 px-5 py-2 text-sm font-semibold text-[#C2461E] transition hover:bg-[#FFE7DA]"
+                    onClick={handleSignOut}
+                  >
+                    Sign out
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -363,9 +372,6 @@ export default function AccountPage() {
                     disabled
                     className="cursor-not-allowed rounded-xl border border-[#E3E6EF] bg-white px-3 py-2 text-[#374151]"
                   />
-                  <span className="text-xs text-[#374151]">
-                    Email updates require assistance from support (coming soon).
-                  </span>
                 </label>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -411,9 +417,6 @@ export default function AccountPage() {
                         </option>
                       ))}
                     </select>
-                    <span className="text-xs text-[#374151]">
-                      We pre-fill major international airports based on your home country.
-                    </span>
                   </label>
                 </div>
 
@@ -481,7 +484,7 @@ export default function AccountPage() {
                   </div>
                 ) : null}
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                   <button
                     type="submit"
                     disabled={saving}
@@ -492,13 +495,6 @@ export default function AccountPage() {
                     }`}
                   >
                     {saving ? 'Saving…' : 'Save changes'}
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex w-full items-center justify-center rounded-2xl border border-orange-200 px-5 py-3 text-sm font-semibold text-[#C2461E] transition hover:bg-[#FFE7DA] sm:w-auto"
-                    onClick={handleSignOut}
-                  >
-                    Sign out
                   </button>
                 </div>
               </form>

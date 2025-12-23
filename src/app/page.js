@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
 import { getDailyBreakdown, STYLE_PRESETS } from '@/lib/pricing';
 import { COUNTRY_HUBS, estimateReturnFare } from '@/lib/airfare';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { composeProfilePayload } from '@/lib/profile';
 import AuthForm from '@/components/auth/AuthForm';
-import ItinerarySummary from '@/app/trip/[tripId]/_components/ItinerarySummary';
 import { HOMEPAGE_TEMPLATES } from '@/data/homepageTemplates';
 import { DEFAULT_HOMEPAGE_DESTINATIONS } from '@/data/homepageDefaults';
 
@@ -1062,7 +1062,7 @@ function FormCard({
         onSubmit();
       }}
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="flex w-full flex-col gap-2">
           <label className="text-sm font-medium text-[#4B5563]">Home</label>
           <select
@@ -1200,11 +1200,6 @@ function StyleToggle({ value, onChange }) {
 
 function PopularDestinations({ images = [], destinations = [], templatesById = {} }) {
   const hasImages = Array.isArray(images) && images.length > 0;
-  const [selectedCity, setSelectedCity] = useState(null);
-  const activeDestination = destinations.find((item) => item.city === selectedCity) ?? null;
-  const selectedTemplate = activeDestination?.templateId
-    ? templatesById[activeDestination.templateId]
-    : HOMEPAGE_TEMPLATES[selectedCity];
 
   return (
     <section className="space-y-3">
@@ -1234,17 +1229,18 @@ function PopularDestinations({ images = [], destinations = [], templatesById = {
           const backgroundClass = imageUrl
             ? 'h-48 bg-cover bg-center'
             : `h-48 bg-gradient-to-r ${item.color}`;
-          const isActive = selectedCity === item.city;
-          const hasTemplate = Boolean(item.templateId || HOMEPAGE_TEMPLATES[item.city]);
+          const hasTemplate = Boolean(
+            (item.templateId && templatesById[item.templateId]) ||
+              item.templateId ||
+              HOMEPAGE_TEMPLATES[item.city]
+          );
 
           return (
-            <button
+            <Link
               key={item.city}
-              type="button"
-              onClick={() => setSelectedCity(item.city)}
-              aria-pressed={isActive}
+              href={`/popular/${encodeURIComponent(item.city)}`}
               className={`group overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-100 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100 ${
-                isActive ? 'border-orange-300 ring-2 ring-orange-200' : 'border-white/70'
+                hasTemplate ? 'border-white/70' : 'border-slate-200'
               }`}
             >
               <div
@@ -1258,46 +1254,10 @@ function PopularDestinations({ images = [], destinations = [], templatesById = {
                   {hasTemplate ? 'Sample itinerary' : 'Preview soon'}
                 </p>
               </div>
-            </button>
+            </Link>
           );
         })}
       </div>
-      {selectedCity ? (
-        <div className="rounded-3xl border border-orange-100 bg-white/80 p-4 shadow-lg shadow-orange-100/40">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[#C2461E]">Template preview</p>
-              <h3 className="text-lg font-semibold text-neutral-900">
-                {selectedTemplate?.name ?? `${selectedCity} sample`}
-              </h3>
-              <p className="text-sm text-[#4C5A6B]">
-                {selectedTemplate?.summary ??
-                  'A short sample to preview the vibe before you start planning.'}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedCity(null)}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-orange-200 hover:text-[#C2461E] transition"
-            >
-              Close
-            </button>
-          </div>
-          <div className="mt-4">
-            {selectedTemplate ? (
-              <ItinerarySummary
-                cards={selectedTemplate.itinerary?.cards ?? []}
-                title={selectedTemplate.name}
-                description={selectedTemplate.description ?? selectedTemplate.notes ?? 'Sample itinerary preview.'}
-              />
-            ) : (
-              <div className="rounded-2xl border border-slate-200/70 bg-white p-6 text-sm text-[#4C5A6B] shadow-sm shadow-slate-100">
-                We&apos;re curating a sample itinerary for {selectedCity}. Check back soon.
-              </div>
-            )}
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }
