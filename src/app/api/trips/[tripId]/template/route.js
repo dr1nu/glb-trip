@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { getTrip, updateTrip } from '@/lib/db';
 import { getTemplate } from '@/lib/templates';
@@ -86,6 +87,49 @@ export async function POST(request, context) {
       );
     }
 
+    const appliedDayIds = new Set(
+      selectedDayCards.slice(0, replaceCount).map((card) => card.id)
+    );
+    const leftoverDayCards = templateDayCards.filter(
+      (card) => !appliedDayIds.has(card.id)
+    );
+    const leftoverActivities = [];
+    for (const card of leftoverDayCards) {
+      const timeline = sanitizeTimeline(card?.timeline);
+      if (timeline.length) {
+        timeline.forEach((item) => {
+          leftoverActivities.push({
+            ...item,
+            id: crypto.randomUUID(),
+          });
+        });
+        continue;
+      }
+
+      const title =
+        typeof card?.title === 'string' && card.title.trim()
+          ? card.title.trim()
+          : 'Template day';
+      const description =
+        typeof card?.summary === 'string' && card.summary.trim()
+          ? card.summary.trim()
+          : '';
+      leftoverActivities.push({
+        id: crypto.randomUUID(),
+        type: 'activity',
+        fields: {
+          title,
+          time: '',
+          price: '',
+          link: '',
+          description,
+          travelMode: '',
+          travelDuration: '',
+          tag: 'Template day',
+        },
+      });
+    }
+
     for (let i = 0; i < replaceCount; i += 1) {
       const target = tripDayIndices[i];
       const templateCard = selectedDayCards[i];
@@ -103,7 +147,7 @@ export async function POST(request, context) {
         ...trip.itinerary,
         updatedAt: new Date().toISOString(),
         cards: tripCards,
-        unassignedActivities: templateUnassigned,
+        unassignedActivities: [...templateUnassigned, ...leftoverActivities],
       },
       published: false,
     });

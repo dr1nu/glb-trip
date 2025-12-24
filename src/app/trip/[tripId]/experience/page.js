@@ -39,6 +39,10 @@ export default async function TripExperiencePage({ params, searchParams }) {
     notFound();
   }
 
+  if (!fromAdmin && !trip.published) {
+    redirect(`/trip/${tripId}`);
+  }
+
   const itinerary = trip.itinerary ?? null;
   if (!itinerary?.cards?.length) {
     const fallback = fromAdmin ? `/trip/${tripId}?from=admin` : `/trip/${tripId}`;

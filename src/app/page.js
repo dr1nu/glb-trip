@@ -222,7 +222,7 @@ function formatShortDate(value) {
   if (!date) return '—';
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
-  return `${month}/${day}`;
+  return `${day}/${month}`;
 }
 
 function formatShortRange(startValue, endValue) {
@@ -1506,20 +1506,28 @@ function formatDateRange(startValue, endValue) {
   const end = toDate(endValue);
   if (!start && !end) return 'Dates pending';
   if (start && !end) {
-    return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return start.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
   if (!start && end) {
-    return end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return end.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
   const sameYear = start.getFullYear() === end.getFullYear();
-  const startLabel = start.toLocaleDateString('en-US', {
+  const startLabel = start.toLocaleDateString('en-GB', {
+    day: '2-digit',
     month: 'short',
-    day: 'numeric',
     year: sameYear ? undefined : 'numeric',
   });
-  const endLabel = end.toLocaleDateString('en-US', {
+  const endLabel = end.toLocaleDateString('en-GB', {
+    day: '2-digit',
     month: 'short',
-    day: 'numeric',
     year: 'numeric',
   });
   return `${startLabel} – ${endLabel}`;

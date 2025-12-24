@@ -323,9 +323,41 @@ function timelinesEqual(a, b) {
   return JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
 }
 
-export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
+function parsePriceValue(raw) {
+  if (typeof raw !== 'string') return 0;
+  const match = raw.match(/[\d,.]+/);
+  if (!match) return 0;
+  const normalized = match[0].replace(/,/g, '.');
+  const value = Number.parseFloat(normalized);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function sumTimelinePrices(timeline) {
+  return (timeline ?? []).reduce((total, entry) => {
+    const price = parsePriceValue(entry?.fields?.price ?? '');
+    return total + price;
+  }, 0);
+}
+
+export default function DayTimelineBuilder({
+  dayCards,
+  onTimelineChange,
+  onMoveEntry,
+  onSwapDays,
+  onReorderDay,
+  unassignedActivities,
+  onAssignActivity,
+  onUnassignedChange,
+  onUnassignedTypeChange,
+  onUnassignedDelete,
+  onAddUnassigned,
+}) {
   const dayOptions = useMemo(() => dayCards ?? [], [dayCards]);
   const [activeDayId, setActiveDayId] = useState(dayOptions[0]?.id ?? null);
+  const [expandedEntryId, setExpandedEntryId] = useState(null);
+  const [showUnassigned, setShowUnassigned] = useState(true);
+  const [swapTargetId, setSwapTargetId] = useState('');
+  const showUnassignedSection = Array.isArray(unassignedActivities);
 
   useEffect(() => {
     if (!activeDayId && dayOptions.length > 0) {
@@ -335,9 +367,24 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
     }
   }, [activeDayId, dayOptions]);
 
+  useEffect(() => {
+    setExpandedEntryId(null);
+  }, [activeDayId]);
+
+  useEffect(() => {
+    if (showUnassignedSection && unassignedActivities.length > 0) {
+      setShowUnassigned(true);
+    }
+  }, [unassignedActivities, showUnassignedSection]);
+
   const activeDay =
     dayOptions.find((card) => card.id === activeDayId) ?? dayOptions[0] ?? null;
   const activeTimeline = activeDay ? getTimeline(activeDay) : [];
+  const dayTotal = useMemo(
+    () => Math.round(sumTimelinePrices(activeTimeline)),
+    [activeTimeline]
+  );
+  const activeDayIndex = dayOptions.findIndex((card) => card.id === activeDay?.id);
 
   function commitTimeline(nextTimeline) {
     if (!activeDay) return;
@@ -352,6 +399,7 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
     const next = [...activeTimeline];
     next.splice(index, 0, entry);
     commitTimeline(next);
+    setExpandedEntryId(entry.id);
   }
 
   function handleDelete(entryId) {
@@ -426,6 +474,16 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
     commitTimeline(next);
   }
 
+  function handleAddAttraction() {
+    handleAddItem('attraction', activeTimeline.length);
+  }
+
+  function handleSwapDays() {
+    if (!activeDay || !swapTargetId) return;
+    onSwapDays?.(activeDay.id, swapTargetId);
+    setSwapTargetId('');
+  }
+
   if (!activeDay) {
     return (
       <section className="bg-white border border-orange-100 rounded-2xl p-6">
@@ -438,7 +496,7 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
 
   return (
     <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-      <header className="space-y-2">
+      <header className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Day-by-day builder</h2>
@@ -466,9 +524,53 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
             ))}
           </div>
         </div>
-        <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
-          {activeDay.subtitle}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-wide text-[#4C5A6B]">
+          <span>{activeDay.subtitle}</span>
+          <span>{dayTotal > 0 ? `Day total: €${dayTotal}` : 'Day total: —'}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[#4C5A6B]">
+          <button
+            type="button"
+            onClick={() => onReorderDay?.(activeDay.id, -1)}
+            disabled={activeDayIndex <= 0}
+            className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
+          >
+            Move earlier
+          </button>
+          <button
+            type="button"
+            onClick={() => onReorderDay?.(activeDay.id, 1)}
+            disabled={activeDayIndex === -1 || activeDayIndex >= dayOptions.length - 1}
+            className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
+          >
+            Move later
+          </button>
+          <label className="flex items-center gap-2">
+            <span>Swap with</span>
+            <select
+              value={swapTargetId}
+              onChange={(event) => setSwapTargetId(event.target.value)}
+              className="rounded-full border border-orange-100 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            >
+              <option value="">Select day</option>
+              {dayOptions
+                .filter((card) => card.id !== activeDay.id)
+                .map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.title}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={handleSwapDays}
+            disabled={!swapTargetId}
+            className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
+          >
+            Swap
+          </button>
+        </div>
       </header>
 
       <Palette onAdd={handleAddItem} />
@@ -488,6 +590,8 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
               key={entry.id}
               entry={entry}
               index={index}
+              dayOptions={dayOptions}
+              activeDayId={activeDay.id}
               onDropCard={(event) => handleDrop(event, index)}
               onDragOverCard={handleDragOver}
               onDragStart={(event) => {
@@ -500,10 +604,77 @@ export default function DayTimelineBuilder({ dayCards, onTimelineChange }) {
               onFieldChange={handleFieldChange}
               onTypeChange={handleTypeChange}
               onDelete={handleDelete}
+              onMoveEntry={(entryId, targetDayId) =>
+                onMoveEntry?.(entryId, activeDay.id, targetDayId)
+              }
+              isExpanded={expandedEntryId === entry.id}
+              onToggle={() =>
+                setExpandedEntryId((prev) => (prev === entry.id ? null : entry.id))
+              }
             />
           ))
         )}
+        <button
+          type="button"
+          onClick={handleAddAttraction}
+          className="flex items-center justify-center gap-2 w-full border border-dashed border-orange-200 rounded-2xl px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50"
+        >
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600">
+            +
+          </span>
+          Add attraction
+        </button>
       </div>
+
+      {showUnassignedSection ? (
+        <section className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4 space-y-3">
+          <header className="flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowUnassigned((prev) => !prev)}
+              className="text-sm font-semibold text-slate-900"
+            >
+              {showUnassigned ? 'Hide' : 'Show'} unassigned activities
+            </button>
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-[#4C5A6B]">
+              <span>
+                {unassignedActivities.length
+                  ? `${unassignedActivities.length} in pool`
+                  : 'None yet'}
+              </span>
+              <button
+                type="button"
+                onClick={() => onAddUnassigned?.()}
+                className="inline-flex items-center justify-center rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-orange-600"
+              >
+                Add activity
+              </button>
+            </div>
+          </header>
+          {showUnassigned ? (
+            <div className="space-y-3">
+              {unassignedActivities.length ? (
+                unassignedActivities.map((activity) => (
+                  <UnassignedActivityCard
+                    key={activity.id}
+                    activity={activity}
+                    dayCards={dayOptions}
+                    onAssign={onAssignActivity}
+                    onChange={onUnassignedChange}
+                    onTypeChange={onUnassignedTypeChange}
+                    onDelete={onUnassignedDelete}
+                  />
+                ))
+              ) : (
+                <div className="border border-dashed border-orange-100 rounded-xl px-4 py-6 text-sm text-[#4C5A6B] text-center">
+                  All optional activities are assigned. Anything left here will show in the Other
+                  Activities tab for travellers.
+                </div>
+              )}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       <p className="text-xs text-[#4C5A6B]">
         Changes are tracked automatically—remember to save the entire trip.
@@ -539,9 +710,7 @@ function Palette({ onAdd }) {
             <p className="font-semibold">{item.label}</p>
             <p className="text-xs text-[#4C5A6B]">{item.description}</p>
           </div>
-          <p className="text-[11px] text-[#4C5A6B]">
-            One card style—pick the type for the correct icon. Travel connector is optional.
-          </p>
+          <span className="sr-only">Add a timeline item of this type.</span>
         </button>
       ))}
     </div>
@@ -551,12 +720,17 @@ function Palette({ onAdd }) {
 function TimelineCard({
   entry,
   index,
+  dayOptions,
+  activeDayId,
   onDragStart,
   onDragOverCard,
   onDropCard,
   onFieldChange,
   onTypeChange,
   onDelete,
+  onMoveEntry,
+  isExpanded,
+  onToggle,
 }) {
   const meta = getTypeMeta(entry.type);
   const fieldsForType = FIELD_DEFS_BY_TYPE[entry.type] ?? FIELD_DEFS_BY_TYPE.default;
@@ -564,13 +738,15 @@ function TimelineCard({
     typeof entry.fields?.title === 'string' && entry.fields.title.trim()
       ? entry.fields.title.trim()
       : null;
+  const [moveTargetId, setMoveTargetId] = useState('');
   return (
     <div
-      className={`border rounded-2xl bg-gradient-to-b ${meta.accent} ${meta.border} p-4 space-y-4`}
+      className={`border rounded-2xl bg-gradient-to-b ${meta.accent} ${meta.border} p-4 space-y-4 cursor-grab active:cursor-grabbing`}
       draggable
       onDragStart={onDragStart}
       onDragOver={onDragOverCard}
       onDrop={onDropCard}
+      onClick={onToggle}
     >
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -589,6 +765,7 @@ function TimelineCard({
               <select
                 value={entry.type}
                 onChange={(event) => onTypeChange(entry.id, event.target.value)}
+                onClick={(event) => event.stopPropagation()}
                 className="bg-white/80 border border-orange-100 rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
               >
                 {TYPE_OPTIONS.map((option) => (
@@ -600,67 +777,276 @@ function TimelineCard({
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => onDelete(entry.id)}
-          className="text-xs text-[#4C5A6B] hover:text-red-400"
-        >
-          Remove
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggle?.();
+            }}
+            className="text-xs font-semibold text-[#4C5A6B] hover:text-slate-900"
+          >
+            {isExpanded ? 'Hide details' : 'Show details'}
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(entry.id);
+            }}
+            className="text-xs text-[#4C5A6B] hover:text-red-400"
+          >
+            Remove
+          </button>
+        </div>
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {fieldsForType.map((field) => (
-          <label key={field.name} className="flex flex-col gap-1 text-sm">
-            <span className="text-[#4C5A6B]">{field.label}</span>
-            {field.type === 'select' ? (
+      {isExpanded ? (
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {fieldsForType.map((field) => (
+            <label key={field.name} className="flex flex-col gap-1 text-sm">
+              <span className="text-[#4C5A6B]">{field.label}</span>
+              {field.type === 'select' ? (
+                <select
+                  value={entry.fields?.[field.name] ?? ''}
+                  onChange={(event) =>
+                    onFieldChange(entry.id, field.name, event.target.value)
+                  }
+                  className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  {field.options?.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : field.multiline ? (
+                <textarea
+                  value={entry.fields?.[field.name] ?? ''}
+                  onChange={(event) =>
+                    onFieldChange(entry.id, field.name, event.target.value)
+                  }
+                  rows={3}
+                  className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder={field.placeholder}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={entry.fields?.[field.name] ?? ''}
+                  onChange={(event) =>
+                    onFieldChange(entry.id, field.name, event.target.value)
+                  }
+                  className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder={field.placeholder}
+                />
+              )}
+            </label>
+          ))}
+          <div className="flex items-end gap-2">
+            <label className="flex flex-col gap-1 text-sm flex-1">
+              <span className="text-[#4C5A6B]">Move to day</span>
               <select
-                value={entry.fields?.[field.name] ?? ''}
-                onChange={(event) =>
-                  onFieldChange(entry.id, field.name, event.target.value)
-                }
+                value={moveTargetId}
+                onChange={(event) => setMoveTargetId(event.target.value)}
                 className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                {field.options?.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
+                <option value="">Select day</option>
+                {dayOptions
+                  .filter((card) => card.id !== activeDayId)
+                  .map((card) => (
+                    <option key={card.id} value={card.id}>
+                      {card.title}
+                    </option>
+                  ))}
               </select>
-            ) : field.multiline ? (
-              <textarea
-                value={entry.fields?.[field.name] ?? ''}
-                onChange={(event) =>
-                  onFieldChange(entry.id, field.name, event.target.value)
-                }
-                rows={3}
-                className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder={field.placeholder}
-              />
-            ) : (
-              <input
-                type="text"
-                value={entry.fields?.[field.name] ?? ''}
-                onChange={(event) =>
-                  onFieldChange(entry.id, field.name, event.target.value)
-                }
-                className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder={field.placeholder}
-              />
-            )}
-          </label>
-        ))}
-      </div>
-      <div className="flex items-center justify-between text-xs text-[#4C5A6B]">
-        <span>Drag to reorder. Travel connector fields are optional.</span>
-        {entry.fields?.travelMode ? (
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                if (!moveTargetId) return;
+                onMoveEntry?.(entry.id, moveTargetId);
+                setMoveTargetId('');
+              }}
+              disabled={!moveTargetId}
+              className="rounded-xl border border-orange-100 px-3 py-2 text-sm font-semibold text-slate-900 disabled:opacity-50"
+            >
+              Move
+            </button>
+          </div>
+        </div>
+      ) : (
+        <span className="sr-only">Details collapsed</span>
+      )}
+      {entry.fields?.travelMode ? (
+        <div className="flex items-center justify-end text-xs text-[#4C5A6B]">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 border border-orange-100 text-[11px] font-semibold text-slate-700">
             <TravelModeIcon mode={entry.fields.travelMode} />
             {TRAVEL_MODES.find((mode) => mode.value === entry.fields.travelMode)?.label ??
               entry.fields.travelMode}
             {entry.fields.travelDuration ? ` • ${entry.fields.travelDuration}` : ''}
           </span>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+function UnassignedActivityCard({ activity, dayCards, onAssign, onChange, onTypeChange, onDelete }) {
+  const fields = activity.fields ?? {};
+  const [dayId, setDayId] = useState(dayCards[0]?.id ?? '');
+
+  useEffect(() => {
+    if (!dayCards.length) return;
+    if (!dayId || !dayCards.some((card) => card.id === dayId)) {
+      setDayId(dayCards[0].id);
+    }
+  }, [dayCards, dayId]);
+
+  const description =
+    typeof fields.description === 'string' && fields.description.trim()
+      ? fields.description.trim()
+      : '';
+  const price =
+    typeof fields.price === 'string' && fields.price.trim()
+      ? fields.price.trim()
+      : '';
+  const link = typeof fields.link === 'string' ? fields.link.trim() : '';
+
+  return (
+    <article className="bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] border border-orange-100 rounded-2xl p-4 space-y-3">
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-11 w-11 rounded-full border border-orange-200 bg-white flex items-center justify-center text-orange-500">
+            <TypeIcon type={activity.type} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">
+              {fields.title?.trim() || 'Untitled activity'}
+            </p>
+            <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
+              Not scheduled yet
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {price ? (
+            <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-white text-slate-900 border border-orange-100">
+              {price}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => onDelete?.(activity.id)}
+            className="text-xs text-[#4C5A6B] hover:text-red-400"
+          >
+            Remove
+          </button>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-[#4C5A6B]">Type</span>
+          <select
+            value={activity.type}
+            onChange={(event) => onTypeChange?.(activity.id, event.target.value)}
+            className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            {TIMELINE_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm md:col-span-2">
+          <span className="text-[#4C5A6B]">Title</span>
+          <input
+            type="text"
+            value={fields.title ?? ''}
+            onChange={(event) => onChange?.(activity.id, 'title', event.target.value)}
+            placeholder="Cooking class, sunset walk, backup museum"
+            className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
+        </label>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-[#4C5A6B]">Description</span>
+          <textarea
+            rows={2}
+            value={description}
+            onChange={(event) => onChange?.(activity.id, 'description', event.target.value)}
+            placeholder="Why it matters, inclusions, or notes."
+            className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-[#4C5A6B]">Suggested time</span>
+            <input
+              type="text"
+              value={fields.time ?? ''}
+              onChange={(event) => onChange?.(activity.id, 'time', event.target.value)}
+              placeholder="e.g. 18:00 or Afternoon"
+              className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-[#4C5A6B]">Badge or price</span>
+            <input
+              type="text"
+              value={fields.price ?? ''}
+              onChange={(event) => onChange?.(activity.id, 'price', event.target.value)}
+              placeholder="Free or €25"
+              className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+            <span className="text-[#4C5A6B]">Link</span>
+            <input
+              type="text"
+              value={link}
+              onChange={(event) => onChange?.(activity.id, 'link', event.target.value)}
+              placeholder="https://experience.com"
+              className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 pt-1">
+        <label className="flex items-center gap-2 text-sm text-[#4C5A6B]">
+          <span>Assign to</span>
+          <select
+            value={dayId}
+            onChange={(event) => setDayId(event.target.value)}
+            className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            {dayCards.map((card) => (
+              <option key={card.id} value={card.id}>
+                {card.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={() => onAssign?.(activity.id, dayId)}
+          disabled={!dayId || !dayCards.length}
+          className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+            !dayId || !dayCards.length
+              ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
+              : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
+          }`}
+        >
+          Add to day
+        </button>
+      </div>
+    </article>
   );
 }

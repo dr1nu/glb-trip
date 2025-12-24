@@ -171,3 +171,24 @@ export async function listTripsByOwner(ownerId) {
 
   return (data ?? []).map(mapRowToTrip);
 }
+
+export async function deleteTrip(id) {
+  if (!id) throw new Error('Trip ID is required to delete.');
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    console.error('Failed to delete trip', error);
+    throw new Error('Unable to delete trip.');
+  }
+
+  return mapRowToTrip(data);
+}

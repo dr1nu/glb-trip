@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import FlightCardPanel from './FlightCardPanel';
 import AccommodationCardPanel from './AccommodationCardPanel';
 import DayCardPanel from './DayCardPanel';
-import DayTimelineBuilder, { TIMELINE_TYPE_OPTIONS, TypeIcon } from './DayTimelineBuilder';
+import DayTimelineBuilder from './DayTimelineBuilder';
 import { applyCardFieldUpdates } from '@/lib/itinerary';
 
 function hasContent(value) {
@@ -100,6 +100,27 @@ function normalizeActivity(activity = {}) {
   };
 }
 
+function parsePriceValue(raw) {
+  if (typeof raw !== 'string') return 0;
+  const match = raw.match(/[\d,.]+/);
+  if (!match) return 0;
+  const normalized = match[0].replace(/,/g, '.');
+  const value = Number.parseFloat(normalized);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function sumTimelinePrices(timeline) {
+  return (timeline ?? []).reduce((total, entry) => {
+    const price = parsePriceValue(entry?.fields?.price ?? '');
+    return total + price;
+  }, 0);
+}
+
+function buildDailyCost(timeline) {
+  const total = Math.round(sumTimelinePrices(timeline));
+  return total > 0 ? `€${total}` : '';
+}
+
 function prepareActivities(raw = [], { resetDirty = false } = {}) {
   return (raw ?? []).map((activity) => {
     const normalized = normalizeActivity(activity);
@@ -138,9 +159,12 @@ export default function TripBuilderClient({
     type: '',
     message: '',
   });
+  const [orderEdited, setOrderEdited] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [activeView, setActiveView] = useState('summary');
 
   const departureCard = useMemo(
     () => cards.find((card) => card.id === 'departure-flight') ?? null,
@@ -172,16 +196,143 @@ export default function TripBuilderClient({
 
   function handleTimelineChange(cardId, nextTimeline) {
     setFeedback({ type: '', message: '' });
+    const safeTimeline = Array.isArray(nextTimeline) ? nextTimeline : [];
+    const dailyCost = buildDailyCost(safeTimeline);
     setCards((prev) =>
       prev.map((card) => {
         if (card.id !== cardId) return card;
         return {
           ...card,
-          timeline: Array.isArray(nextTimeline) ? nextTimeline : [],
+          timeline: safeTimeline,
+          priceLabel: dailyCost,
+          fields: {
+            ...(card.fields ?? {}),
+            dailyCost,
+          },
           isDirty: true,
         };
       })
     );
+  }
+
+  function handleMoveEntry(entryId, fromDayId, toDayId) {
+    if (!entryId || !fromDayId || !toDayId || fromDayId === toDayId) return;
+    setFeedback({ type: '', message: '' });
+    setCards((prev) => {
+      const fromCard = prev.find((card) => card.id === fromDayId);
+      const toCard = prev.find((card) => card.id === toDayId);
+      if (!fromCard || !toCard) return prev;
+      const fromTimeline = Array.isArray(fromCard.timeline) ? fromCard.timeline : [];
+      const entryIndex = fromTimeline.findIndex((item) => item.id === entryId);
+      if (entryIndex === -1) return prev;
+      const entry = fromTimeline[entryIndex];
+      const nextFromTimeline = fromTimeline.filter((item) => item.id !== entryId);
+      const toTimeline = Array.isArray(toCard.timeline) ? toCard.timeline : [];
+      const fromDailyCost = buildDailyCost(nextFromTimeline);
+      const toDailyCost = buildDailyCost([...toTimeline, entry]);
+
+      return prev.map((card) => {
+        if (card.id === fromDayId) {
+          return {
+            ...card,
+            timeline: nextFromTimeline,
+            priceLabel: fromDailyCost,
+            fields: {
+              ...(card.fields ?? {}),
+              dailyCost: fromDailyCost,
+            },
+            isDirty: true,
+          };
+        }
+        if (card.id === toDayId) {
+          return {
+            ...card,
+            timeline: [...toTimeline, entry],
+            priceLabel: toDailyCost,
+            fields: {
+              ...(card.fields ?? {}),
+              dailyCost: toDailyCost,
+            },
+            isDirty: true,
+          };
+        }
+        return card;
+      });
+    });
+  }
+
+  function handleReorderDay(dayId, direction) {
+    setFeedback({ type: '', message: '' });
+    setCards((prev) => {
+      const dayCards = prev.filter((card) => card.type === 'day');
+      const fromIndex = dayCards.findIndex((card) => card.id === dayId);
+      const toIndex = fromIndex + direction;
+      if (fromIndex === -1 || toIndex < 0 || toIndex >= dayCards.length) {
+        return prev;
+      }
+      const nextDayCards = [...dayCards];
+      const [moved] = nextDayCards.splice(fromIndex, 1);
+      nextDayCards.splice(toIndex, 0, moved);
+
+      let dayCursor = 0;
+      return prev.map((card) => {
+        if (card.type !== 'day') return card;
+        const nextCard = nextDayCards[dayCursor];
+        dayCursor += 1;
+        return nextCard;
+      });
+    });
+    setOrderEdited(true);
+  }
+
+  function handleSwapDays(dayId, targetDayId) {
+    if (!dayId || !targetDayId || dayId === targetDayId) return;
+    setFeedback({ type: '', message: '' });
+    setCards((prev) => {
+      const firstCard = prev.find((card) => card.id === dayId && card.type === 'day');
+      const secondCard = prev.find((card) => card.id === targetDayId && card.type === 'day');
+      if (!firstCard || !secondCard) return prev;
+
+      const firstContent = {
+        fields: firstCard.fields,
+        subtitle: firstCard.subtitle,
+        priceLabel: firstCard.priceLabel,
+        summary: firstCard.summary,
+        timeline: firstCard.timeline,
+        notes: firstCard.notes,
+      };
+      const secondContent = {
+        fields: secondCard.fields,
+        subtitle: secondCard.subtitle,
+        priceLabel: secondCard.priceLabel,
+        summary: secondCard.summary,
+        timeline: secondCard.timeline,
+        notes: secondCard.notes,
+      };
+
+      return prev.map((card) => {
+        if (card.id === dayId) {
+          return {
+            ...card,
+            ...secondContent,
+            id: card.id,
+            title: card.title,
+            isDirty: true,
+          };
+        }
+        if (card.id === targetDayId) {
+          return {
+            ...card,
+            ...firstContent,
+            id: card.id,
+            title: card.title,
+            isDirty: true,
+          };
+        }
+        return card;
+      });
+    });
+    setOrderEdited(true);
   }
 
   function handleAssignActivity(activityId, dayId) {
@@ -193,9 +344,19 @@ export default function TripBuilderClient({
       prev.map((card) => {
         if (card.id !== dayId) return card;
         const existingTimeline = Array.isArray(card.timeline) ? card.timeline : [];
+        const nextTimeline = [
+          ...existingTimeline,
+          { id: activity.id, type: activity.type, fields: activity.fields },
+        ];
+        const dailyCost = buildDailyCost(nextTimeline);
         return {
           ...card,
-          timeline: [...existingTimeline, { id: activity.id, type: activity.type, fields: activity.fields }],
+          timeline: nextTimeline,
+          priceLabel: dailyCost,
+          fields: {
+            ...(card.fields ?? {}),
+            dailyCost,
+          },
           isDirty: true,
         };
       })
@@ -333,6 +494,7 @@ export default function TripBuilderClient({
         : unassignedActivities;
       setUnassignedActivities(prepareActivities(nextActivities, { resetDirty: true }));
       setActivitiesEdited(false);
+      setOrderEdited(false);
       setTemplateFeedback({ type: 'success', message: 'Template applied to this trip.' });
       setFeedback({ type: '', message: '' });
     } catch (err) {
@@ -400,11 +562,15 @@ export default function TripBuilderClient({
 
   const hasDirtyCards = cards.some((card) => card.isDirty);
   const hasDirtyActivities = activitiesEdited || unassignedActivities.some((item) => item.isDirty);
-  const hasDirty = hasDirtyCards || hasDirtyActivities;
+  const hasDirty = hasDirtyCards || hasDirtyActivities || orderEdited;
 
-  async function handleSave() {
-    if (saving || !hasDirty) return;
-    setSaving(true);
+  async function handleSave(publish = false) {
+    if (saving || publishing || (!hasDirty && !publish)) return;
+    if (publish) {
+      setPublishing(true);
+    } else {
+      setSaving(true);
+    }
     setFeedback({ type: '', message: '' });
 
     try {
@@ -423,8 +589,14 @@ export default function TripBuilderClient({
       if (hasDirtyActivities) {
         payload.unassignedActivities = unassignedActivities.map(({ isDirty, ...activity }) => activity);
       }
+      if (orderEdited) {
+        payload.cardOrder = cards.map((card) => card.id);
+      }
+      if (publish) {
+        payload.publish = true;
+      }
 
-      if (!payload.cards && !payload.unassignedActivities) {
+      if (!payload.cards && !payload.unassignedActivities && !payload.cardOrder && !publish) {
         setFeedback({
           type: 'info',
           message: 'No changes to save.',
@@ -454,7 +626,11 @@ export default function TripBuilderClient({
       setCards(prepareCards(nextCards, { resetDirty: true }));
       setUnassignedActivities(prepareActivities(nextActivities, { resetDirty: true }));
       setActivitiesEdited(false);
-      setFeedback({ type: 'success', message: 'Trip saved.' });
+      setOrderEdited(false);
+      setFeedback({
+        type: 'success',
+        message: publish ? 'Trip published.' : 'Draft saved.',
+      });
     } catch (err) {
       console.error('Failed to save itinerary', err);
       setFeedback({
@@ -463,196 +639,195 @@ export default function TripBuilderClient({
       });
     } finally {
       setSaving(false);
+      setPublishing(false);
     }
   }
 
   return (
     <div className="space-y-6">
-      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Load from template</h2>
-            <p className="text-sm text-[#4C5A6B]">
-              Prefill this builder with a saved plan for{' '}
-              {destinationCountry || 'this destination'}.
-            </p>
-          </div>
-          <span className="text-xs uppercase tracking-wide text-[#4C5A6B]">
-            {templates?.length ? `${templates.length} available` : 'No templates yet'}
-          </span>
-        </header>
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={selectedTemplateId}
-            onChange={(e) => setSelectedTemplateId(e.target.value)}
-            className="rounded-xl border border-orange-100 px-3 py-2 text-sm text-slate-900 bg-white min-w-[220px]"
-            disabled={!templates?.length}
-          >
-            <option value="">{templates?.length ? 'Choose a template' : 'No templates'}</option>
-            {templates?.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name} · {template.destinationCountry}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={handleApplyTemplate}
-            disabled={!selectedTemplateId || applyingTemplate || !templates?.length}
-            className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
-              !selectedTemplateId || applyingTemplate || !templates?.length
-                ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
-                : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
-            }`}
-          >
-            {applyingTemplate ? 'Applying…' : 'Apply template'}
-          </button>
-        </div>
-        {templateFeedback.message ? (
-          <div
-            className={`text-sm rounded-xl px-3 py-2 border ${
-              templateFeedback.type === 'success'
-                ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                : templateFeedback.type === 'error'
-                ? 'bg-red-500/10 border-red-500/30 text-red-300'
-                : 'bg-orange-50 border-orange-100 text-[#4C5A6B]'
-            }`}
-          >
-            {templateFeedback.message}
-          </div>
-        ) : null}
-        {!templates?.length ? (
-          <p className="text-xs text-[#4C5A6B]">
-            Create a template in the admin area to enable importing into trips.
-          </p>
-        ) : null}
-      </section>
-
-      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-        <header>
-          <h2 className="text-lg font-semibold">Flights</h2>
-          <p className="text-sm text-[#4C5A6B]">
-            Add confirmed timings, baggage info, and booking links for each leg.
-          </p>
-        </header>
-
-        <div className="space-y-4">
-          {departureCard ? (
-            <FlightCardPanel
-              card={departureCard}
-              direction="departure"
-              onFieldChange={handleFieldChange}
-              isDirty={departureCard.isDirty}
-            />
-          ) : (
-            <MissingCardNotice label="Departure flight" />
-          )}
-          {returnCard ? (
-            <FlightCardPanel
-              card={returnCard}
-              direction="return"
-              onFieldChange={handleFieldChange}
-              isDirty={returnCard.isDirty}
-            />
-          ) : (
-            <MissingCardNotice label="Return flight" />
-          )}
-        </div>
-      </section>
-
-      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-        <header>
-          <h2 className="text-lg font-semibold">Accommodation</h2>
-          <p className="text-sm text-[#4C5A6B]">
-            Capture stay details so travellers know where they&apos;ll unwind.
-          </p>
-        </header>
-        {accommodationCard ? (
-          <AccommodationCardPanel
-            card={accommodationCard}
-            onFieldChange={handleFieldChange}
-            isDirty={accommodationCard.isDirty}
-          />
-        ) : (
-          <MissingCardNotice label="Accommodation" />
-        )}
-      </section>
-
-      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-        <header>
-          <h2 className="text-lg font-semibold">Daily highlights</h2>
-          <p className="text-sm text-[#4C5A6B]">
-            Outline each day&apos;s must-see experience and costs.
-          </p>
-        </header>
-        <div className="space-y-4">
-          {dayCards.length > 0 ? (
-            dayCards.map((card) => (
-              <DayCardPanel
-                key={card.id}
-                card={card}
-                onFieldChange={handleFieldChange}
-                isDirty={card.isDirty}
-              />
-            ))
-          ) : (
-            <MissingCardNotice label="Daily plans" />
-          )}
-        </div>
-      </section>
-
-      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Unassigned activities</h2>
-            <p className="text-sm text-[#4C5A6B]">
-              Optional ideas from templates. Assign them to a day or leave them for the
-              traveller&apos;s &ldquo;Other Activities&rdquo; tab.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-wide text-[#4C5A6B]">
-              {unassignedActivities.length
-                ? `${unassignedActivities.length} in pool`
-                : 'None yet'}
-            </span>
+      <section className="bg-white border border-orange-100 rounded-2xl p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex rounded-full border border-orange-100 bg-orange-50 p-1">
             <button
               type="button"
-              onClick={handleAddUnassigned}
-              className="inline-flex items-center justify-center px-3 py-2 text-xs font-semibold rounded-xl transition-colors bg-orange-500 hover:bg-orange-600 text-neutral-900"
+              onClick={() => setActiveView('summary')}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-full transition ${
+                activeView === 'summary'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-[#4C5A6B] hover:text-slate-900'
+              }`}
             >
-              Add activity
+              Summary
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('days')}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-full transition ${
+                activeView === 'days'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-[#4C5A6B] hover:text-slate-900'
+              }`}
+            >
+              Days
             </button>
           </div>
-        </header>
-        <div className="space-y-3">
-          {unassignedActivities.length ? (
-            unassignedActivities.map((activity) => (
-              <UnassignedActivityCard
-                key={activity.id}
-                activity={activity}
-                dayCards={dayCards}
-                onAssign={handleAssignActivity}
-                onChange={handleUnassignedChange}
-                onTypeChange={handleUnassignedTypeChange}
-                onDelete={handleUnassignedDelete}
-              />
-            ))
-          ) : (
-            <div className="border border-dashed border-orange-100 rounded-xl px-4 py-6 text-sm text-[#4C5A6B] text-center">
-              All optional activities are assigned. Anything left here will show in the Other
-              Activities tab for travellers.
-            </div>
-          )}
+          <span className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+            {activeView === 'summary' ? 'Trip summary builder' : 'Day-by-day timeline'}
+          </span>
         </div>
       </section>
 
-      {dayCards.length > 0 ? (
+      {activeView === 'summary' ? (
+        <>
+          <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
+            <header className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Load from template</h2>
+                <p className="text-sm text-[#4C5A6B]">
+                  Prefill this builder with a saved plan for{' '}
+                  {destinationCountry || 'this destination'}.
+                </p>
+              </div>
+              <span className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+                {templates?.length ? `${templates.length} available` : 'No templates yet'}
+              </span>
+            </header>
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                className="rounded-xl border border-orange-100 px-3 py-2 text-sm text-slate-900 bg-white min-w-[220px]"
+                disabled={!templates?.length}
+              >
+                <option value="">{templates?.length ? 'Choose a template' : 'No templates'}</option>
+                {templates?.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} · {template.destinationCountry}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleApplyTemplate}
+                disabled={!selectedTemplateId || applyingTemplate || !templates?.length}
+                className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                  !selectedTemplateId || applyingTemplate || !templates?.length
+                    ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
+                    : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
+                }`}
+              >
+                {applyingTemplate ? 'Applying…' : 'Apply template'}
+              </button>
+            </div>
+            {templateFeedback.message ? (
+              <div
+                className={`text-sm rounded-xl px-3 py-2 border ${
+                  templateFeedback.type === 'success'
+                    ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                    : templateFeedback.type === 'error'
+                    ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                    : 'bg-orange-50 border-orange-100 text-[#4C5A6B]'
+                }`}
+              >
+                {templateFeedback.message}
+              </div>
+            ) : null}
+            {!templates?.length ? (
+              <p className="text-xs text-[#4C5A6B]">
+                Create a template in the admin area to enable importing into trips.
+              </p>
+            ) : null}
+          </section>
+
+          <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
+            <header>
+              <h2 className="text-lg font-semibold">Flights</h2>
+              <p className="text-sm text-[#4C5A6B]">
+                Add confirmed timings, baggage info, and booking links for each leg.
+              </p>
+            </header>
+
+            <div className="space-y-4">
+              {departureCard ? (
+                <FlightCardPanel
+                  card={departureCard}
+                  direction="departure"
+                  onFieldChange={handleFieldChange}
+                  isDirty={departureCard.isDirty}
+                />
+              ) : (
+                <MissingCardNotice label="Departure flight" />
+              )}
+              {returnCard ? (
+                <FlightCardPanel
+                  card={returnCard}
+                  direction="return"
+                  onFieldChange={handleFieldChange}
+                  isDirty={returnCard.isDirty}
+                />
+              ) : (
+                <MissingCardNotice label="Return flight" />
+              )}
+            </div>
+          </section>
+
+          <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
+            <header>
+              <h2 className="text-lg font-semibold">Accommodation</h2>
+              <p className="text-sm text-[#4C5A6B]">
+                Capture stay details so travellers know where they&apos;ll unwind.
+              </p>
+            </header>
+            {accommodationCard ? (
+              <AccommodationCardPanel
+                card={accommodationCard}
+                onFieldChange={handleFieldChange}
+                isDirty={accommodationCard.isDirty}
+              />
+            ) : (
+              <MissingCardNotice label="Accommodation" />
+            )}
+          </section>
+
+          <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
+            <header>
+              <h2 className="text-lg font-semibold">Daily highlights</h2>
+              <p className="text-sm text-[#4C5A6B]">
+                Outline each day&apos;s must-see experience and costs.
+              </p>
+            </header>
+            <div className="space-y-4">
+              {dayCards.length > 0 ? (
+                dayCards.map((card) => (
+                  <DayCardPanel
+                    key={card.id}
+                    card={card}
+                    onFieldChange={handleFieldChange}
+                    isDirty={card.isDirty}
+                  />
+                ))
+              ) : (
+                <MissingCardNotice label="Daily plans" />
+              )}
+            </div>
+          </section>
+
+        </>
+      ) : (
         <DayTimelineBuilder
           dayCards={dayCards}
           onTimelineChange={handleTimelineChange}
+          onMoveEntry={handleMoveEntry}
+          onSwapDays={handleSwapDays}
+          onReorderDay={handleReorderDay}
+          unassignedActivities={unassignedActivities}
+          onAssignActivity={handleAssignActivity}
+          onUnassignedChange={handleUnassignedChange}
+          onUnassignedTypeChange={handleUnassignedTypeChange}
+          onUnassignedDelete={handleUnassignedDelete}
+          onAddUnassigned={handleAddUnassigned}
         />
-      ) : null}
+      )}
 
       <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
         <header className="flex flex-wrap items-center justify-between gap-3">
@@ -678,15 +853,27 @@ export default function TripBuilderClient({
             </button>
             <button
               type="button"
-              onClick={handleSave}
-              disabled={saving || !hasDirty}
+              onClick={() => handleSave(false)}
+              disabled={saving || publishing || !hasDirty}
               className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
-                saving || !hasDirty
+                saving || publishing || !hasDirty
+                  ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
+                  : 'bg-white text-slate-900 border border-orange-200 hover:border-orange-300'
+              }`}
+            >
+              {saving ? 'Saving…' : 'Save draft'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSave(true)}
+              disabled={saving || publishing}
+              className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                saving || publishing
                   ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
                   : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
               }`}
             >
-              {saving ? 'Saving…' : 'Save trip'}
+              {publishing ? 'Publishing…' : 'Publish trip'}
             </button>
           </div>
         </header>
@@ -724,162 +911,5 @@ export default function TripBuilderClient({
         ) : null}
       </section>
     </div>
-  );
-}
-
-function UnassignedActivityCard({ activity, dayCards, onAssign, onChange, onTypeChange, onDelete }) {
-  const fields = activity.fields ?? {};
-  const [dayId, setDayId] = useState(dayCards[0]?.id ?? '');
-
-  useEffect(() => {
-    if (!dayCards.length) return;
-    if (!dayId || !dayCards.some((card) => card.id === dayId)) {
-      setDayId(dayCards[0].id);
-    }
-  }, [dayCards, dayId]);
-
-  const description =
-    typeof fields.description === 'string' && fields.description.trim()
-      ? fields.description.trim()
-      : '';
-  const price =
-    typeof fields.price === 'string' && fields.price.trim()
-      ? fields.price.trim()
-      : '';
-  const link = typeof fields.link === 'string' ? fields.link.trim() : '';
-
-  return (
-    <article className="bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] border border-orange-100 rounded-2xl p-4 space-y-3">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="h-11 w-11 rounded-full border border-orange-200 bg-white flex items-center justify-center text-orange-500">
-            <TypeIcon type={activity.type} />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">
-              {fields.title?.trim() || 'Untitled activity'}
-            </p>
-            <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
-              Not scheduled yet
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {price ? (
-            <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-white text-slate-900 border border-orange-100">
-              {price}
-            </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => onDelete?.(activity.id)}
-            className="text-xs text-[#4C5A6B] hover:text-red-400"
-          >
-            Remove
-          </button>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-[#4C5A6B]">Type</span>
-          <select
-            value={activity.type}
-            onChange={(event) => onTypeChange?.(activity.id, event.target.value)}
-            className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-          >
-            {TIMELINE_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm md:col-span-2">
-          <span className="text-[#4C5A6B]">Title</span>
-          <input
-            type="text"
-            value={fields.title ?? ''}
-            onChange={(event) => onChange?.(activity.id, 'title', event.target.value)}
-            placeholder="Cooking class, sunset walk, backup museum"
-            className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
-        </label>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-[#4C5A6B]">Description</span>
-          <textarea
-            rows={2}
-            value={description}
-            onChange={(event) => onChange?.(activity.id, 'description', event.target.value)}
-            placeholder="Why it matters, inclusions, or notes."
-            className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-[#4C5A6B]">Suggested time</span>
-            <input
-              type="text"
-              value={fields.time ?? ''}
-              onChange={(event) => onChange?.(activity.id, 'time', event.target.value)}
-              placeholder="e.g. 18:00 or Afternoon"
-              className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-[#4C5A6B]">Badge or price</span>
-            <input
-              type="text"
-              value={fields.price ?? ''}
-              onChange={(event) => onChange?.(activity.id, 'price', event.target.value)}
-              placeholder="Free or €25"
-              className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-            <span className="text-[#4C5A6B]">Link</span>
-            <input
-              type="text"
-              value={link}
-              onChange={(event) => onChange?.(activity.id, 'link', event.target.value)}
-              placeholder="https://experience.com"
-              className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 pt-1">
-        <label className="flex items-center gap-2 text-sm text-[#4C5A6B]">
-          <span>Assign to</span>
-          <select
-            value={dayId}
-            onChange={(event) => setDayId(event.target.value)}
-            className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-          >
-            {dayCards.map((card) => (
-              <option key={card.id} value={card.id}>
-                {card.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={() => onAssign(activity.id, dayId)}
-          disabled={!dayId || !dayCards.length}
-          className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
-            !dayId || !dayCards.length
-              ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
-              : 'bg-orange-500 hover:bg-orange-600 text-neutral-900'
-          }`}
-        >
-          Add to day
-        </button>
-      </div>
-    </article>
   );
 }

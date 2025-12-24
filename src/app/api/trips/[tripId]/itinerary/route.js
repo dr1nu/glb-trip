@@ -31,9 +31,12 @@ export async function PATCH(request, context) {
   const unassignedInput = Array.isArray(payload?.unassignedActivities)
     ? payload.unassignedActivities
     : null;
-  if (!cardsInput && !unassignedInput) {
+  const cardOrderInput = Array.isArray(payload?.cardOrder) ? payload.cardOrder : null;
+  const publishInput =
+    typeof payload?.publish === 'boolean' ? payload.publish : null;
+  if (!cardsInput && !unassignedInput && !cardOrderInput && publishInput === null) {
     return NextResponse.json(
-      { error: 'cards or unassignedActivities are required.' },
+      { error: 'cards, cardOrder, or unassignedActivities are required.' },
       { status: 400 }
     );
   }
@@ -68,14 +71,15 @@ export async function PATCH(request, context) {
 
     const hasCardUpdates = cardsMap.size > 0;
     const hasUnassignedUpdates = Array.isArray(unassignedInput);
-    if (!hasCardUpdates && !hasUnassignedUpdates) {
+    const hasOrderUpdates = Array.isArray(cardOrderInput) && cardOrderInput.length > 0;
+    if (!hasCardUpdates && !hasUnassignedUpdates && !hasOrderUpdates && publishInput === null) {
       return NextResponse.json(
         { error: 'No valid updates provided.' },
         { status: 400 }
       );
     }
 
-    const nextCards = hasCardUpdates
+    let nextCards = hasCardUpdates
       ? trip.itinerary.cards.map((card) => {
           if (!cardsMap.has(card.id)) return card;
           const updates = cardsMap.get(card.id);
@@ -93,6 +97,27 @@ export async function PATCH(request, context) {
         })
       : trip.itinerary.cards;
 
+    if (hasOrderUpdates) {
+      const orderIds = cardOrderInput
+        .filter((id) => typeof id === 'string' && id.trim())
+        .map((id) => id.trim());
+      const uniqueOrderIds = Array.from(new Set(orderIds));
+      if (uniqueOrderIds.length !== nextCards.length) {
+        return NextResponse.json(
+          { error: 'cardOrder must include every itinerary card exactly once.' },
+          { status: 400 }
+        );
+      }
+      const cardMap = new Map(nextCards.map((card) => [card.id, card]));
+      if (!uniqueOrderIds.every((id) => cardMap.has(id))) {
+        return NextResponse.json(
+          { error: 'cardOrder includes unknown card IDs.' },
+          { status: 400 }
+        );
+      }
+      nextCards = uniqueOrderIds.map((id) => cardMap.get(id));
+    }
+
     const nextUnassigned = hasUnassignedUpdates
       ? sanitizeTimeline(unassignedInput)
       : sanitizeTimeline(trip.itinerary.unassignedActivities);
@@ -104,7 +129,7 @@ export async function PATCH(request, context) {
         cards: nextCards,
         unassignedActivities: nextUnassigned,
       },
-      published: true,
+      published: publishInput === null ? trip.published : publishInput,
     });
 
     if (!updated?.itinerary) {

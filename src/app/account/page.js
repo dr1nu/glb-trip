@@ -35,6 +35,15 @@ export default function AccountPage() {
     () => getAirportsForCountry(profile.homeCountry),
     [profile.homeCountry]
   );
+  const hasMeaningfulPreferences = (prefs) => {
+    if (!prefs) return false;
+    if (Array.isArray(prefs.interests) && prefs.interests.length > 0) return true;
+    return Object.keys(DEFAULT_TRAVEL_PREFERENCES).some((key) => {
+      if (key === 'interests') return false;
+      const value = prefs[key];
+      return value && value !== DEFAULT_TRAVEL_PREFERENCES[key];
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -82,9 +91,13 @@ export default function AccountPage() {
           console.error('Failed to load profile', fetchError);
           setError('Unable to load your profile.');
         } else {
-          const mergedPrefs = mergeTravelPreferences(
-            data?.travel_preferences ?? user.user_metadata?.travelPreferences
+          const profilePrefs = mergeTravelPreferences(data?.travel_preferences);
+          const metadataPrefs = mergeTravelPreferences(
+            user.user_metadata?.travelPreferences
           );
+          const mergedPrefs = hasMeaningfulPreferences(profilePrefs)
+            ? profilePrefs
+            : metadataPrefs;
           setProfile({
             firstName: data?.first_name ?? user.user_metadata?.firstName ?? '',
             lastName: data?.last_name ?? user.user_metadata?.lastName ?? '',

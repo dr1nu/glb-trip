@@ -426,7 +426,7 @@ function TimelineEntry({ entry, isLast }) {
               <span className="text-sm font-semibold text-[#245ad4]">{time || '—'}</span>
               <div className="flex items-center gap-3">
                 <span
-                  className={`h-11 w-11 rounded-full border ${meta.iconBg} flex items-center justify-center`}
+                  className={`h-12 w-12 rounded-full border ${meta.iconBg} flex items-center justify-center`}
                 >
                   <ExperienceIcon type={entry?.type} />
                 </span>
@@ -481,7 +481,7 @@ function TimelineEntry({ entry, isLast }) {
 }
 
 function ExperienceIcon({ type }) {
-  const className = 'h-6 w-6 translate-x-px -translate-y-px';
+  const className = 'h-6 w-6';
   const strokeProps = {
     fill: 'none',
     stroke: 'currentColor',
@@ -528,20 +528,26 @@ function ExperienceIcon({ type }) {
       );
     case 'accommodation':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M4 20V6a2 2 0 012-2h12a2 2 0 012 2v14" />
-          <path d="M9 20v-3a3 3 0 013-3h0a3 3 0 013 3v3" />
-          <rect x="7" y="7.5" width="2" height="2" rx="0.4" />
-          <rect x="15" y="7.5" width="2" height="2" rx="0.4" />
-          <rect x="7" y="11" width="2" height="2" rx="0.4" />
-          <rect x="15" y="11" width="2" height="2" rx="0.4" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className={className}
+          aria-hidden="true"
+        >
+          <path d="M12 3l9 6v12a1 1 0 01-1 1h-6v-6h-4v6H4a1 1 0 01-1-1V9l9-6z" />
         </svg>
       );
     case 'flight':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M2.5 15.5l8.5-3V5a2 2 0 014 0v7.5l8.5 3" />
-          <path d="M10.5 12.5v7l1.5-1 1.5 1v-7" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className={className}
+          aria-hidden="true"
+        >
+          <path d="M21 16.5v-1.764a1 1 0 00-.553-.894L13 10V5.5a1.5 1.5 0 00-3 0V10l-7.447 3.842A1 1 0 002 14.736V16.5l9-1.5v3.764l-2.553.894A1 1 0 008 21.5h2l1.333-.5L12.667 21.5H15a1 1 0 00.553-1.842L13 18.764V15l8 1.5z" />
         </svg>
       );
     case 'transport':

@@ -5,6 +5,7 @@ import { listProfiles } from '@/lib/admin-users';
 import { listTripsByOwner } from '@/lib/db';
 import LogoutButton from '../_components/LogoutButton';
 import AdminNav from '../_components/AdminNav';
+import DeleteTripButton from '../_components/DeleteTripButton';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -153,6 +154,7 @@ export default async function UsersPage({ searchParams }) {
                               Open builder →
                             </Link>
                           ) : null}
+                          <DeleteTripButton tripId={trip.id} />
                         </div>
                       </div>
                     </article>

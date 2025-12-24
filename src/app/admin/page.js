@@ -4,6 +4,7 @@ import { listTrips } from '@/lib/db';
 import { getAdminUser } from '@/lib/auth';
 import LogoutButton from './_components/LogoutButton';
 import AdminNav from './_components/AdminNav';
+import DeleteTripButton from './_components/DeleteTripButton';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -99,6 +100,7 @@ export default async function AdminPage() {
                         Open builder →
                       </Link>
                     ) : null}
+                    <DeleteTripButton tripId={id} />
                   </div>
                 </div>
 

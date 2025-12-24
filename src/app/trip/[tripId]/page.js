@@ -35,13 +35,14 @@ export default async function TripPage({ params, searchParams }) {
     itinerary = null,
     preferences = null,
     imagePath = null,
+    published = false,
   } = trip;
 
   const createdLabel = createdAt
     ? new Date(createdAt).toLocaleString()
     : 'unknown';
 
-  const itineraryReady = Boolean(itinerary?.cards?.length);
+  const itineraryReady = Boolean(itinerary?.cards?.length) && (fromAdmin || published);
   const immersiveHref = fromAdmin
     ? `/trip/${id}/experience?from=admin`
     : `/trip/${id}/experience`;
@@ -182,7 +183,6 @@ function PendingTripOverview({
             <InfoCard
               title="Travel dates"
               value={travelDates}
-              meta={durationLabel}
               icon={<IconCircle tone="blue"><CalendarIcon /></IconCircle>}
             />
           </div>
@@ -567,10 +567,26 @@ function formatBaggage(preferences) {
   return map[preferences?.baggage] ?? '—';
 }
 
+function formatFlexibleMonthLabel(preferences) {
+  if (!preferences?.flexibleMonth) return '';
+  const parsed = new Date(`${preferences.flexibleMonth}-01`);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    month: '2-digit',
+    year: '2-digit',
+  }).format(parsed);
+}
+
 function formatTravelWindow(preferences) {
   if (!preferences) return '—';
   if (preferences.travelWindow === 'flexible') {
-    return preferences.flexibleMonth ? `Flexible around ${preferences.flexibleMonth}` : 'Flexible';
+    const flexibleLabel = formatFlexibleMonthLabel(preferences);
+    const days =
+      Number(preferences.flexibleDays) ||
+      Number(preferences.rangeDays) ||
+      0;
+    const daysLabel = days > 0 ? `${days} days` : 'Flexible days';
+    return flexibleLabel ? `${daysLabel} during ${flexibleLabel}` : daysLabel;
   }
   if (preferences.travelWindow === 'range' || preferences.travelWindow === 'specific') {
     const from = preferences.dateFrom || 'TBC';
@@ -625,7 +641,7 @@ function buildQuickSearchLinks({ homeCountry, destinationCountry, preferences, c
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yy = String(d.getFullYear()).slice(-2);
-    return `${dd}${mm}${yy}`;
+    return `${yy}${mm}${dd}`;
   };
   const formatBookingDate = (value) => {
     const d = new Date(value);
@@ -670,17 +686,47 @@ function buildQuickSearchLinks({ homeCountry, destinationCountry, preferences, c
 
 function formatTravelDates(preferences) {
   if (!preferences) return 'Dates not provided';
-  const { travelWindow, dateFrom, dateTo, flexibleMonth } = preferences;
+  const { travelWindow, dateFrom, dateTo, flexibleMonth, flexibleDays, rangeDays } = preferences;
   if (travelWindow === 'flexible' && flexibleMonth) {
-    return `Flexible around ${flexibleMonth}`;
+    const parsed = new Date(`${flexibleMonth}-01`);
+    if (!Number.isNaN(parsed.getTime())) {
+      const days = Number(flexibleDays) || Number(rangeDays) || 0;
+      const daysLabel = days > 0 ? `${days} days` : 'Flexible days';
+      const monthLabel = new Intl.DateTimeFormat('en-US', {
+        month: '2-digit',
+        year: '2-digit',
+      }).format(parsed);
+      return `${daysLabel} during ${monthLabel}`;
+    }
   }
-  if ((travelWindow === 'specific' || travelWindow === 'range') && dateFrom && dateTo) {
+  if (travelWindow === 'range' && dateFrom && dateTo) {
+    const fromLabel = formatNumericDate(dateFrom);
+    const toLabel = formatNumericDate(dateTo);
+    const days =
+      Number(rangeDays) ||
+      (() => {
+        const start = new Date(dateFrom);
+        const end = new Date(dateTo);
+        if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        return diff > 0 ? diff : 0;
+      })();
+    const daysLabel = days > 0 ? `${days} days` : 'Flexible days';
+    return `${daysLabel} between ${fromLabel} and ${toLabel}`;
+  }
+  if (travelWindow === 'specific' && dateFrom && dateTo) {
     const fromLabel = formatDateLabel(dateFrom);
     const toLabel = formatDateLabel(dateTo);
     return `${fromLabel} → ${toLabel}`;
   }
   if (dateFrom) return `From ${formatDateLabel(dateFrom)}`;
   return 'Dates not provided';
+}
+
+function formatNumericDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date)) return value;
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
 }
 
 function formatDuration(tripLengthDays, preferences) {
