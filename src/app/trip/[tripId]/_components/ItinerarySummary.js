@@ -3,7 +3,7 @@
 export default function ItinerarySummary({
   cards,
   title = 'Itinerary',
-  description = 'Finalised trip cards shared by your travel specialist.',
+  description = 'Finalised trip details shared by your travel specialist.',
   className = '',
 }) {
   const safeCards = Array.isArray(cards) ? cards : [];
@@ -11,14 +11,14 @@ export default function ItinerarySummary({
   if (safeCards.length === 0) {
     return (
       <section
-        className={`bg-[#fff7ef] border border-[#ffd9b3] rounded-2xl p-6 space-y-3 ${className}`}
+        className={`bg-white border border-slate-200/70 rounded-2xl p-6 shadow-sm shadow-slate-100 space-y-3 ${className}`}
       >
         <header>
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="text-sm text-[#4C5A6B]">{description}</p>
         </header>
         <p className="text-sm text-[#4C5A6B]">
-          Itinerary cards will appear here once the trip is ready.
+          Itinerary details will appear here once the trip is ready.
         </p>
       </section>
     );
@@ -26,15 +26,15 @@ export default function ItinerarySummary({
 
   return (
     <section
-      className={`bg-[#fff7ef] border border-[#ffd9b3] rounded-2xl p-6 space-y-4 ${className}`}
+      className={`bg-white border border-slate-200/70 rounded-2xl p-6 shadow-sm shadow-slate-100 space-y-4 ${className}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="text-sm text-[#4C5A6B]">{description}</p>
         </div>
-        <span className="text-xs uppercase tracking-wide text-[#c25a00] border border-[#ffd9b3] rounded-lg px-3 py-1 bg-white/70">
-          {safeCards.length} card{safeCards.length === 1 ? '' : 's'}
+        <span className="text-xs uppercase tracking-wide text-[#4C5A6B] border border-slate-200 rounded-lg px-3 py-1 bg-white/70">
+          {safeCards.length} item{safeCards.length === 1 ? '' : 's'}
         </span>
       </header>
 
@@ -77,15 +77,15 @@ function FlightDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-white border border-[#ffd9b3] rounded-2xl p-5 space-y-4 shadow-sm shadow-[#ff8a00]/10">
-      <HeaderWithIcon
-        iconType={card.type === 'return' ? 'planeReturn' : 'plane'}
-        title={card.type === 'return' ? 'Return flight' : 'Departure flight'}
-        subtitle={card.summary || 'Route forthcoming'}
-        price={card.priceLabel || 'Price tbc'}
-      />
+    <SummaryCard
+      accent={CARD_META.flight}
+      iconType={card.type === 'return' ? 'planeReturn' : 'plane'}
+      title={card.type === 'return' ? 'Return flight' : 'Departure flight'}
+      subtitle={card.summary || 'Route forthcoming'}
+      price={card.priceLabel || 'Price tbc'}
+    >
       <DetailList details={details} />
-    </article>
+    </SummaryCard>
   );
 }
 
@@ -111,15 +111,15 @@ function AccommodationDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-white border border-[#ffd9b3] rounded-2xl p-5 space-y-4 shadow-sm shadow-[#ff8a00]/10">
-      <HeaderWithIcon
-        iconType="home"
-        title="Accommodation"
-        subtitle={card.subtitle ?? 'Awaiting selection'}
-        price={card.priceLabel || 'Price tbc'}
-      />
+    <SummaryCard
+      accent={CARD_META.accommodation}
+      iconType="home"
+      title="Accommodation"
+      subtitle={card.subtitle ?? 'Awaiting selection'}
+      price={card.priceLabel || 'Price tbc'}
+    >
       <DetailList details={details} />
-    </article>
+    </SummaryCard>
   );
 }
 
@@ -135,37 +135,65 @@ function DayDisplay({ card }) {
   ];
 
   return (
-    <article className="bg-white border border-[#ffd9b3] rounded-2xl p-5 space-y-4 shadow-sm shadow-[#ff8a00]/10">
-      <HeaderWithIcon
-        iconType="pin"
-        title={card.title}
-        subtitle={fields.city || card.subtitle || 'Destination'}
-        price={fields.dailyCost || card.priceLabel || 'Cost tbc'}
-      />
+    <SummaryCard
+      accent={CARD_META.day}
+      iconType="pin"
+      title={card.title}
+      subtitle={fields.city || card.subtitle || 'Destination'}
+      price={fields.dailyCost || card.priceLabel || 'Cost tbc'}
+    >
       <DetailList details={details} />
-    </article>
+    </SummaryCard>
   );
 }
 
-function HeaderWithIcon({ iconType, title, subtitle, price }) {
-  const icon = getIcon(iconType);
+const CARD_META = {
+  flight: {
+    rail: 'bg-sky-300',
+    border: 'border-sky-100',
+    iconBg: 'bg-sky-50 border-sky-200 text-sky-700',
+    badge: 'bg-sky-100 text-sky-700 border border-sky-200',
+  },
+  accommodation: {
+    rail: 'bg-emerald-300',
+    border: 'border-emerald-100',
+    iconBg: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+    badge: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  },
+  day: {
+    rail: 'bg-purple-300',
+    border: 'border-purple-100',
+    iconBg: 'bg-purple-50 border-purple-200 text-purple-700',
+    badge: 'bg-purple-100 text-purple-700 border border-purple-200',
+  },
+};
+
+function SummaryCard({ accent, iconType, title, subtitle, price, children }) {
   const hasPrice =
     typeof price === 'string' ? price.trim().length > 0 : Boolean(price);
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex items-center gap-4">
-        {icon}
-        <div>
-          <p className="text-sm font-semibold text-slate-900">{title}</p>
-          <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
-            {subtitle ?? 'Details forthcoming'}
-          </p>
+    <article className={`relative overflow-hidden rounded-2xl border ${accent.border} bg-white shadow-sm`}>
+      <div className={`absolute left-0 top-0 h-full w-1 ${accent.rail}`} />
+      <div className="p-5 space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <span className={`h-12 w-12 rounded-full border flex items-center justify-center ${accent.iconBg}`}>
+              {getIcon(iconType)}
+            </span>
+            <div className="min-w-0">
+              <p className="text-base font-semibold text-slate-900">{title}</p>
+              <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+                {subtitle ?? 'Details forthcoming'}
+              </p>
+            </div>
+          </div>
+          <span className={`text-xs font-semibold rounded-full px-3 py-1 ${accent.badge}`}>
+            {hasPrice ? price : 'Set soon'}
+          </span>
         </div>
+        {children}
       </div>
-      <div className="text-sm font-semibold text-slate-900">
-        {hasPrice ? price : 'Set soon'}
-      </div>
-    </div>
+    </article>
   );
 }
 
@@ -184,7 +212,7 @@ function DetailList({ details }) {
       {valid.map(({ label, value, isLink, linkLabel }) => (
         <div
           key={label}
-          className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ffd9b3] pb-2 last:border-b-0 last:pb-0"
+          className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0"
         >
           <dt className="text-[#4C5A6B]">{label}</dt>
           <dd className="font-medium text-slate-900">
@@ -203,7 +231,7 @@ function BookingLink({ href, label = 'Book now' }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#ff7a00] transition-colors shadow-sm shadow-[#ff8a00]/20"
+      className="inline-flex items-center justify-center rounded-lg border border-orange-500 px-3 py-1.5 text-xs font-semibold text-orange-600 hover:bg-orange-50 transition-colors"
     >
       {label}
     </a>
@@ -211,14 +239,10 @@ function BookingLink({ href, label = 'Book now' }) {
 }
 
 function getIcon(type) {
-  const baseClass =
-    'h-12 w-12 rounded-full border flex items-center justify-center';
-  const colorClass = 'bg-[#e1eaff] border-[#a8baf5] text-[#0f1f49]';
-
   const icon =
     type === 'home' ? <HomeIcon /> : type === 'planeReturn' || type === 'plane' ? <PlaneIcon /> : <PinIcon />;
 
-  return <div className={`${baseClass} ${colorClass}`}>{icon}</div>;
+  return icon;
 }
 
 function PlaneIcon() {

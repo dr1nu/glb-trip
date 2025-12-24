@@ -1,8 +1,11 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { ADMIN_COOKIE_NAME, verifySession } from '@/lib/auth';
-import { buildDefaultItinerary, extractDayCards } from '@/lib/itinerary';
+import { getAdminUser } from '@/lib/auth';
+import {
+  buildDefaultItinerary,
+  extractDayCards,
+  extractUnassignedActivities,
+} from '@/lib/itinerary';
 import { getTemplate } from '@/lib/templates';
 import TemplateBuilderClient from './_components/TemplateBuilderClient';
 
@@ -11,9 +14,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function TemplateBuilderPage({ params }) {
   const { templateId } = await params;
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value ?? null;
-  if (!verifySession(token)) {
+  const adminUser = await getAdminUser();
+  if (!adminUser) {
     redirect('/admin/login');
   }
 
@@ -24,6 +26,7 @@ export default async function TemplateBuilderPage({ params }) {
 
   const itinerary = template.itinerary ?? buildDefaultItinerary(template);
   const cards = extractDayCards(itinerary);
+  const unassignedActivities = extractUnassignedActivities(itinerary);
 
   const lengthLabel = template.tripLengthDays
     ? `${template.tripLengthDays} day${template.tripLengthDays === 1 ? '' : 's'}`
@@ -50,7 +53,11 @@ export default async function TemplateBuilderPage({ params }) {
           </Link>
         </header>
 
-        <TemplateBuilderClient templateId={templateId} initialCards={cards} />
+        <TemplateBuilderClient
+          templateId={templateId}
+          initialCards={cards}
+          initialActivities={unassignedActivities}
+        />
       </div>
     </main>
   );

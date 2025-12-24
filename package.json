@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "migrate:trips": "node scripts/migrate-trips.js"
+    "migrate:trips": "node scripts/migrate-trips.js",
+    "seed:homepage-templates": "node scripts/seed-homepage-templates.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

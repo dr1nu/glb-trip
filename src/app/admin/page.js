@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { listTrips } from '@/lib/db';
-import { ADMIN_COOKIE_NAME, verifySession } from '@/lib/auth';
+import { getAdminUser } from '@/lib/auth';
 import LogoutButton from './_components/LogoutButton';
+import AdminNav from './_components/AdminNav';
+import DeleteTripButton from './_components/DeleteTripButton';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,9 +25,8 @@ function euro(value) {
 }
 
 export default async function AdminPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value ?? null;
-  if (!verifySession(token)) {
+  const adminUser = await getAdminUser();
+  if (!adminUser) {
     redirect('/admin/login');
   }
 
@@ -36,6 +36,9 @@ export default async function AdminPage() {
     <main className="space-y-8">
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-neutral-800 pb-5">
         <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">
+            Admin
+          </p>
           <h1 className="text-2xl font-semibold">Trips dashboard</h1>
           <p className="text-sm text-neutral-400">
             {trips.length === 0
@@ -43,13 +46,8 @@ export default async function AdminPage() {
               : `Showing ${trips.length} trip${trips.length === 1 ? '' : 's'}.`}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/templates"
-            className="text-sm font-medium text-neutral-300 hover:text-white"
-          >
-            Templates →
-          </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <AdminNav />
           <LogoutButton />
         </div>
       </header>
@@ -102,6 +100,7 @@ export default async function AdminPage() {
                         Open builder →
                       </Link>
                     ) : null}
+                    <DeleteTripButton tripId={id} />
                   </div>
                 </div>
 

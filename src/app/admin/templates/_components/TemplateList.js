@@ -91,9 +91,7 @@ export default function TemplateList({ templates }) {
             </div>
           </div>
 
-          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-            <Fact label="Cards" value={template.itinerary?.cards?.length ?? 0} />
-            <Fact label="Source trip" value={template.sourceTripId || '—'} />
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <Fact
               label="Updated"
               value={
@@ -108,6 +106,11 @@ export default function TemplateList({ templates }) {
           </dl>
           {template.notes ? (
             <p className="text-sm text-neutral-300">{template.notes}</p>
+          ) : null}
+          {template.sourceTripId ? (
+            <p className="text-[11px] text-neutral-500">
+              Source trip: {template.sourceTripId}
+            </p>
           ) : null}
         </article>
       ))}

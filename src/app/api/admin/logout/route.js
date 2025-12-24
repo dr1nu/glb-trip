@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { ADMIN_COOKIE_NAME, clearCookieOptions } from '@/lib/auth';
 
 export async function POST() {
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(ADMIN_COOKIE_NAME, '', clearCookieOptions());
-  return response;
+  return NextResponse.json(
+    {
+      error: 'Admin logout now happens via Supabase auth; call supabase.auth.signOut() client-side.',
+    },
+    { status: 400 }
+  );
 }

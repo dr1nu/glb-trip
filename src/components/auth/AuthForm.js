@@ -43,6 +43,7 @@ export default function AuthForm({
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     const next = splitFullName(defaultName);
@@ -176,6 +177,34 @@ export default function AuthForm({
     }
   }
 
+  async function handlePasswordReset() {
+    if (isResetting || isSubmitting) return;
+    const email = fields.email.trim();
+    if (!email) {
+      setError('Enter your email to reset your password.');
+      return;
+    }
+    setIsResetting(true);
+    setError('');
+    setMessage('');
+    try {
+      const redirectTo =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/reset`
+          : undefined;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        email,
+        { redirectTo }
+      );
+      if (resetError) throw resetError;
+      setMessage('If this email exists, a reset link is on its way.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send reset link.');
+    } finally {
+      setIsResetting(false);
+    }
+  }
+
   const isLightLayout = layout === 'account-card' || layout === 'page';
   const containerClasses =
     {
@@ -301,28 +330,38 @@ export default function AuthForm({
         <input
           required
           name="email"
-        type="email"
-        value={fields.email}
-        onChange={handleFieldChange}
-        className={fieldClasses}
-        placeholder="you@example.com"
-        autoComplete="email"
-      />
-    </label>
+          type="email"
+          value={fields.email}
+          onChange={handleFieldChange}
+          className={fieldClasses}
+          placeholder="you@example.com"
+          autoComplete="email"
+        />
+      </label>
 
       <label className="flex flex-col gap-2 text-sm">
         <span className="font-medium">Password</span>
         <input
           required
           name="password"
-        type="password"
-        value={fields.password}
-        onChange={handleFieldChange}
-        className={fieldClasses}
-        placeholder="••••••••"
-        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-      />
-    </label>
+          type="password"
+          value={fields.password}
+          onChange={handleFieldChange}
+          className={fieldClasses}
+          placeholder="••••••••"
+          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+        />
+        {mode === 'signin' ? (
+          <button
+            type="button"
+            onClick={handlePasswordReset}
+            className={footerLinkClass}
+            disabled={isResetting || isSubmitting}
+          >
+            {isResetting ? 'Sending reset link…' : 'Forgot password?'}
+          </button>
+        ) : null}
+      </label>
 
       {mode === 'signup' ? (
         <label className="flex flex-col gap-2 text-sm">
@@ -330,14 +369,14 @@ export default function AuthForm({
           <input
             required
             name="confirmPassword"
-          type="password"
-          value={fields.confirmPassword}
-          onChange={handleFieldChange}
-          className={fieldClasses}
-          placeholder="Repeat your password"
-          autoComplete="new-password"
-        />
-      </label>
+            type="password"
+            value={fields.confirmPassword}
+            onChange={handleFieldChange}
+            className={fieldClasses}
+            placeholder="Repeat your password"
+            autoComplete="new-password"
+          />
+        </label>
       ) : null}
 
       {mode === 'signup' ? (
@@ -418,6 +457,7 @@ AuthForm.propTypes = {
       signUp: PropTypes.func.isRequired,
       signInWithPassword: PropTypes.func.isRequired,
       getUser: PropTypes.func.isRequired,
+      resetPasswordForEmail: PropTypes.func.isRequired,
     }).isRequired,
     from: PropTypes.func.isRequired,
   }).isRequired,

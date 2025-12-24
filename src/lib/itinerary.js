@@ -249,6 +249,7 @@ export function buildDefaultItinerary(trip = {}) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     cards,
+    unassignedActivities: [],
   };
 }
 
@@ -284,17 +285,46 @@ function formatPriceRange(low, high) {
   return null;
 }
 
-const TIMELINE_FIELDS = {
-  transport: ['title', 'time', 'price', 'link', 'description'],
-  attraction: ['title', 'time', 'price', 'link', 'description'],
-  food: ['title', 'name', 'description'],
-};
+const COMMON_TIMELINE_FIELDS = [
+  'title',
+  'time',
+  'price',
+  'link',
+  'description',
+  'travelMode',
+  'travelDuration',
+  'tag',
+];
+
+const TIMELINE_TYPES = [
+  'attraction',
+  'photo',
+  'rest',
+  'food',
+  'accommodation',
+  'flight',
+  'transport',
+  'train',
+  'walk',
+  'tube',
+  'taxi',
+  'activity',
+];
+
+const TIMELINE_FIELDS = TIMELINE_TYPES.reduce((acc, type) => {
+  acc[type] = COMMON_TIMELINE_FIELDS;
+  return acc;
+}, {});
 
 export function sanitizeTimeline(input) {
   if (!Array.isArray(input)) return [];
   return input
     .map((item) => normalizeTimelineItem(item))
     .filter(Boolean);
+}
+
+export function sanitizeActivities(input) {
+  return sanitizeTimeline(input);
 }
 
 export const extractDayCards = (itinerary) => {
@@ -307,12 +337,17 @@ export const extractDayCards = (itinerary) => {
     }));
 };
 
+export const extractUnassignedActivities = (itinerary) => {
+  if (!itinerary) return [];
+  return sanitizeActivities(itinerary.unassignedActivities);
+};
+
 function normalizeTimelineItem(item) {
   if (typeof item !== 'object' || item === null) return null;
-  const type = item.type;
-  if (!Object.prototype.hasOwnProperty.call(TIMELINE_FIELDS, type)) {
-    return null;
-  }
+  const rawType = typeof item.type === 'string' ? item.type.trim().toLowerCase() : '';
+  const type = Object.prototype.hasOwnProperty.call(TIMELINE_FIELDS, rawType)
+    ? rawType
+    : 'attraction';
 
   const id =
     typeof item.id === 'string' && item.id.trim()

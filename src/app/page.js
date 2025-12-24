@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
 import { getDailyBreakdown, STYLE_PRESETS } from '@/lib/pricing';
 import { COUNTRY_HUBS, estimateReturnFare } from '@/lib/airfare';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { composeProfilePayload } from '@/lib/profile';
 import AuthForm from '@/components/auth/AuthForm';
+import { HOMEPAGE_TEMPLATES } from '@/data/homepageTemplates';
+import { DEFAULT_HOMEPAGE_DESTINATIONS } from '@/data/homepageDefaults';
 
 const SUMMER_HEAVY_DESTINATIONS = new Set([
   'Spain', 'Portugal', 'France', 'Italy', 'Croatia', 'Greece', 'Malta', 'Cyprus', 'Türkiye',
@@ -80,13 +83,6 @@ const DESTINATION_CITIES = {
     { city: 'Edinburgh', hub: { iata: 'EDI', lat: 55.9500, lon: -3.3720, factor: 1.0 } },
   ],
 };
-
-const POPULAR_DESTINATIONS = [
-  { city: 'Paris', country: 'France', color: 'from-rose-400 to-orange-300' },
-  { city: 'Tokyo', country: 'Japan', color: 'from-purple-500 to-indigo-500' },
-  { city: 'Bali', country: 'Indonesia', color: 'from-emerald-500 to-lime-400' },
-  { city: 'New York', country: 'USA', color: 'from-sky-500 to-blue-500' },
-];
 
 const HOME_IMAGES_BUCKET = 'home-page-images';
 
@@ -214,7 +210,52 @@ const TZ_TO_COUNTRY = {
 };
 
 function formatDateInput(date) {
-  return date.toISOString().split('T')[0];
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatShortDate(value) {
+  const date = toDate(value);
+  if (!date) return '—';
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${day}/${month}`;
+}
+
+function formatShortRange(startValue, endValue) {
+  if (!startValue && !endValue) return 'Select dates';
+  if (startValue && !endValue) return `${formatShortDate(startValue)} - --/--`;
+  return `${formatShortDate(startValue)} - ${formatShortDate(endValue)}`;
+}
+
+function buildMonthGrid(monthDate) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = firstDay.getDay();
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i += 1) {
+    cells.push(null);
+  }
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push(new Date(year, month, day));
+  }
+  while (cells.length % 7 !== 0) {
+    cells.push(null);
+  }
+  return cells;
+}
+
+function isSameDay(a, b) {
+  if (!a || !b) return false;
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
 }
 
 function getDefaultDates() {
@@ -382,6 +423,8 @@ export default function Home() {
   const [homeCountry, setHomeCountry] = useState('');
   const [travelStyle, setTravelStyle] = useState('value');
   const [homePrefilled, setHomePrefilled] = useState(false);
+  const [homepageDestinations, setHomepageDestinations] = useState(DEFAULT_HOMEPAGE_DESTINATIONS);
+  const [homepageTemplatesById, setHomepageTemplatesById] = useState({});
 
   const [showResult, setShowResult] = useState(false);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -525,6 +568,65 @@ export default function Home() {
   }, [homePrefilled, user]);
 
   useEffect(() => {
+    let ignore = false;
+    async function loadHomepageConfig() {
+      try {
+        const response = await fetch('/api/homepage-settings');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!ignore && Array.isArray(data?.destinations) && data.destinations.length > 0) {
+          setHomepageDestinations(data.destinations);
+        }
+      } catch (err) {
+        console.warn('Failed to load homepage settings', err);
+      }
+    }
+    loadHomepageConfig();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadTemplates() {
+      const templateIds = homepageDestinations
+        .map((item) => item.templateId)
+        .filter((id) => typeof id === 'string' && id.trim().length > 0);
+      if (templateIds.length === 0) return;
+
+      const uniqueIds = Array.from(new Set(templateIds));
+      const missingIds = uniqueIds.filter((id) => !homepageTemplatesById[id]);
+      if (missingIds.length === 0) return;
+
+      try {
+        const results = await Promise.all(
+          missingIds.map(async (id) => {
+            const response = await fetch(`/api/templates/${id}`);
+            if (!response.ok) return null;
+            const data = await response.json();
+            return data?.template ?? null;
+          })
+        );
+        if (ignore) return;
+        const next = { ...homepageTemplatesById };
+        results.forEach((template) => {
+          if (template?.id) {
+            next[template.id] = template;
+          }
+        });
+        setHomepageTemplatesById(next);
+      } catch (err) {
+        console.warn('Failed to load homepage templates', err);
+      }
+    }
+    loadTemplates();
+    return () => {
+      ignore = true;
+    };
+  }, [homepageDestinations, homepageTemplatesById]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadImages() {
@@ -605,7 +707,7 @@ export default function Home() {
   return (
     <main className="relative min-h-screen bg-[#FFF7F1] text-[#0F172A]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[360px] rounded-b-[48px] bg-gradient-to-r from-[#FF9B66] via-[#FF7B42] to-[#FF6B35] opacity-90 shadow-[0_26px_120px_-60px_rgba(255,107,53,0.35)]" />
-      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 pb-32 pt-20 sm:px-6 lg:px-8">
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 pb-12 pt-20 sm:px-6 lg:px-8">
         <section className="relative">
           <div
             className="absolute inset-x-6 -top-14 h-24 rounded-3xl bg-white/35 blur-3xl"
@@ -656,14 +758,16 @@ export default function Home() {
 
         {!showResult ? (
           <>
-            <PopularDestinations images={popularImages} />
+            <PopularDestinations
+              images={popularImages}
+              destinations={homepageDestinations}
+              templatesById={homepageTemplatesById}
+            />
             <ValueProps />
           </>
         ) : null}
 
-        <p className="text-xs text-[#4C5A6B] text-center">
-          Prototype. Prices are estimates; seasons and luggage can change totals.
-        </p>
+        
       </div>
       {authModalOpen ? (
         <AuthOverlay onClose={() => setAuthModalOpen(false)}>
@@ -684,6 +788,247 @@ export default function Home() {
 }
 
 /* -------------------- Form -------------------- */
+function DateRangePicker({
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+}) {
+  const minDate = new Date();
+  minDate.setHours(0, 0, 0, 0);
+
+  const start = toDate(startDate);
+  const end = toDate(endDate);
+  const [open, setOpen] = useState(false);
+  const [hoverDate, setHoverDate] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef(null);
+  const dragMovedRef = useRef(false);
+  const [displayMonth, setDisplayMonth] = useState(() => {
+    const seed = start || minDate;
+    return new Date(seed.getFullYear(), seed.getMonth(), 1);
+  });
+  useEffect(() => {
+    if (!start) return;
+    setDisplayMonth(new Date(start.getFullYear(), start.getMonth(), 1));
+  }, [startDate]);
+
+  const isSelectingEnd = Boolean(start && !end);
+  const rangeStart = isDragging ? dragStartRef.current : start;
+  const rangeEnd = end || (isSelectingEnd ? hoverDate : isDragging ? hoverDate : null);
+  const nextMonth = new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1);
+  const monthLabel = displayMonth.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+  const nextMonthLabel = nextMonth.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  function handleDayClick(day) {
+    if (!day) return;
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    if (normalized < minDate) return;
+
+    if (start && !end && isSameDay(normalized, start)) {
+      onStartDateChange('');
+      onEndDateChange('');
+      setHoverDate(null);
+      return;
+    }
+
+    if (!start || (start && end)) {
+      onStartDateChange(formatDateInput(normalized));
+      onEndDateChange('');
+      setHoverDate(null);
+      return;
+    }
+
+    if (start && !end) {
+      if (normalized < start) {
+        onStartDateChange(formatDateInput(normalized));
+        onEndDateChange('');
+        setHoverDate(null);
+        return;
+      }
+      onEndDateChange(formatDateInput(normalized));
+      setHoverDate(null);
+      setOpen(false);
+    }
+  }
+
+  function startDrag(day) {
+    if (!day) return;
+    if (isDisabled(day)) return;
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    if (!start || end) {
+      dragStartRef.current = normalized;
+      setHoverDate(normalized);
+      setIsDragging(true);
+      dragMovedRef.current = false;
+    }
+  }
+
+  function stopDrag(day) {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const startRef = dragStartRef.current;
+    dragStartRef.current = null;
+    const dragMoved = dragMovedRef.current;
+    dragMovedRef.current = false;
+    if (!day || !startRef) {
+      setHoverDate(null);
+      return;
+    }
+    if (!dragMoved) {
+      handleDayClick(day);
+      return;
+    }
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    if (normalized < startRef) {
+      onStartDateChange(formatDateInput(normalized));
+      onEndDateChange(formatDateInput(startRef));
+    } else {
+      onStartDateChange(formatDateInput(startRef));
+      onEndDateChange(formatDateInput(normalized));
+    }
+    setHoverDate(null);
+    setOpen(false);
+  }
+
+  function inRange(day) {
+    if (!rangeStart || !rangeEnd || !day) return false;
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    return normalized >= rangeStart && normalized <= rangeEnd;
+  }
+
+  function isDisabled(day) {
+    if (!day) return true;
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    return normalized < minDate;
+  }
+
+  function renderMonthGrid(monthDate, label) {
+    const cells = buildMonthGrid(monthDate);
+    return (
+      <div className="space-y-2">
+        <div className="text-sm font-semibold text-neutral-900">{label}</div>
+        <div className="grid grid-cols-7 gap-1 text-[11px] text-[#4C5A6B]">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayLabel) => (
+            <div key={`${label}-${dayLabel}`} className="text-center uppercase tracking-wide">
+              {dayLabel}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((day, index) => {
+            const activeStart = isDragging ? dragStartRef.current : start;
+            const selectedStart = activeStart && isSameDay(day, activeStart);
+            const selectedEnd = end && isSameDay(day, end);
+            const highlighted = inRange(day);
+            const disabled = isDisabled(day);
+            return (
+              <button
+                key={`${label}-${day ? day.toISOString() : 'empty'}-${index}`}
+                type="button"
+                onMouseDown={() => startDrag(day)}
+                onMouseUp={() => {
+                  if (isDragging) {
+                    stopDrag(day);
+                    return;
+                  }
+                  handleDayClick(day);
+                }}
+                onMouseEnter={() => {
+                  if (isSelectingEnd && day && !disabled) {
+                    setHoverDate(new Date(day.getFullYear(), day.getMonth(), day.getDate()));
+                  }
+                  if (isDragging && day && !disabled) {
+                    dragMovedRef.current = true;
+                    setHoverDate(new Date(day.getFullYear(), day.getMonth(), day.getDate()));
+                  }
+                }}
+                className={`h-9 rounded-lg text-sm transition ${
+                  disabled
+                    ? 'text-slate-300'
+                    : selectedStart || selectedEnd
+                    ? 'bg-orange-500 text-white'
+                    : highlighted
+                    ? 'bg-orange-100 text-orange-700'
+                    : 'text-slate-700 hover:bg-orange-50'
+                }`}
+                disabled={disabled}
+              >
+                {day ? day.getDate() : ''}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full rounded-2xl border border-[#E3E6EF] bg-white px-4 py-3 text-left text-sm font-medium text-[#0F172A] shadow-sm focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+        aria-expanded={open}
+      >
+        <span className="flex items-center justify-between">
+          <span>{formatShortRange(startDate, endDate)}</span>
+          <span className="text-[#4C5A6B] text-xs">▾</span>
+        </span>
+      </button>
+
+      {open ? (
+        <div className="absolute left-1/2 z-30 mt-2 w-[min(95vw,760px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl shadow-orange-100">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1 text-sm text-[#4C5A6B] hover:bg-orange-50"
+              onClick={() =>
+                setDisplayMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+              }
+            >
+              ←
+            </button>
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#4C5A6B]">
+              Select dates
+            </span>
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1 text-sm text-[#4C5A6B] hover:bg-orange-50"
+              onClick={() =>
+                setDisplayMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+              }
+            >
+              →
+            </button>
+          </div>
+          <div className="mt-4 grid gap-6 md:grid-cols-2">
+            {renderMonthGrid(displayMonth, monthLabel)}
+            {renderMonthGrid(nextMonth, nextMonthLabel)}
+          </div>
+          <div className="mt-3 flex items-center justify-between text-xs text-[#4C5A6B]">
+            <span>{isSelectingEnd ? 'Select an end date' : 'Select a start date'}</span>
+            <button
+              type="button"
+              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-orange-200 hover:text-[#C2461E] transition disabled:opacity-40"
+              onClick={() => setOpen(false)}
+              disabled={Boolean(start && !end)}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function FormCard({
   destinationCountry,
   setDestinationCountry,
@@ -702,17 +1047,22 @@ function FormCard({
   setTravelStyle,
   onSubmit,
 }) {
-  const today = formatDateInput(new Date());
   const destinationValue = encodeDestination(destinationCountry, destinationCity);
+  const [dateError, setDateError] = useState('');
   return (
     <form
       className="relative rounded-[32px] border border-[#E3E6EF] bg-white p-6 shadow-[0_24px_90px_-60px_rgba(15,23,42,0.35)] backdrop-blur-sm ring-1 ring-white/70 space-y-6 sm:p-7"
       onSubmit={(e) => {
         e.preventDefault();
+        if (!startDate || !endDate) {
+          setDateError('Please select a start and end date.');
+          return;
+        }
+        setDateError('');
         onSubmit();
       }}
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="flex w-full flex-col gap-2">
           <label className="text-sm font-medium text-[#4B5563]">Home</label>
           <select
@@ -745,24 +1095,16 @@ function FormCard({
           />
         </div>
         <div className="flex w-full flex-col gap-2">
-          <label className="text-sm font-medium text-[#4B5563]">Start date</label>
-          <input
-            type="date"
-            min={today}
-            value={startDate}
-            onChange={(e) => onStartDateChange(e.target.value)}
-            className="rounded-2xl border border-[#E3E6EF] bg-white px-4 py-3 text-sm font-medium text-[#0F172A] shadow-sm focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+          <label className="text-sm font-medium text-[#4B5563]">Dates</label>
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={onStartDateChange}
+            onEndDateChange={onEndDateChange}
           />
-        </div>
-        <div className="flex w-full flex-col gap-2">
-          <label className="text-sm font-medium text-[#4B5563]">End date</label>
-          <input
-            type="date"
-            min={startDate || today}
-            value={endDate}
-            onChange={(e) => onEndDateChange(e.target.value)}
-            className="rounded-2xl border border-[#E3E6EF] bg-white px-4 py-3 text-sm font-medium text-[#0F172A] shadow-sm focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-          />
+          {dateError ? (
+            <span className="text-xs text-[#C2461E]">{dateError}</span>
+          ) : null}
         </div>
       </div>
 
@@ -803,53 +1145,103 @@ function FormCard({
 
 function StyleToggle({ value, onChange }) {
   const items = [
-    { k: 'shoestring', label: STYLE_PRESETS.shoestring.label, hint: '−€25/day' },
-    { k: 'value',      label: STYLE_PRESETS.value.label,      hint: 'baseline' },
-    { k: 'comfort',    label: STYLE_PRESETS.comfort.label,    hint: '+€40/day' }
+    {
+      k: 'shoestring',
+      label: STYLE_PRESETS.shoestring.label,
+      hint: '−€25/day',
+      detail: 'Budget-friendly stays, simple transport, and fewer paid activities.',
+    },
+    {
+      k: 'value',
+      label: STYLE_PRESETS.value.label,
+      hint: 'baseline',
+      detail: 'Balanced mix of comfort, local experiences, and flexibility.',
+    },
+    {
+      k: 'comfort',
+      label: STYLE_PRESETS.comfort.label,
+      hint: '+€40/day',
+      detail: 'Upgraded stays, premium experiences, and extra convenience.',
+    }
   ];
   return (
     <div className="grid grid-cols-3 gap-2">
       {items.map(it => {
         const active = value === it.k;
         return (
-          <button
-            key={it.k}
-            type="button"
-            onClick={() => onChange(it.k)}
-            className={`rounded-2xl px-3 py-2 text-sm font-semibold border transition ${
-              active
-                ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-lg shadow-orange-100'
-                : 'border-[#E3E6EF] bg-white text-[#4B5563] hover:text-[#0F172A]'
-            }`}
-            title={it.hint}
-          >
-            {it.label}
-          </button>
+          <div key={it.k} className="relative group">
+            <button
+              type="button"
+              onClick={() => onChange(it.k)}
+              className={`w-full rounded-2xl px-3 py-2 text-sm font-semibold border transition ${
+                active
+                  ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-lg shadow-orange-100'
+                  : 'border-[#E3E6EF] bg-white text-[#4B5563] hover:text-[#0F172A]'
+              }`}
+              aria-describedby={`style-tip-${it.k}`}
+            >
+              {it.label}
+            </button>
+            <div
+              id={`style-tip-${it.k}`}
+              role="tooltip"
+              className="pointer-events-none absolute -bottom-2 left-1/2 z-20 w-48 -translate-x-1/2 translate-y-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] text-[#4C5A6B] opacity-0 shadow-lg shadow-slate-200/60 transition group-hover:opacity-100"
+            >
+              <p className="font-semibold text-slate-900">{it.label}</p>
+              <p>{it.detail}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-wide text-[#9A6B3B]">{it.hint}</p>
+            </div>
+          </div>
         );
       })}
     </div>
   );
 }
 
-function PopularDestinations({ images = [] }) {
+function PopularDestinations({ images = [], destinations = [], templatesById = {} }) {
   const hasImages = Array.isArray(images) && images.length > 0;
 
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
-        <span className="text-orange-500">↗</span> Popular Destinations
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5"
+            aria-hidden="true"
+          >
+            <path d="M11 5h8v8" />
+            <path d="M19 5l-9 9" />
+            <path d="M5 19h8" />
+          </svg>
+        </span>
+        Popular Destinations
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {POPULAR_DESTINATIONS.map((item, index) => {
+        {destinations.map((item, index) => {
           const imageUrl = hasImages ? images[index % images.length] : null;
           const backgroundClass = imageUrl
             ? 'h-48 bg-cover bg-center'
             : `h-48 bg-gradient-to-r ${item.color}`;
+          const hasTemplate = Boolean(
+            (item.templateId && templatesById[item.templateId]) ||
+              item.templateId ||
+              HOMEPAGE_TEMPLATES[item.city]
+          );
 
           return (
-            <div
+            <Link
               key={item.city}
-              className="group overflow-hidden rounded-2xl border border-white/70 bg-white shadow-lg shadow-slate-100 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100"
+              href={`/popular/${encodeURIComponent(item.city)}`}
+              className={`group overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-100 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100 ${
+                hasTemplate ? 'border-white/70' : 'border-slate-200'
+              }`}
             >
               <div
                 className={`${backgroundClass} transition-transform duration-300 group-hover:scale-105`}
@@ -858,8 +1250,11 @@ function PopularDestinations({ images = [] }) {
               <div className="space-y-1 p-3">
                 <p className="text-sm font-semibold text-neutral-900">{item.city}</p>
                 <p className="text-xs text-[#4C5A6B]">{item.country}</p>
+                <p className="text-[11px] uppercase tracking-wide text-[#9A6B3B]">
+                  {hasTemplate ? 'Sample itinerary' : 'Preview soon'}
+                </p>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -871,7 +1266,22 @@ function ValueProps() {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
-        <span className="text-orange-500">◎</span> Why travel with us?
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5"
+            aria-hidden="true"
+          >
+            <path d="M12 3l2.2 4.5L19 8l-3.5 3.4.8 4.8L12 14.8 7.7 16.2l.8-4.8L5 8l4.8-.5L12 3z" />
+          </svg>
+        </span>
+        Why travel with us?
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {VALUE_CARDS.map((card) => (
@@ -1096,20 +1506,28 @@ function formatDateRange(startValue, endValue) {
   const end = toDate(endValue);
   if (!start && !end) return 'Dates pending';
   if (start && !end) {
-    return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return start.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
   if (!start && end) {
-    return end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return end.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
   const sameYear = start.getFullYear() === end.getFullYear();
-  const startLabel = start.toLocaleDateString('en-US', {
+  const startLabel = start.toLocaleDateString('en-GB', {
+    day: '2-digit',
     month: 'short',
-    day: 'numeric',
     year: sameYear ? undefined : 'numeric',
   });
-  const endLabel = end.toLocaleDateString('en-US', {
+  const endLabel = end.toLocaleDateString('en-GB', {
+    day: '2-digit',
     month: 'short',
-    day: 'numeric',
     year: 'numeric',
   });
   return `${startLabel} – ${endLabel}`;

@@ -28,7 +28,7 @@ export const COUNTRY_BUCKET = {
 
 // Travel style deltas (per person, per day)
 export const STYLE_PRESETS = {
-  shoestring: { accomDelta: -15, otherDelta: -10, label: "Shoestring" },
+  shoestring: { accomDelta: -15, otherDelta: -10, label: "Budget" },
   value:      { accomDelta:   0, otherDelta:   0, label: "Value" },
   comfort:    { accomDelta: +25, otherDelta: +15, label: "Comfort" }
 };

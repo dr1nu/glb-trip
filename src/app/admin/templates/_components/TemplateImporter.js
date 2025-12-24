@@ -87,13 +87,13 @@ export default function TemplateImporter() {
       const notes = window.prompt('Optional notes', '') || undefined;
 
       const dayGroups = new Map();
+      const unassignedActivities = [];
       rows.forEach((row) => {
         const day = toNumber(row.day);
-        if (!day) return;
-        const itemType = (row.type || 'attraction').toString().trim().toLowerCase();
+        const itemTypeRaw = (row.type || 'attraction').toString().trim().toLowerCase();
         const title = row.title || row.place || '';
         const timelineItem = {
-          type: itemType,
+          type: itemTypeRaw || 'attraction',
           fields: {
             title,
             name: title,
@@ -103,11 +103,15 @@ export default function TemplateImporter() {
             description: row.description || '',
           },
         };
+        if (!day) {
+          unassignedActivities.push(timelineItem);
+          return;
+        }
         dayGroups.set(day, [...(dayGroups.get(day) || []), timelineItem]);
       });
 
       const sortedDays = Array.from(dayGroups.keys()).sort((a, b) => a - b);
-      if (!sortedDays.length) {
+      if (!sortedDays.length && unassignedActivities.length === 0) {
         throw new Error('No rows with a valid "day" column were found.');
       }
 
@@ -133,11 +137,12 @@ export default function TemplateImporter() {
       const payload = {
         name: name.trim(),
         destinationCountry: destination.trim(),
-        tripLengthDays: tripLength || dayCards.length,
+        tripLengthDays: tripLength || dayCards.length || 1,
         itinerary: {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           cards: dayCards,
+          unassignedActivities,
         },
         notes,
       };

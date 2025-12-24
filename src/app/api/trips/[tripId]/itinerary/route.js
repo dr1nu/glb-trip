@@ -28,9 +28,15 @@ export async function PATCH(request, context) {
   }
 
   const cardsInput = Array.isArray(payload?.cards) ? payload.cards : null;
-  if (!cardsInput) {
+  const unassignedInput = Array.isArray(payload?.unassignedActivities)
+    ? payload.unassignedActivities
+    : null;
+  const cardOrderInput = Array.isArray(payload?.cardOrder) ? payload.cardOrder : null;
+  const publishInput =
+    typeof payload?.publish === 'boolean' ? payload.publish : null;
+  if (!cardsInput && !unassignedInput && !cardOrderInput && publishInput === null) {
     return NextResponse.json(
-      { error: 'cards array is required.' },
+      { error: 'cards, cardOrder, or unassignedActivities are required.' },
       { status: 400 }
     );
   }
@@ -45,55 +51,88 @@ export async function PATCH(request, context) {
     }
 
     const cardsMap = new Map();
-    for (const item of cardsInput) {
-      if (item && typeof item.id === 'string') {
-        const normalizedFields = normalizeFieldUpdates(item.fields ?? {});
-        const update = {};
-        if (Object.keys(normalizedFields).length > 0) {
-          update.fields = normalizedFields;
-        }
-        if (Array.isArray(item.timeline)) {
-          update.timeline = sanitizeTimeline(item.timeline);
-        }
-        if (Object.keys(update).length > 0) {
-          cardsMap.set(item.id, update);
+    if (cardsInput) {
+      for (const item of cardsInput) {
+        if (item && typeof item.id === 'string') {
+          const normalizedFields = normalizeFieldUpdates(item.fields ?? {});
+          const update = {};
+          if (Object.keys(normalizedFields).length > 0) {
+            update.fields = normalizedFields;
+          }
+          if (Array.isArray(item.timeline)) {
+            update.timeline = sanitizeTimeline(item.timeline);
+          }
+          if (Object.keys(update).length > 0) {
+            cardsMap.set(item.id, update);
+          }
         }
       }
     }
 
-    if (cardsMap.size === 0) {
+    const hasCardUpdates = cardsMap.size > 0;
+    const hasUnassignedUpdates = Array.isArray(unassignedInput);
+    const hasOrderUpdates = Array.isArray(cardOrderInput) && cardOrderInput.length > 0;
+    if (!hasCardUpdates && !hasUnassignedUpdates && !hasOrderUpdates && publishInput === null) {
       return NextResponse.json(
-        { error: 'No valid card updates provided.' },
+        { error: 'No valid updates provided.' },
         { status: 400 }
       );
     }
 
-    const nextCards = trip.itinerary.cards.map((card) => {
-      if (!cardsMap.has(card.id)) return card;
-      const updates = cardsMap.get(card.id);
-      let nextCard = card;
-      if (updates.fields) {
-        nextCard = applyCardFieldUpdates(nextCard, updates.fields);
+    let nextCards = hasCardUpdates
+      ? trip.itinerary.cards.map((card) => {
+          if (!cardsMap.has(card.id)) return card;
+          const updates = cardsMap.get(card.id);
+          let nextCard = card;
+          if (updates.fields) {
+            nextCard = applyCardFieldUpdates(nextCard, updates.fields);
+          }
+          if (Object.prototype.hasOwnProperty.call(updates, 'timeline')) {
+            nextCard = {
+              ...nextCard,
+              timeline: updates.timeline,
+            };
+          }
+          return nextCard;
+        })
+      : trip.itinerary.cards;
+
+    if (hasOrderUpdates) {
+      const orderIds = cardOrderInput
+        .filter((id) => typeof id === 'string' && id.trim())
+        .map((id) => id.trim());
+      const uniqueOrderIds = Array.from(new Set(orderIds));
+      if (uniqueOrderIds.length !== nextCards.length) {
+        return NextResponse.json(
+          { error: 'cardOrder must include every itinerary card exactly once.' },
+          { status: 400 }
+        );
       }
-      if (Object.prototype.hasOwnProperty.call(updates, 'timeline')) {
-        nextCard = {
-          ...nextCard,
-          timeline: updates.timeline,
-        };
+      const cardMap = new Map(nextCards.map((card) => [card.id, card]));
+      if (!uniqueOrderIds.every((id) => cardMap.has(id))) {
+        return NextResponse.json(
+          { error: 'cardOrder includes unknown card IDs.' },
+          { status: 400 }
+        );
       }
-      return nextCard;
-    });
+      nextCards = uniqueOrderIds.map((id) => cardMap.get(id));
+    }
+
+    const nextUnassigned = hasUnassignedUpdates
+      ? sanitizeTimeline(unassignedInput)
+      : sanitizeTimeline(trip.itinerary.unassignedActivities);
 
     const updated = await updateTrip(tripId, {
       itinerary: {
         ...trip.itinerary,
         updatedAt: new Date().toISOString(),
         cards: nextCards,
+        unassignedActivities: nextUnassigned,
       },
-      published: true,
+      published: publishInput === null ? trip.published : publishInput,
     });
 
-    if (!updated?.itinerary?.cards) {
+    if (!updated?.itinerary) {
       return NextResponse.json(
         { error: 'Failed to update itinerary.' },
         { status: 500 }
@@ -101,7 +140,10 @@ export async function PATCH(request, context) {
     }
 
     return NextResponse.json(
-      { cards: updated.itinerary.cards },
+      {
+        cards: updated.itinerary.cards ?? [],
+        unassignedActivities: sanitizeTimeline(updated.itinerary.unassignedActivities),
+      },
       { status: 200 }
     );
   } catch (err) {

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getTrip } from '@/lib/db';
 import { listTemplates } from '@/lib/templates';
+import { extractUnassignedActivities } from '@/lib/itinerary';
 import TripBuilderClient from './_components/TripBuilderClient';
 
 export const runtime = 'nodejs';
@@ -18,6 +19,7 @@ export default async function TripBuilderPage({ params }) {
   if (!itinerary?.cards?.length) {
     redirect(`/trip/${tripId}?from=admin`);
   }
+  const unassignedActivities = extractUnassignedActivities(itinerary);
 
   const origin = trip.homeCountry ?? 'Home';
   const destination = trip.destinationCountry ?? 'Destination';
@@ -57,6 +59,7 @@ export default async function TripBuilderPage({ params }) {
         <TripBuilderClient
           tripId={tripId}
           initialCards={itinerary.cards}
+          initialActivities={unassignedActivities}
           destinationCountry={trip.destinationCountry}
           tripLengthDays={trip.tripLengthDays}
           templates={sortedTemplates}

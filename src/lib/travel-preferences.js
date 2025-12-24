@@ -19,12 +19,12 @@ export const ACCOMMODATION_OPTIONS = [
 export const TRAVEL_INTERESTS = [
   'Culture & History',
   'Adventure & Sports',
-  'Food & Dining',
+  'Museums',
   'Nature & Wildlife',
   'Beach & Relaxation',
   'Shopping',
   'Nightlife',
-  'Photography',
+  'City life',
 ];
 
 export const DEFAULT_TRAVEL_PREFERENCES = {
@@ -44,6 +44,17 @@ export const DEFAULT_TRAVEL_PREFERENCES = {
 };
 
 export function mergeTravelPreferences(preferences) {
+  if (typeof preferences === 'string') {
+    try {
+      const parsed = JSON.parse(preferences);
+      return mergeTravelPreferences(parsed);
+    } catch (err) {
+      return {
+        ...DEFAULT_TRAVEL_PREFERENCES,
+        interests: [...DEFAULT_TRAVEL_PREFERENCES.interests],
+      };
+    }
+  }
   if (!preferences || typeof preferences !== 'object') {
     return {
       ...DEFAULT_TRAVEL_PREFERENCES,

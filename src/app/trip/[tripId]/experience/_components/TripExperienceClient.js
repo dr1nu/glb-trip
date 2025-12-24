@@ -9,6 +9,7 @@ export default function TripExperienceClient({
   tripLengthDays,
   summaryCards,
   dayCards,
+  otherActivities = [],
 }) {
   const buildPlaceholderDays = (length) => {
     const count = Math.max(1, Number.isFinite(length) && length > 0 ? Math.round(length) : 1);
@@ -52,6 +53,7 @@ export default function TripExperienceClient({
   const tabDefinitions = useMemo(() => {
     const safeSummary = Array.isArray(summaryCards) ? summaryCards : [];
     const safeDaysSource = Array.isArray(dayCards) ? dayCards : safeSummary;
+    const safeOther = Array.isArray(otherActivities) ? otherActivities : [];
     const safeDays = safeDaysSource
       .map((card, idx) => ({ card, idx }))
       .filter(({ card, idx }) => isDayCard(card, idx))
@@ -96,27 +98,31 @@ export default function TripExperienceClient({
         title.includes('inbound')
       );
     };
+    const flightCards = safeSummary.filter((card) => looksLikeFlight(card) && !isBudgetCard(card));
+    const accommodationCards = safeSummary.filter(
+      (card) => isAccommodationCard(card) && !isBudgetCard(card)
+    );
+    const summaryCardsFiltered = safeSummary.filter(
+      (card) => !looksLikeFlight(card) && !isBudgetCard(card) && !isAccommodationCard(card)
+    );
+
     const tabs = [
       {
-        id: 'flights',
-        label: 'Flights',
+        id: 'trip-details',
+        label: 'Trip Details',
         content: (
-          <ItinerarySummary
-            cards={safeSummary.filter((card) => looksLikeFlight(card) && !isBudgetCard(card))}
-            title="Flights"
-            description="Your outbound and return routes."
-          />
-        ),
-      },
-      {
-        id: 'accommodation',
-        label: 'Accommodation',
-        content: (
-          <ItinerarySummary
-            cards={safeSummary.filter((card) => isAccommodationCard(card) && !isBudgetCard(card))}
-            title="Accommodation"
-            description="Where you're staying each night."
-          />
+          <div className="space-y-6">
+            <ItinerarySummary
+              cards={flightCards}
+              title="Flights"
+              description="Your outbound and return routes."
+            />
+            <ItinerarySummary
+              cards={accommodationCards}
+              title="Accommodation"
+              description="Where you're staying each night."
+            />
+          </div>
         ),
       },
       {
@@ -124,9 +130,7 @@ export default function TripExperienceClient({
         label: 'Summary',
         content: (
           <ItinerarySummary
-            cards={safeSummary.filter(
-              (card) => !looksLikeFlight(card) && !isBudgetCard(card) && !isAccommodationCard(card)
-            )}
+            cards={summaryCardsFiltered}
             title="Trip summary"
             description="High-level overview of stays and daily highlights."
           />
@@ -142,8 +146,16 @@ export default function TripExperienceClient({
       });
     });
 
+    if (safeOther.length > 0) {
+      tabs.push({
+        id: 'other-activities',
+        label: 'Other Activities',
+        content: <OtherActivitiesList activities={safeOther} />,
+      });
+    }
+
     return tabs;
-  }, [summaryCards, dayCards]);
+  }, [summaryCards, dayCards, otherActivities, tripLengthDays]);
 
   const [activeTab, setActiveTab] = useState(tabDefinitions[0]?.id);
   useEffect(() => {
@@ -218,7 +230,7 @@ function DayItineraryDetail({ card }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] border border-orange-100 rounded-2xl p-5 space-y-3">
+      <div className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-sm shadow-slate-100 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
@@ -246,7 +258,7 @@ function DayItineraryDetail({ card }) {
         )}
       </div>
 
-      <div className="bg-gradient-to-b from-[#FFF4EB] via-white to-[#FFF9F4] border border-orange-100 rounded-2xl p-5 space-y-4">
+      <div className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-sm shadow-slate-100 space-y-4">
         <h3 className="text-base font-semibold">Detailed itinerary</h3>
         {timeline.length === 0 ? (
           <p className="text-sm text-[#4C5A6B]">
@@ -255,7 +267,11 @@ function DayItineraryDetail({ card }) {
         ) : (
           <div className="space-y-3">
             {timeline.map((entry, index) => (
-              <TimelineEntry key={entry.id ?? index} entry={entry} index={index} />
+              <TimelineEntry
+                key={entry.id ?? index}
+                entry={entry}
+                isLast={index === timeline.length - 1}
+              />
             ))}
           </div>
         )}
@@ -271,6 +287,30 @@ function DayItineraryDetail({ card }) {
   );
 }
 
+function OtherActivitiesList({ activities }) {
+  if (!activities?.length) {
+    return <EmptyState />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-[#4C5A6B]">
+        Ideas we like that aren&apos;t locked to a specific day. Use them as backups or spontaneous
+        additions.
+      </p>
+      <div className="space-y-3">
+        {activities.map((entry, index) => (
+          <TimelineEntry
+            key={entry.id ?? index}
+            entry={entry}
+            isLast={index === activities.length - 1}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
     <div className="text-center text-sm text-[#4C5A6B]">
@@ -280,126 +320,336 @@ function EmptyState() {
 }
 
 const ENTRY_META = {
-  transport: {
-    label: 'Transport',
-    iconColor: 'bg-sky-500/10 border-sky-400/40 text-sky-200',
-  },
   attraction: {
     label: 'Attraction',
-    iconColor: 'bg-purple-500/10 border-purple-400/40 text-purple-200',
+    border: 'border-purple-100',
+    badge: 'bg-purple-100 text-purple-700',
+    iconBg: 'bg-purple-50 border-purple-200 text-purple-700',
+    rail: 'bg-purple-300',
+  },
+  photo: {
+    label: 'Photo stop',
+    border: 'border-rose-100',
+    badge: 'bg-rose-100 text-rose-700',
+    iconBg: 'bg-rose-50 border-rose-200 text-rose-700',
+    rail: 'bg-rose-300',
+  },
+  rest: {
+    label: 'Rest / sleep',
+    border: 'border-slate-200',
+    badge: 'bg-slate-100 text-slate-700',
+    iconBg: 'bg-slate-50 border-slate-200 text-slate-700',
+    rail: 'bg-slate-300',
   },
   food: {
     label: 'Food & drink',
-    iconColor: 'bg-emerald-500/10 border-emerald-400/40 text-emerald-200',
+    border: 'border-amber-100',
+    badge: 'bg-amber-100 text-amber-700',
+    iconBg: 'bg-amber-50 border-amber-200 text-amber-700',
+    rail: 'bg-amber-300',
+  },
+  accommodation: {
+    label: 'Accommodation',
+    border: 'border-emerald-100',
+    badge: 'bg-emerald-100 text-emerald-700',
+    iconBg: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+    rail: 'bg-emerald-300',
+  },
+  flight: {
+    label: 'Flight',
+    border: 'border-sky-100',
+    badge: 'bg-sky-100 text-sky-700',
+    iconBg: 'bg-sky-50 border-sky-200 text-sky-700',
+    rail: 'bg-sky-300',
+  },
+  transport: {
+    label: 'Transport (train)',
+    border: 'border-indigo-100',
+    badge: 'bg-indigo-100 text-indigo-700',
+    iconBg: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+    rail: 'bg-indigo-300',
   },
 };
 
-function TimelineEntry({ entry, index }) {
-  const meta = ENTRY_META[entry?.type] ?? {
-    label: 'Plan',
-    iconColor: 'bg-orange-50 border-orange-100 text-[#4C5A6B]',
-  };
+const DEFAULT_ENTRY_META = {
+  label: 'Plan',
+  border: 'border-slate-200',
+  badge: 'bg-slate-100 text-slate-700',
+  iconBg: 'bg-slate-50 border-slate-200 text-slate-700',
+  rail: 'bg-slate-200',
+};
+
+const TRAVEL_META = {
+  walk: { label: 'Walk', border: 'border-slate-200' },
+  train: { label: 'Train', border: 'border-indigo-200' },
+  tube: { label: 'Tube / metro', border: 'border-purple-200' },
+  taxi: { label: 'Taxi', border: 'border-amber-200' },
+  car: { label: 'Car / transfer', border: 'border-emerald-200' },
+  flight: { label: 'Flight', border: 'border-sky-200' },
+};
+
+function TimelineEntry({ entry, isLast }) {
+  const meta = ENTRY_META[entry?.type] ?? DEFAULT_ENTRY_META;
   const fields = entry?.fields ?? {};
   const title =
     typeof fields.title === 'string' && fields.title.trim()
       ? fields.title.trim()
       : meta.label;
-  const time = fields.time;
-  const price = fields.price;
-  const link = fields.link;
-  const description = fields.description;
-  const name = fields.name;
+  const time = typeof fields.time === 'string' ? fields.time.trim() : '';
+  const rawBadge =
+    typeof fields.price === 'string' && fields.price.trim()
+      ? fields.price.trim()
+      : typeof fields.tag === 'string' && fields.tag.trim()
+      ? fields.tag.trim()
+      : '';
+  const isFree = rawBadge.toLowerCase() === 'free';
+  const badgeClass = isFree
+    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+    : 'bg-slate-100 text-slate-900 border border-slate-200';
+  const badge = rawBadge;
+  const link = typeof fields.link === 'string' ? fields.link.trim() : '';
+  const description = typeof fields.description === 'string' ? fields.description.trim() : '';
+  const travelMode =
+    typeof fields.travelMode === 'string' ? fields.travelMode.trim().toLowerCase() : '';
+  const travelDuration =
+    typeof fields.travelDuration === 'string' ? fields.travelDuration.trim() : '';
+  const travelMeta = TRAVEL_META[travelMode] ?? null;
+  const travelDurationLabel = formatDuration(travelDuration);
 
   return (
-    <article className="border border-orange-100 rounded-2xl p-4 space-y-3">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span
-            className={`h-11 w-11 rounded-full border ${meta.iconColor} flex items-center justify-center`}
-          >
-            <ExperienceIcon type={entry?.type} />
-          </span>
-          <div>
-            <p className="text-base font-semibold text-slate-900">{title}</p>
-            {name && entry?.type === 'food' ? (
-              <p className="text-sm text-[#4C5A6B]">{name}</p>
+    <div className="relative flex flex-col pb-8">
+      <article className={`relative overflow-hidden rounded-2xl border ${meta.border} bg-white shadow-sm`}>
+        <div className={`absolute left-0 top-0 h-full w-1 ${meta.rail}`} />
+        <div className="p-5 space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-wrap items-start gap-4 min-w-0">
+              <span className="text-sm font-semibold text-[#245ad4]">{time || '—'}</span>
+              <div className="flex items-center gap-3">
+                <span
+                  className={`h-12 w-12 rounded-full border ${meta.iconBg} flex items-center justify-center`}
+                >
+                  <ExperienceIcon type={entry?.type} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-base font-semibold text-slate-900 break-words">{title}</p>
+                  {description ? (
+                    <p className="text-sm text-[#4C5A6B] break-words">{description}</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+            {(badge || link) ? (
+              <div className="flex flex-col items-end gap-3 min-w-[96px]">
+                {badge ? (
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}
+                  >
+                    {badge}
+                  </span>
+                ) : null}
+                {link ? (
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-orange-500 text-orange-600 px-3 py-2 text-sm font-semibold hover:bg-orange-50 transition-colors"
+                  >
+                    Book now <ExternalIcon />
+                  </a>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap justify-end gap-2 text-sm">
-          {time ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 px-3 py-1 text-[#4C5A6B]">
-              <ClockIcon /> {time}
+      </article>
+      {travelMode || travelDuration ? (
+        <div className="mt-3 flex items-center gap-2 text-xs text-[#4C5A6B]">
+          <span
+            className={`inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 ${travelMeta?.border ?? 'border-slate-200'}`}
+          >
+            <TravelModeIcon mode={travelMode} />
+            <span className="font-semibold text-slate-800">
+              {travelMeta?.label ?? 'Travel'}
             </span>
-          ) : null}
-          {price ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 px-3 py-1 text-[#4C5A6B]">
-              <TagIcon /> {price}
-            </span>
-          ) : null}
+            {travelDurationLabel ? <span className="text-[#4C5A6B]">• {travelDurationLabel}</span> : null}
+          </span>
         </div>
-      </header>
-      <div className="text-sm text-[#4C5A6B] space-y-2">
-        {description ? (
-          <p>{description}</p>
-        ) : (
-          <p className="text-[#4C5A6B] text-xs">
-            Details will be added soon.
-          </p>
-        )}
-      </div>
-      {link ? (
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-3 py-2 text-xs font-semibold text-neutral-900 hover:bg-orange-400 transition-colors"
-        >
-          View details
-        </a>
       ) : null}
-    </article>
+      {!isLast ? <span className="absolute left-5 right-5 bottom-2 h-px bg-slate-200" /> : null}
+    </div>
   );
 }
 
 function ExperienceIcon({ type }) {
-  if (type === 'transport') {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path d="M4 16V6a4 4 0 014-4h8a4 4 0 014 4v10a4 4 0 01-4 4l2 1.5v.5h-2l-3-2h-2l-3 2H6v-.5L8 20a4 4 0 01-4-4zm2-5h12V6a2 2 0 00-2-2H8a2 2 0 00-2 2v5zm0 4a2 2 0 002 2h8a2 2 0 002-2v-1H6v1z" />
-      </svg>
-    );
+  const className = 'h-6 w-6';
+  const strokeProps = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.6,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  };
+  switch (type) {
+    case 'attraction':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M4 10h16" />
+          <path d="M4 20h16" />
+          <path d="M5 10V9l7-4 7 4v1" />
+          <path d="M7 10v8" />
+          <path d="M10.5 10v8" />
+          <path d="M14 10v8" />
+          <path d="M17 10v8" />
+        </svg>
+      );
+    case 'photo':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <rect x="3" y="7" width="18" height="12" rx="2" />
+          <path d="M8 7l1.5-2h5L16 7" />
+          <circle cx="12" cy="13" r="3" />
+          <circle cx="17" cy="10" r="1" />
+        </svg>
+      );
+    case 'rest':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M21 13a8 8 0 11-8-10 6 6 0 008 10z" />
+          <path d="M16.5 7.5h.01" />
+        </svg>
+      );
+    case 'food':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M5 6h9v7a4 4 0 01-4 4H9a4 4 0 01-4-4V6z" />
+          <path d="M14 8h2a3 3 0 010 6h-2" />
+          <path d="M7 4h5" />
+        </svg>
+      );
+    case 'accommodation':
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className={className}
+          aria-hidden="true"
+        >
+          <path d="M12 3l9 6v12a1 1 0 01-1 1h-6v-6h-4v6H4a1 1 0 01-1-1V9l9-6z" />
+        </svg>
+      );
+    case 'flight':
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className={className}
+          aria-hidden="true"
+        >
+          <path d="M21 16.5v-1.764a1 1 0 00-.553-.894L13 10V5.5a1.5 1.5 0 00-3 0V10l-7.447 3.842A1 1 0 002 14.736V16.5l9-1.5v3.764l-2.553.894A1 1 0 008 21.5h2l1.333-.5L12.667 21.5H15a1 1 0 00.553-1.842L13 18.764V15l8 1.5z" />
+        </svg>
+      );
+    case 'transport':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M6 7a4 4 0 014-4h4a4 4 0 014 4v8a3 3 0 01-3 3H9a3 3 0 01-3-3V7z" />
+          <path d="M8 7h8" />
+          <path d="M8 11h8" />
+          <circle cx="10" cy="15" r="1" />
+          <circle cx="14" cy="15" r="1" />
+          <path d="M9 18l-2 2" />
+          <path d="M15 18l2 2" />
+        </svg>
+      );
+    default:
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M12 22s7-7 7-13a7 7 0 10-14 0c0 6 7 13 7 13z" />
+          <circle cx="12" cy="9" r="2.5" />
+        </svg>
+      );
   }
-  if (type === 'attraction') {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
-      </svg>
-    );
+}
+
+function TravelModeIcon({ mode }) {
+  const className = 'h-4 w-4';
+  const strokeProps = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.6,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  };
+  switch (mode) {
+    case 'walk':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <circle cx="12" cy="5" r="2" />
+          <path d="M8 22l2-5-2-3 2-4 4 1 2 3" />
+          <path d="M14 10l-1 4 3 3" />
+          <path d="M6 15l-2 3" />
+        </svg>
+      );
+    case 'train':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M7 4h10a4 4 0 014 4v7a3 3 0 01-3 3H6a3 3 0 01-3-3V8a4 4 0 014-4z" />
+          <path d="M7 8h10" />
+          <path d="M7 11h10" />
+          <circle cx="9" cy="16" r="1" />
+          <circle cx="15" cy="16" r="1" />
+          <path d="M8 19l-2 2" />
+          <path d="M16 19l2 2" />
+        </svg>
+      );
+    case 'tube':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <rect x="5" y="3" width="14" height="16" rx="5" />
+          <path d="M8 9h8" />
+          <path d="M8 12h8" />
+          <circle cx="9" cy="16" r="1" />
+          <circle cx="15" cy="16" r="1" />
+          <path d="M8 19l-2 2" />
+          <path d="M16 19l2 2" />
+        </svg>
+      );
+    case 'taxi':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11" />
+          <path d="M4 11h16a2 2 0 012 2v3" />
+          <path d="M4 16v-3a2 2 0 012-2" />
+          <circle cx="8" cy="17" r="1.5" />
+          <circle cx="16" cy="17" r="1.5" />
+          <path d="M10 5h4" />
+        </svg>
+      );
+    case 'car':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11" />
+          <path d="M4 11h16a2 2 0 012 2v3" />
+          <path d="M4 16v-3a2 2 0 012-2" />
+          <circle cx="8" cy="17" r="1.5" />
+          <circle cx="16" cy="17" r="1.5" />
+        </svg>
+      );
+    case 'flight':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M2.5 15.5l8.5-3V5a2 2 0 014 0v7.5l8.5 3" />
+          <path d="M10.5 12.5v7l1.5-1 1.5 1v-7" />
+        </svg>
+      );
+    default:
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <circle cx="12" cy="12" r="2" />
+        </svg>
+      );
   }
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <path d="M4 3h3v18H4V3zm13.5 0a4.5 4.5 0 00-4.5 4.5v8.25a3.75 3.75 0 007.5 0V7.5A4.5 4.5 0 0017.5 3zm-3 4.5A3 3 0 0117.5 4.5 3 3 0 0120.5 7.5v8.25a2.25 2.25 0 11-4.5 0V7.5z" />
-    </svg>
-  );
 }
 
 function ClockIcon() {
@@ -416,7 +666,7 @@ function ClockIcon() {
   );
 }
 
-function TagIcon() {
+function ExternalIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -425,7 +675,26 @@ function TagIcon() {
       className="h-4 w-4"
       aria-hidden="true"
     >
-      <path d="M20.59 13.41l-8-8A2 2 0 0011.17 5H5a2 2 0 00-2 2v6.17a2 2 0 00.59 1.41l8 8a2 2 0 002.82 0l6.18-6.18a2 2 0 000-2.82zM7.5 9A1.5 1.5 0 119 10.5 1.5 1.5 0 017.5 9z" />
+      <path d="M14 3h7v7h-2V6.414l-9.293 9.293-1.414-1.414L17.586 5H14V3z" />
+      <path d="M5 5h5V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-5h-2v5H5V5z" />
     </svg>
   );
+}
+
+function formatDuration(raw) {
+  if (!raw) return '';
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric) && numeric >= 0) {
+    if (numeric < 60) {
+      return `${numeric} min`;
+    }
+    const hours = Math.floor(numeric / 60);
+    const minutes = Math.round(numeric % 60);
+    if (minutes === 0) {
+      return `${hours} hr`;
+    }
+    return `${hours} hr ${minutes} min`;
+  }
+  const trimmed = raw.trim();
+  return trimmed ? `${trimmed}${trimmed.toLowerCase().includes('min') ? '' : ' min'}` : '';
 }
