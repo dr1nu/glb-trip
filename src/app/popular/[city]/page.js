@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import ItinerarySummary from '@/app/trip/[tripId]/_components/ItinerarySummary';
+import TripExperienceClient from '@/app/trip/[tripId]/experience/_components/TripExperienceClient';
 import { DEFAULT_HOMEPAGE_DESTINATIONS } from '@/data/homepageDefaults';
 import { HOMEPAGE_TEMPLATES } from '@/data/homepageTemplates';
 
@@ -28,6 +28,13 @@ export default function PopularDestinationPage() {
   const selectedTemplate = activeDestination?.templateId
     ? templatesById[activeDestination.templateId]
     : HOMEPAGE_TEMPLATES[city];
+  const itineraryCards = Array.isArray(selectedTemplate?.itinerary?.cards)
+    ? selectedTemplate.itinerary.cards
+    : [];
+  const dayCards = itineraryCards.filter((card) => card?.type === 'day');
+  const tripLength =
+    Number(selectedTemplate?.tripLengthDays) ||
+    (dayCards.length > 0 ? dayCards.length : 0);
 
   useEffect(() => {
     let ignore = false;
@@ -110,32 +117,19 @@ export default function PopularDestinationPage() {
           </section>
         ) : (
           <section className="rounded-3xl border border-[#E3E6EF] bg-white p-6 shadow-xl shadow-orange-100/60">
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-[#C2461E]">
-                Sample itinerary
-              </p>
-              <h2 className="text-2xl font-semibold text-neutral-900">
-                {selectedTemplate?.name ?? `${city} sample`}
-              </h2>
-              <p className="text-sm text-[#4C5A6B]">
-                {selectedTemplate?.summary ??
-                  'A short preview to help you sense the vibe before you plan.'}
-              </p>
-            </div>
-            <div className="mt-5">
+            <div className="space-y-6">
               {loadingTemplate ? (
                 <div className="rounded-2xl border border-slate-200/70 bg-white p-6 text-sm text-[#4C5A6B] shadow-sm shadow-slate-100">
                   Loading itinerary preview…
                 </div>
               ) : selectedTemplate ? (
-                <ItinerarySummary
-                  cards={selectedTemplate.itinerary?.cards ?? []}
-                  title={selectedTemplate.name}
-                  description={
-                    selectedTemplate.description ??
-                    selectedTemplate.notes ??
-                    'Sample itinerary preview.'
-                  }
+                <TripExperienceClient
+                  destinationCountry={activeDestination?.country ?? city}
+                  homeCountry="Home"
+                  tripLengthDays={tripLength || dayCards.length || 1}
+                  summaryCards={itineraryCards}
+                  dayCards={dayCards}
+                  otherActivities={selectedTemplate?.itinerary?.unassignedActivities ?? []}
                 />
               ) : (
                 <div className="rounded-2xl border border-slate-200/70 bg-white p-6 text-sm text-[#4C5A6B] shadow-sm shadow-slate-100">
