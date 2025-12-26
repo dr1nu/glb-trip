@@ -21,7 +21,7 @@ const IMAGE_PLACEHOLDERS = [
   'from-blue-200 via-cyan-200 to-emerald-200',
 ];
 
-const STATUS_ORDER = ['Pending', 'Confirmed', 'Completed'];
+const STATUS_ORDER = ['Requested', 'Itinerary Ready', 'Completed'];
 
 function parseDate(value) {
   if (!value) return null;
@@ -126,12 +126,12 @@ function getTripStatus(trip) {
   }
   if (trip.published) {
     return {
-      label: 'Confirmed',
+      label: 'Itinerary Ready',
       badge: 'bg-emerald-100 text-emerald-700',
     };
   }
   return {
-    label: 'Pending',
+    label: 'Requested',
     badge: 'bg-amber-100 text-amber-700',
   };
 }
@@ -185,7 +185,7 @@ function TripCard({ trip, index, onDelete }) {
   };
 
   return (
-    <article className="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
+    <article className="relative flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
       <div className="w-full overflow-hidden rounded-2xl sm:w-48">
         <div
           className="relative h-36 w-full overflow-hidden rounded-2xl bg-gradient-to-br"
@@ -235,6 +235,19 @@ function TripCard({ trip, index, onDelete }) {
         </div>
       </div>
 
+      <button
+        type="button"
+        onClick={handleDelete}
+        disabled={isDeleting}
+        aria-label={isDeleting ? 'Deleting trip' : 'Delete trip'}
+        className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 shadow shadow-rose-100 transition hover:bg-rose-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className="sr-only">
+          {isDeleting ? 'Deleting trip' : 'Delete trip'}
+        </span>
+        <TrashIcon />
+      </button>
+
       <div className="flex w-full flex-col gap-2 sm:w-auto sm:self-center">
         <Link
           href={`/trip/${trip.id}`}
@@ -242,14 +255,6 @@ function TripCard({ trip, index, onDelete }) {
         >
           View Details
         </Link>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="inline-flex w-full items-center justify-center rounded-2xl border border-rose-200 bg-white px-5 py-2.5 text-sm font-semibold text-rose-600 shadow shadow-rose-100 transition hover:bg-rose-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isDeleting ? 'Deleting…' : 'Delete trip'}
-        </button>
       </div>
     </article>
   );
@@ -445,6 +450,26 @@ function UsersIcon() {
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 00-3-3.87" />
       <path d="M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 7h12" />
+      <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" />
+      <path d="M7 7l1 12a2 2 0 002 2h4a2 2 0 002-2l1-12" />
+      <path d="M10 11v6M14 11v6" />
     </svg>
   );
 }
