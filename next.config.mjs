@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: "/trip-planner/app",
   // Ensure public Supabase env vars are available at build time in all environments.
   env: {
     NEXT_PUBLIC_SUPABASE_URL:
