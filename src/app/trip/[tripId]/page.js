@@ -6,6 +6,7 @@ import CreateItineraryButton from './_components/CreateItineraryButton';
 import ItinerarySummary from './_components/ItinerarySummary';
 import TripImagePicker from './_components/TripImagePicker';
 import AdminBillingEditor from './_components/AdminBillingEditor';
+import PayToUnlockButton from './_components/PayToUnlockButton';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -135,6 +136,7 @@ export default async function TripPage({ params, searchParams }) {
             billingPaidAt={billingPaidAt}
             effectiveAmountCents={effectiveAmountCents}
             paymentRequired={paymentRequired}
+            tripId={id}
           />
         )}
 
@@ -183,6 +185,23 @@ function PendingTripOverview({
 
   return (
     <>
+      {showPaymentNotice ? (
+        <section className="rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] p-5 sm:p-6 space-y-4 shadow-sm shadow-[#ff8a00]/10">
+          <SectionHeading
+            title="Payment required to view your itinerary"
+            description="Your trip is ready, but payment is needed before we can show the full details."
+          />
+          <div className="rounded-2xl border border-[#ffd9b3] bg-white/90 p-4 space-y-2 text-sm text-[#4C5A6B]">
+            <p className="text-base font-semibold text-slate-900">
+              Total due: {amountLabel}{billingContext}
+            </p>
+            <p className="text-xs text-[#6a7687]">
+              You will be redirected to Stripe to complete payment securely.
+            </p>
+          </div>
+          <PayToUnlockButton tripId={tripId} />
+        </section>
+      ) : null}
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#ff9f43] via-[#ff8a00] to-[#ff6f00] text-white shadow-lg shadow-[#ff7a00]/20 border border-[#ffd9b3]">
         <div className="px-5 py-6 sm:px-7 sm:py-7 space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold tracking-wide uppercase border border-white/30 shadow-sm shadow-black/10 text-white">
@@ -333,23 +352,23 @@ function ConfirmedTripOverview({
   billingPaidAt,
   effectiveAmountCents,
   paymentRequired,
+  tripId,
 }) {
   const showPaymentNotice = paymentRequired && !fromAdmin;
-  const usesCustomAmount = typeof billingCustomAmountCents === 'number';
   const amountLabel = formatEuroCents(effectiveAmountCents);
   const billingContext =
     billingCurrency && billingCurrency !== 'EUR' ? ` (${billingCurrency})` : '';
-  const perDayLabel =
-    !usesCustomAmount && tripLengthDays
-      ? `€3 per day x ${tripLengthDays} day${tripLengthDays === 1 ? '' : 's'}`
-      : null;
   const paidLabel = billingPaidAt
     ? new Date(billingPaidAt).toLocaleString()
     : null;
 
   return (
     <>
-      <section className="rounded-3xl border border-[#d8deed] bg-white/92 shadow-sm shadow-[#0c2a52]/10 p-5 sm:p-6 space-y-4">
+      <section
+        className={`rounded-3xl border ${
+          showPaymentNotice ? 'border-[#ffd9b3] bg-[#fff7ef]' : 'border-[#d8deed] bg-white/92'
+        } shadow-sm ${showPaymentNotice ? 'shadow-[#ff8a00]/10' : 'shadow-[#0c2a52]/10'} p-5 sm:p-6 space-y-4`}
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#0c2a52]">
@@ -358,7 +377,14 @@ function ConfirmedTripOverview({
             <h1 className="text-2xl font-semibold">
               Trip to {destinationCountry || 'Destination pending'}
             </h1>
-            <p className="text-sm text-[#4C5A6B]">Itinerary created {createdLabel}</p>
+            {showPaymentNotice ? (
+              <p className="text-sm font-semibold text-[#c25a00]">
+                Payment required to view your itinerary
+              </p>
+            ) : null}
+            {!paymentRequired ? (
+              <p className="text-sm text-[#4C5A6B]">Itinerary created {createdLabel}</p>
+            ) : null}
           </div>
           <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2fb] px-3 py-1 text-xs font-semibold text-[#0c2a52] border border-[#d8deed]">
             <CheckIcon />
@@ -381,7 +407,7 @@ function ConfirmedTripOverview({
           <Fact label="Budget" value={budgetLabel} />
           <Fact label="Travellers" value={travellers} />
         </div>
-        {billingStatus ? (
+        {billingStatus && !paymentRequired ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <Fact
               label="Billing"
@@ -399,37 +425,20 @@ function ConfirmedTripOverview({
             />
           </div>
         ) : null}
-      </section>
 
-      {showPaymentNotice ? (
-        <>
-          <section className="rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] p-5 sm:p-6 space-y-4 shadow-sm shadow-[#ff8a00]/10">
-            <SectionHeading
-              title="Payment required to view your itinerary"
-              description="Your trip is ready, but payment is needed before we can show the full details."
-            />
-            <div className="rounded-2xl border border-[#ffd9b3] bg-white/90 p-4 space-y-2 text-sm text-[#4C5A6B]">
+        {showPaymentNotice ? (
+          <div className="mt-2 rounded-2xl border border-[#ffd9b3] bg-white/90 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-base font-semibold text-slate-900">
                 Total due: {amountLabel}{billingContext}
               </p>
-              {usesCustomAmount ? (
-                <p>Custom amount set by your travel specialist.</p>
-              ) : perDayLabel ? (
-                <p>Calculated as {perDayLabel}.</p>
-              ) : null}
-              <p className="text-xs text-[#6a7687]">
-                Payments are not enabled yet. This is where checkout will appear.
-              </p>
+              <PayToUnlockButton tripId={tripId} />
             </div>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 opacity-60 cursor-not-allowed"
-              disabled
-            >
-              Pay to unlock itinerary
-            </button>
-          </section>
+          </div>
+        ) : null}
+      </section>
 
+      {showPaymentNotice ? (
           <section className="relative rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] shadow-sm shadow-[#ff8a00]/10 overflow-hidden">
             <div className="absolute inset-0 z-10 flex items-center justify-center p-6 text-center">
               <div className="rounded-2xl border border-[#ff8a00] bg-white px-6 py-5 shadow-xl shadow-[#ff8a00]/30">
@@ -439,13 +448,9 @@ function ConfirmedTripOverview({
                 <p className="text-sm text-[#4C5A6B]">
                   Pay to view every day, detail, and booking link.
                 </p>
-                <button
-                  type="button"
-                  className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 opacity-70 cursor-not-allowed"
-                  disabled
-                >
-                  Pay to unlock itinerary
-                </button>
+                <div className="mt-3">
+                  <PayToUnlockButton tripId={tripId} label="Pay to unlock itinerary" />
+                </div>
               </div>
             </div>
             <div className="pointer-events-none z-0 blur-[2px] opacity-60">
@@ -457,7 +462,6 @@ function ConfirmedTripOverview({
               />
             </div>
           </section>
-        </>
       ) : (
         <ItinerarySummary
           className="shadow-sm shadow-[#0c2a52]/10 border border-[#ffd9b3] bg-[#fff7ef]"
