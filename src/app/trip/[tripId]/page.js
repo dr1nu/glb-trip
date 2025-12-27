@@ -5,6 +5,7 @@ import { COUNTRY_HUBS } from '@/lib/airfare';
 import CreateItineraryButton from './_components/CreateItineraryButton';
 import ItinerarySummary from './_components/ItinerarySummary';
 import TripImagePicker from './_components/TripImagePicker';
+import AdminBillingEditor from './_components/AdminBillingEditor';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,15 @@ export const dynamic = 'force-dynamic';
 function euro(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) return '—';
   return `€${Math.round(value)}`;
+}
+
+function formatEuroCents(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '—';
+  const rounded = Math.round(value);
+  if (rounded % 100 === 0) {
+    return `€${rounded / 100}`;
+  }
+  return `€${(rounded / 100).toFixed(2)}`;
 }
 
 export default async function TripPage({ params, searchParams }) {
@@ -36,6 +46,11 @@ export default async function TripPage({ params, searchParams }) {
     preferences = null,
     imagePath = null,
     published = false,
+    billingStatus = null,
+    billingCurrency = 'EUR',
+    billingAmountCents = null,
+    billingCustomAmountCents = null,
+    billingPaidAt = null,
   } = trip;
 
   const createdLabel = createdAt
@@ -48,6 +63,13 @@ export default async function TripPage({ params, searchParams }) {
     : `/trip/${id}/experience`;
   const showTravellerCTA = itineraryReady && !fromAdmin;
   const showAdminCTA = itineraryReady && fromAdmin;
+  const effectiveAmountCents =
+    typeof billingCustomAmountCents === 'number'
+      ? billingCustomAmountCents
+      : typeof billingAmountCents === 'number'
+        ? billingAmountCents
+        : Math.max(0, Math.round((tripLengthDays ?? 0) * 300));
+  const paymentRequired = itineraryReady && !fromAdmin && billingStatus === 'pending';
   const travellers = formatTravellerCount(contact);
   const budgetLabel = formatBudgetLabel(budgetTotal);
   const travelDates = formatTravelDates(preferences);
@@ -60,7 +82,7 @@ export default async function TripPage({ params, searchParams }) {
   const accommodationLabel = formatAccommodation(preferences);
   const baggageLabel = formatBaggage(preferences);
 
-  if (itineraryReady && !fromAdmin) {
+  if (itineraryReady && !fromAdmin && !paymentRequired) {
     redirect(immersiveHref);
   }
 
@@ -106,6 +128,13 @@ export default async function TripPage({ params, searchParams }) {
             travellers={travellers}
             preferences={preferences}
             contact={contact}
+            billingStatus={billingStatus}
+            billingCurrency={billingCurrency}
+            billingAmountCents={billingAmountCents}
+            billingCustomAmountCents={billingCustomAmountCents}
+            billingPaidAt={billingPaidAt}
+            effectiveAmountCents={effectiveAmountCents}
+            paymentRequired={paymentRequired}
           />
         )}
 
@@ -120,6 +149,10 @@ export default async function TripPage({ params, searchParams }) {
             preferences={preferences}
             contact={contact}
             result={result}
+            tripLengthDays={tripLengthDays}
+            billingCurrency={billingCurrency}
+            billingAmountCents={billingAmountCents}
+            billingCustomAmountCents={billingCustomAmountCents}
           />
         ) : null}
       </div>
@@ -293,7 +326,27 @@ function ConfirmedTripOverview({
   travellers,
   preferences,
   contact,
+  billingStatus,
+  billingCurrency,
+  billingAmountCents,
+  billingCustomAmountCents,
+  billingPaidAt,
+  effectiveAmountCents,
+  paymentRequired,
 }) {
+  const showPaymentNotice = paymentRequired && !fromAdmin;
+  const usesCustomAmount = typeof billingCustomAmountCents === 'number';
+  const amountLabel = formatEuroCents(effectiveAmountCents);
+  const billingContext =
+    billingCurrency && billingCurrency !== 'EUR' ? ` (${billingCurrency})` : '';
+  const perDayLabel =
+    !usesCustomAmount && tripLengthDays
+      ? `€3 per day x ${tripLengthDays} day${tripLengthDays === 1 ? '' : 's'}`
+      : null;
+  const paidLabel = billingPaidAt
+    ? new Date(billingPaidAt).toLocaleString()
+    : null;
+
   return (
     <>
       <section className="rounded-3xl border border-[#d8deed] bg-white/92 shadow-sm shadow-[#0c2a52]/10 p-5 sm:p-6 space-y-4">
@@ -328,16 +381,93 @@ function ConfirmedTripOverview({
           <Fact label="Budget" value={budgetLabel} />
           <Fact label="Travellers" value={travellers} />
         </div>
+        {billingStatus ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <Fact
+              label="Billing"
+              value={
+                billingStatus === 'paid'
+                  ? `Paid${paidLabel ? ` on ${paidLabel}` : ''}`
+                  : billingStatus === 'free'
+                    ? 'Included (free annual trip)'
+                    : 'Payment required'
+              }
+            />
+            <Fact
+              label="Amount"
+              value={billingStatus === 'free' ? '€0' : `${amountLabel}${billingContext}`}
+            />
+          </div>
+        ) : null}
       </section>
 
-      <ItinerarySummary
-        className="shadow-sm shadow-[#0c2a52]/10 border border-[#ffd9b3] bg-[#fff7ef]"
-        cards={itinerary?.cards || []}
-        title="Your itinerary"
-        description="Jump straight into the plan we created for you."
-      />
+      {showPaymentNotice ? (
+        <>
+          <section className="rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] p-5 sm:p-6 space-y-4 shadow-sm shadow-[#ff8a00]/10">
+            <SectionHeading
+              title="Payment required to view your itinerary"
+              description="Your trip is ready, but payment is needed before we can show the full details."
+            />
+            <div className="rounded-2xl border border-[#ffd9b3] bg-white/90 p-4 space-y-2 text-sm text-[#4C5A6B]">
+              <p className="text-base font-semibold text-slate-900">
+                Total due: {amountLabel}{billingContext}
+              </p>
+              {usesCustomAmount ? (
+                <p>Custom amount set by your travel specialist.</p>
+              ) : perDayLabel ? (
+                <p>Calculated as {perDayLabel}.</p>
+              ) : null}
+              <p className="text-xs text-[#6a7687]">
+                Payments are not enabled yet. This is where checkout will appear.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 opacity-60 cursor-not-allowed"
+              disabled
+            >
+              Pay to unlock itinerary
+            </button>
+          </section>
 
-      {showTravellerCTA ? (
+          <section className="relative rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] shadow-sm shadow-[#ff8a00]/10 overflow-hidden">
+            <div className="absolute inset-0 z-10 flex items-center justify-center p-6 text-center">
+              <div className="rounded-2xl border border-[#ff8a00] bg-white px-6 py-5 shadow-xl shadow-[#ff8a00]/30">
+                <p className="text-base font-semibold text-slate-900">
+                  Unlock your full itinerary
+                </p>
+                <p className="text-sm text-[#4C5A6B]">
+                  Pay to view every day, detail, and booking link.
+                </p>
+                <button
+                  type="button"
+                  className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 opacity-70 cursor-not-allowed"
+                  disabled
+                >
+                  Pay to unlock itinerary
+                </button>
+              </div>
+            </div>
+            <div className="pointer-events-none z-0 blur-[2px] opacity-60">
+              <ItinerarySummary
+                className="border-0 bg-transparent p-5 sm:p-6 shadow-none"
+                cards={itinerary?.cards || []}
+                title="Your itinerary"
+                description="Jump straight into the plan we created for you."
+              />
+            </div>
+          </section>
+        </>
+      ) : (
+        <ItinerarySummary
+          className="shadow-sm shadow-[#0c2a52]/10 border border-[#ffd9b3] bg-[#fff7ef]"
+          cards={itinerary?.cards || []}
+          title="Your itinerary"
+          description="Jump straight into the plan we created for you."
+        />
+      )}
+
+      {showTravellerCTA && !showPaymentNotice ? (
         <section className="rounded-2xl border border-[#ffd9b3] bg-[#fff7ef] p-5 space-y-3 shadow-sm shadow-[#ff8a00]/10">
           <div>
             <h2 className="text-lg font-semibold">Ready to explore?</h2>
@@ -365,7 +495,7 @@ function ConfirmedTripOverview({
         </div>
       ) : null}
 
-      {contact || preferences ? (
+      {!paymentRequired && (contact || preferences) ? (
         <section className="rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] p-5 sm:p-6 space-y-4 shadow-sm shadow-[#ff8a00]/10">
           <SectionHeading
             title="Traveller details"
@@ -421,6 +551,10 @@ function AdminActions({
   preferences,
   contact,
   result,
+  tripLengthDays,
+  billingCurrency,
+  billingAmountCents,
+  billingCustomAmountCents,
 }) {
   if (!tripId) return null;
   const { flightsUrl, accommodationUrl } = buildQuickSearchLinks({
@@ -489,6 +623,14 @@ function AdminActions({
         tripId={tripId}
         hasItinerary={itineraryReady}
         cardCount={cardCount}
+      />
+
+      <AdminBillingEditor
+        tripId={tripId}
+        tripLengthDays={tripLengthDays}
+        billingCurrency={billingCurrency}
+        billingAmountCents={billingAmountCents}
+        billingCustomAmountCents={billingCustomAmountCents}
       />
 
       <TripImagePicker

@@ -42,6 +42,9 @@ export default async function TripExperiencePage({ params, searchParams }) {
   if (!fromAdmin && !trip.published) {
     redirect(`/trip/${tripId}`);
   }
+  if (!fromAdmin && trip.billingStatus === 'pending') {
+    redirect(`/trip/${tripId}`);
+  }
 
   const itinerary = trip.itinerary ?? null;
   if (!itinerary?.cards?.length) {

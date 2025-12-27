@@ -24,6 +24,12 @@ function mapRowToTrip(row) {
     preferences: row.preferences ?? null,
     itinerary: row.itinerary ?? null,
     published: row.published ?? false,
+    billingStatus: row.billing_status ?? null,
+    billingCurrency: row.billing_currency ?? null,
+    billingAmountCents: row.billing_amount_cents ?? null,
+    billingCustomAmountCents: row.billing_custom_amount_cents ?? null,
+    billingFreeYear: row.billing_free_year ?? null,
+    billingPaidAt: row.billing_paid_at ?? null,
   };
 }
 
@@ -59,6 +65,24 @@ function serializeTripPayload(payload) {
   }
   if (payload.published !== undefined) {
     serialized.published = payload.published;
+  }
+  if (payload.billingStatus !== undefined) {
+    serialized.billing_status = payload.billingStatus;
+  }
+  if (payload.billingCurrency !== undefined) {
+    serialized.billing_currency = payload.billingCurrency;
+  }
+  if (payload.billingAmountCents !== undefined) {
+    serialized.billing_amount_cents = payload.billingAmountCents;
+  }
+  if (payload.billingCustomAmountCents !== undefined) {
+    serialized.billing_custom_amount_cents = payload.billingCustomAmountCents;
+  }
+  if (payload.billingFreeYear !== undefined) {
+    serialized.billing_free_year = payload.billingFreeYear;
+  }
+  if (payload.billingPaidAt !== undefined) {
+    serialized.billing_paid_at = payload.billingPaidAt;
   }
   return serialized;
 }

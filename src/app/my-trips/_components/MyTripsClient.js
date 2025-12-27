@@ -21,7 +21,7 @@ const IMAGE_PLACEHOLDERS = [
   'from-blue-200 via-cyan-200 to-emerald-200',
 ];
 
-const STATUS_ORDER = ['Requested', 'Itinerary Ready', 'Completed'];
+const STATUS_ORDER = ['Requested', 'Payment required', 'Itinerary Ready', 'Completed'];
 
 function parseDate(value) {
   if (!value) return null;
@@ -122,6 +122,12 @@ function getTripStatus(trip) {
     return {
       label: 'Completed',
       badge: 'bg-blue-100 text-blue-700',
+    };
+  }
+  if (trip.published && trip.billingStatus === 'pending') {
+    return {
+      label: 'Payment required',
+      badge: 'bg-orange-100 text-orange-700',
     };
   }
   if (trip.published) {

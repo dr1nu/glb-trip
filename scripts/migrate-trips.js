@@ -39,6 +39,13 @@ function serializeTripPayload(trip) {
     preferences: trip.preferences ?? null,
     itinerary: trip.itinerary ?? null,
     published: trip.published ?? false,
+    billing_status: trip.billingStatus ?? trip.billing_status ?? null,
+    billing_currency: trip.billingCurrency ?? trip.billing_currency ?? null,
+    billing_amount_cents: trip.billingAmountCents ?? trip.billing_amount_cents ?? null,
+    billing_custom_amount_cents:
+      trip.billingCustomAmountCents ?? trip.billing_custom_amount_cents ?? null,
+    billing_free_year: trip.billingFreeYear ?? trip.billing_free_year ?? null,
+    billing_paid_at: trip.billingPaidAt ?? trip.billing_paid_at ?? null,
     created_at: trip.createdAt ?? new Date().toISOString(),
     updated_at: trip.updatedAt ?? new Date().toISOString(),
   };

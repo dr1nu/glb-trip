@@ -106,6 +106,91 @@ export async function DELETE(request, context) {
   }
 }
 
+export async function PATCH(request, context) {
+  const params = context?.params ? await context.params : {};
+  const tripId = params?.tripId ?? extractTripIdFromUrl(request.url);
+  if (!tripId) {
+    return NextResponse.json(
+      { error: 'Trip ID missing from request.' },
+      { status: 400 }
+    );
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Invalid request payload.' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('Failed to read auth session', error);
+      return NextResponse.json(
+        { error: 'Unable to validate your session.' },
+        { status: 401 }
+      );
+    }
+
+    const user = data?.user ?? null;
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Please sign in to update trips.' },
+        { status: 401 }
+      );
+    }
+
+    if (!isAdminUser(user)) {
+      return NextResponse.json(
+        { error: 'You do not have permission to update this trip.' },
+        { status: 403 }
+      );
+    }
+
+    const updates = {};
+    if (Object.prototype.hasOwnProperty.call(payload, 'billingCustomAmountCents')) {
+      const value = payload.billingCustomAmountCents;
+      if (value === null) {
+        updates.billingCustomAmountCents = null;
+      } else {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          return NextResponse.json(
+            { error: 'Custom amount must be a non-negative number.' },
+            { status: 400 }
+          );
+        }
+        updates.billingCustomAmountCents = Math.round(parsed);
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: 'No supported fields provided.' },
+        { status: 400 }
+      );
+    }
+
+    const updated = await updateTrip(tripId, updates);
+    if (!updated) {
+      return NextResponse.json({ error: 'Trip not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ trip: updated });
+  } catch (err) {
+    console.error('Failed to update trip', err);
+    return NextResponse.json(
+      { error: 'Failed to update trip.' },
+      { status: 500 }
+    );
+  }
+}
+
 function buildItinerary(trip) {
   return buildDefaultItinerary(trip);
 }
