@@ -421,9 +421,11 @@ function TimelineEntry({ entry, isLast }) {
       <article className={`relative overflow-hidden rounded-2xl border ${meta.border} bg-white shadow-sm`}>
         <div className={`absolute left-0 top-0 h-full w-1 ${meta.rail}`} />
         <div className="p-5 space-y-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex flex-wrap items-start gap-4 min-w-0">
-              <span className="text-sm font-semibold text-[#245ad4]">{time || '—'}</span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-4 min-w-0">
+              <span className="min-w-[64px] text-center text-sm font-semibold text-[#245ad4]">
+                {time || '—'}
+              </span>
               <div className="flex items-center gap-3">
                 <span
                   className={`h-12 w-12 rounded-full border ${meta.iconBg} flex items-center justify-center`}
@@ -439,10 +441,10 @@ function TimelineEntry({ entry, isLast }) {
               </div>
             </div>
             {(badge || link) ? (
-              <div className="flex flex-col items-end gap-3 min-w-[96px]">
+              <div className="flex flex-col items-center gap-3 min-w-[96px] text-center">
                 {badge ? (
                   <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-center ${badgeClass}`}
                   >
                     {badge}
                   </span>

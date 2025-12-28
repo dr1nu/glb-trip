@@ -84,9 +84,9 @@ export async function DELETE(request, context) {
     }
 
     const isAdmin = isAdminUser(user);
-    if (!isAdmin && trip.ownerId !== user.id) {
+    if (!isAdmin) {
       return NextResponse.json(
-        { error: 'You do not have permission to delete this trip.' },
+        { error: 'Only admins can delete trips.' },
         { status: 403 }
       );
     }

@@ -69,9 +69,23 @@ export default async function TripPage({ params, searchParams }) {
       <div className="w-full max-w-3xl space-y-6">
         <Link
           href={fromAdmin ? '/admin' : '/'}
-          className="inline-flex items-center gap-2 text-sm font-medium text-[#0c2a52] hover:text-[#0a2344]"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
         >
-          <span aria-hidden>←</span>
+          <span aria-hidden>
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M13.5 8.5L10 12l3.5 3.5" />
+              <path d="M10.5 12h6" />
+            </svg>
+          </span>
           {fromAdmin ? 'Back to admin' : 'Plan another trip'}
         </Link>
 
@@ -229,7 +243,6 @@ function PendingTripOverview({
             <InfoCard
               title="Accommodation"
               value={accommodationLabel}
-              meta={styleHint(preferences)}
               icon={<IconCircle tone="mint"><BedIcon /></IconCircle>}
             />
           </div>
@@ -766,14 +779,6 @@ function resultConfidence(preferences) {
   if (preferences.travelWindow === 'flexible') return 'Window: flexible';
   if (preferences.dateFrom && preferences.dateTo) return `Window: ${preferences.dateFrom} → ${preferences.dateTo}`;
   return 'Budget will be finalised after review';
-}
-
-function styleHint(preferences) {
-  if (!preferences) return undefined;
-  if (preferences.travelWindow === 'flexible' && preferences.flexibleMonth) {
-    return `Timing: ${preferences.flexibleMonth}`;
-  }
-  return preferences.travelWindow ? `Timing: ${preferences.travelWindow}` : undefined;
 }
 
 function IconCircle({ children, tone = 'blue' }) {

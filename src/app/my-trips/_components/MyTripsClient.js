@@ -25,11 +25,48 @@ const STATUS_ORDER = ['Requested', 'Itinerary Ready', 'Completed'];
 
 function parseDate(value) {
   if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const raw = typeof value === 'string' ? value.trim() : String(value);
+  if (!raw) return null;
+  const direct = new Date(raw);
+  if (!Number.isNaN(direct.getTime())) return direct;
+  const isoMatch = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    const parsed = new Date(`${year}-${month}-${day}`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  const euMatch = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (euMatch) {
+    const [, day, month, year] = euMatch;
+    const parsed = new Date(`${year}-${month}-${day}`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}
+
+function extractItineraryDates(trip) {
+  const cards = Array.isArray(trip?.itinerary?.cards) ? trip.itinerary.cards : [];
+  if (!cards.length) return { start: null, end: null };
+  const departure = cards.find((card) => card?.type === 'departure');
+  const returnCard = cards.find((card) => card?.type === 'return');
+  const start = parseDate(departure?.fields?.departTime || departure?.fields?.arrivalTime);
+  const end = parseDate(returnCard?.fields?.arrivalTime || returnCard?.fields?.departTime);
+  return { start, end };
 }
 
 function formatTripDates(trip) {
+  if (trip?.published) {
+    const { start, end } = extractItineraryDates(trip);
+    if (start && end) {
+      if (start.getTime() === end.getTime()) {
+        return DATE_FORMATTER.format(start);
+      }
+      return `${DATE_FORMATTER.format(start)} to ${DATE_FORMATTER.format(end)}`;
+    }
+    if (start) return DATE_FORMATTER.format(start);
+    if (end) return DATE_FORMATTER.format(end);
+  }
   const start = parseDate(trip.preferences?.dateFrom);
   const end = parseDate(trip.preferences?.dateTo);
   if (start && end) {
@@ -145,8 +182,7 @@ function TripInfoItem({ icon, label }) {
   );
 }
 
-function TripCard({ trip, index, onDelete }) {
-  const [isDeleting, setIsDeleting] = useState(false);
+function TripCard({ trip, index }) {
   const gradient =
     IMAGE_PLACEHOLDERS[index % IMAGE_PLACEHOLDERS.length] ??
     IMAGE_PLACEHOLDERS[0];
@@ -157,32 +193,6 @@ function TripCard({ trip, index, onDelete }) {
   const travelers = formatTravelers(trip);
   const showDuration = travelWindow === 'flexible';
   const imageUrl = trip.imageUrl ?? null;
-
-  const handleDelete = async () => {
-    if (isDeleting) return;
-    const confirmed = window.confirm(
-      'Delete this trip? This action cannot be undone.'
-    );
-    if (!confirmed) return;
-
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/trips/${trip.id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        const message = payload?.error || 'Unable to delete trip.';
-        throw new Error(message);
-      }
-      onDelete(trip.id);
-    } catch (err) {
-      console.error('Failed to delete trip', err);
-      window.alert(err instanceof Error ? err.message : 'Unable to delete trip.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   return (
     <article className="relative flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
@@ -235,19 +245,6 @@ function TripCard({ trip, index, onDelete }) {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={handleDelete}
-        disabled={isDeleting}
-        aria-label={isDeleting ? 'Deleting trip' : 'Delete trip'}
-        className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 shadow shadow-rose-100 transition hover:bg-rose-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <span className="sr-only">
-          {isDeleting ? 'Deleting trip' : 'Delete trip'}
-        </span>
-        <TrashIcon />
-      </button>
-
       <div className="flex w-full flex-col gap-2 sm:w-auto sm:self-center">
         <Link
           href={`/trip/${trip.id}`}
@@ -288,10 +285,6 @@ export default function MyTripsClient({ trips }) {
       return statusMatch && destinationMatch;
     });
   }, [tripList, statusFilter, destinationFilter]);
-
-  const handleTripDelete = (tripId) => {
-    setTripList((prev) => prev.filter((trip) => trip.id !== tripId));
-  };
 
   return (
     <>
@@ -385,12 +378,7 @@ export default function MyTripsClient({ trips }) {
       ) : (
         <div className="space-y-5">
           {filteredTrips.map((trip, index) => (
-            <TripCard
-              key={trip.id}
-              trip={trip}
-              index={index}
-              onDelete={handleTripDelete}
-            />
+            <TripCard key={trip.id} trip={trip} index={index} />
           ))}
         </div>
       )}
@@ -450,26 +438,6 @@ function UsersIcon() {
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 00-3-3.87" />
       <path d="M16 3.13a4 4 0 010 7.75" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 7h12" />
-      <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" />
-      <path d="M7 7l1 12a2 2 0 002 2h4a2 2 0 002-2l1-12" />
-      <path d="M10 11v6M14 11v6" />
     </svg>
   );
 }

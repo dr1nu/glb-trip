@@ -14,6 +14,7 @@ export default function TripImagePicker({ tripId, destinationCountry, initialIma
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [options, setOptions] = useState([]);
   const [selectedPath, setSelectedPath] = useState(initialImagePath ?? '');
+  const [countryFolder, setCountryFolder] = useState(destinationCountry ?? '');
   const [loadingList, setLoadingList] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -23,20 +24,45 @@ export default function TripImagePicker({ tripId, destinationCountry, initialIma
     async function loadImages() {
       if (!destinationCountry) {
         setOptions([]);
+        setCountryFolder('');
         return;
       }
       setLoadingList(true);
       setFeedback('');
       try {
-        const { data, error } = await supabase.storage
-          .from(BUCKET)
-          .list(destinationCountry, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
-        if (error) {
-          throw error;
-        }
-        const paths = (data ?? [])
+        const listFolder = async (folder) => {
+          const { data, error } = await supabase.storage
+            .from(BUCKET)
+            .list(folder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+          if (error) throw error;
+          return data ?? [];
+        };
+
+        let folder = destinationCountry;
+        let data = await listFolder(folder);
+        let paths = data
           .filter((file) => file && file.name && !file.name.endsWith('/'))
-          .map((file) => buildPath(destinationCountry, file.name));
+          .map((file) => buildPath(folder, file.name));
+
+        if (paths.length === 0) {
+          const { data: root, error: rootError } = await supabase.storage
+            .from(BUCKET)
+            .list('', { limit: 200, sortBy: { column: 'name', order: 'asc' } });
+          if (rootError) throw rootError;
+          const match = (root ?? []).find((entry) => {
+            if (!entry?.name) return false;
+            return entry.name.toLowerCase() === destinationCountry.toLowerCase();
+          });
+          if (match?.name) {
+            folder = match.name;
+            data = await listFolder(folder);
+            paths = data
+              .filter((file) => file && file.name && !file.name.endsWith('/'))
+              .map((file) => buildPath(folder, file.name));
+          }
+        }
+
+        setCountryFolder(folder);
         setOptions(paths);
         setSelectedPath((prev) => {
           if (paths.length === 0) return '';
@@ -89,13 +115,14 @@ export default function TripImagePicker({ tripId, destinationCountry, initialIma
   }
 
   async function handleUpload(file) {
-    if (!file || uploading || !destinationCountry) return;
+    const folder = countryFolder || destinationCountry || '';
+    if (!file || uploading || !folder) return;
     setUploading(true);
     setFeedback('');
     try {
       const form = new FormData();
       form.append('file', file);
-      form.append('country', destinationCountry);
+      form.append('country', folder);
       const response = await fetch(`/api/trips/${tripId}/image`, {
         method: 'PUT',
         body: form,
@@ -112,10 +139,10 @@ export default function TripImagePicker({ tripId, destinationCountry, initialIma
       // refresh list to include new file
       const { data: refreshed } = await supabase.storage
         .from(BUCKET)
-        .list(destinationCountry, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+        .list(folder, { limit: 100, sortBy: { column: 'name', order: 'asc' } });
       const paths = (refreshed ?? [])
         .filter((fileEntry) => fileEntry && fileEntry.name && !fileEntry.name.endsWith('/'))
-        .map((fileEntry) => buildPath(destinationCountry, fileEntry.name));
+        .map((fileEntry) => buildPath(folder, fileEntry.name));
       setOptions(paths);
     } catch (err) {
       console.error('Upload failed', err);

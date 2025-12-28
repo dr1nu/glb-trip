@@ -56,11 +56,25 @@ export default async function TripExperiencePage({ params, searchParams }) {
     <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-slate-900">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <Link
-          href={fromAdmin ? `/trip/${tripId}?from=admin` : `/trip/${tripId}`}
-          className="inline-flex items-center gap-1 text-sm text-[#4C5A6B] hover:text-[#4C5A6B]"
+          href="/my-trips"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
         >
-          <span aria-hidden>←</span>
-          Back to trip
+          <span aria-hidden>
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M13.5 8.5L10 12l3.5 3.5" />
+              <path d="M10.5 12h6" />
+            </svg>
+          </span>
+          Back to my trips
         </Link>
 
         <TripExperienceClient
