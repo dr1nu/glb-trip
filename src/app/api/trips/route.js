@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createTrip, getTrip, listTrips } from '@/lib/db';
+import { createTrip, getTrip, listTrips, listTripsByOwner } from '@/lib/db';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { splitFullName } from '@/lib/profile';
 
 export const dynamic = 'force-dynamic';
+
+const BILLING_CURRENCY = 'EUR';
+const RATE_PER_DAY_CENTS = 300;
 
 function cleanString(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -130,7 +133,34 @@ export async function POST(request) {
       );
     }
 
-    const trip = await createTrip(payload, user.id);
+    const now = new Date();
+    const currentYear = now.getUTCFullYear();
+    const existingTrips = await listTripsByOwner(user.id);
+    const hasFreeThisYear = existingTrips.some((trip) => {
+      if (trip.billingFreeYear === currentYear) return true;
+      if (trip.billingStatus === 'free') {
+        if (!trip.createdAt) return false;
+        const createdYear = new Date(trip.createdAt).getUTCFullYear();
+        return createdYear === currentYear;
+      }
+      return false;
+    });
+    const isFreeTrip = !hasFreeThisYear;
+    const baseAmountCents = Math.max(
+      0,
+      Math.round(payload.tripLengthDays * RATE_PER_DAY_CENTS)
+    );
+
+    const trip = await createTrip(
+      {
+        ...payload,
+        billingStatus: isFreeTrip ? 'free' : 'pending',
+        billingCurrency: BILLING_CURRENCY,
+        billingAmountCents: isFreeTrip ? 0 : baseAmountCents,
+        billingFreeYear: isFreeTrip ? currentYear : null,
+      },
+      user.id
+    );
     return NextResponse.json({ tripId: trip.id });
   } catch (err) {
     console.error('Failed to create trip', err);
