@@ -175,7 +175,7 @@ function SummaryCard({ accent, iconType, title, subtitle, price, children }) {
     <article className={`relative overflow-hidden rounded-2xl border ${accent.border} bg-white shadow-sm`}>
       <div className={`absolute left-0 top-0 h-full w-1 ${accent.rail}`} />
       <div className="p-5 space-y-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <span className={`h-12 w-12 rounded-full border flex items-center justify-center ${accent.iconBg}`}>
               {getIcon(iconType)}

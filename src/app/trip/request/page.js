@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -16,6 +16,12 @@ import { getAirportsForCountry } from '@/lib/airports-by-country';
 import AuthForm from '@/components/auth/AuthForm';
 
 const STORAGE_KEY = 'glb-pending-trip';
+
+function toDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 function computeDaysBetween(startValue, endValue) {
   if (!startValue || !endValue) return null;
@@ -62,6 +68,296 @@ const MONTHS = [
   { value: '11', label: 'November' },
   { value: '12', label: 'December' },
 ];
+
+function formatDateInput(date) {
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatShortDate(value) {
+  const date = toDate(value);
+  if (!date) return '—';
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${day}/${month}`;
+}
+
+function formatShortRange(startValue, endValue) {
+  if (!startValue && !endValue) return 'Select dates';
+  if (startValue && !endValue) return `${formatShortDate(startValue)} - --/--`;
+  return `${formatShortDate(startValue)} - ${formatShortDate(endValue)}`;
+}
+
+function buildMonthGrid(monthDate) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = firstDay.getDay();
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i += 1) {
+    cells.push(null);
+  }
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push(new Date(year, month, day));
+  }
+  while (cells.length % 7 !== 0) {
+    cells.push(null);
+  }
+  return cells;
+}
+
+function isSameDay(a, b) {
+  if (!a || !b) return false;
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+}
+
+function DateRangePicker({
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+}) {
+  const minDate = new Date();
+  minDate.setHours(0, 0, 0, 0);
+
+  const start = toDate(startDate);
+  const end = toDate(endDate);
+  const [open, setOpen] = useState(false);
+  const [hoverDate, setHoverDate] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef(null);
+  const dragMovedRef = useRef(false);
+  const [displayMonth, setDisplayMonth] = useState(() => {
+    const seed = start || minDate;
+    return new Date(seed.getFullYear(), seed.getMonth(), 1);
+  });
+  useEffect(() => {
+    if (!start) return;
+    setDisplayMonth(new Date(start.getFullYear(), start.getMonth(), 1));
+  }, [startDate]);
+
+  const isSelectingEnd = Boolean(start && !end);
+  const rangeStart = isDragging ? dragStartRef.current : start;
+  const rangeEnd = end || (isSelectingEnd ? hoverDate : isDragging ? hoverDate : null);
+  const nextMonth = new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1);
+  const monthLabel = displayMonth.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+  const nextMonthLabel = nextMonth.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  function handleDayClick(day) {
+    if (!day) return;
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    if (normalized < minDate) return;
+
+    if (start && !end && isSameDay(normalized, start)) {
+      onStartDateChange('');
+      onEndDateChange('');
+      setHoverDate(null);
+      return;
+    }
+
+    if (!start || (start && end)) {
+      onStartDateChange(formatDateInput(normalized));
+      onEndDateChange('');
+      setHoverDate(null);
+      return;
+    }
+
+    if (start && !end) {
+      if (normalized < start) {
+        onStartDateChange(formatDateInput(normalized));
+        onEndDateChange('');
+        setHoverDate(null);
+        return;
+      }
+      onEndDateChange(formatDateInput(normalized));
+      setHoverDate(null);
+      setOpen(false);
+    }
+  }
+
+  function startDrag(day) {
+    if (!day) return;
+    if (isDisabled(day)) return;
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    if (!start || end) {
+      dragStartRef.current = normalized;
+      setHoverDate(normalized);
+      setIsDragging(true);
+      dragMovedRef.current = false;
+    }
+  }
+
+  function stopDrag(day) {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const startRef = dragStartRef.current;
+    dragStartRef.current = null;
+    const dragMoved = dragMovedRef.current;
+    dragMovedRef.current = false;
+    if (!day || !startRef) {
+      setHoverDate(null);
+      return;
+    }
+    if (!dragMoved) {
+      handleDayClick(day);
+      return;
+    }
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    if (normalized < startRef) {
+      onStartDateChange(formatDateInput(normalized));
+      onEndDateChange(formatDateInput(startRef));
+    } else {
+      onStartDateChange(formatDateInput(startRef));
+      onEndDateChange(formatDateInput(normalized));
+    }
+    setHoverDate(null);
+    setOpen(false);
+  }
+
+  function inRange(day) {
+    if (!rangeStart || !rangeEnd || !day) return false;
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    return normalized >= rangeStart && normalized <= rangeEnd;
+  }
+
+  function isDisabled(day) {
+    if (!day) return true;
+    const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    return normalized < minDate;
+  }
+
+  function renderMonthGrid(monthDate, label) {
+    const cells = buildMonthGrid(monthDate);
+    return (
+      <div className="space-y-2">
+        <div className="text-sm font-semibold text-neutral-900">{label}</div>
+        <div className="grid grid-cols-7 gap-1 text-[11px] text-[#4C5A6B]">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayLabel) => (
+            <div key={`${label}-${dayLabel}`} className="text-center uppercase tracking-wide">
+              {dayLabel}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((day, index) => {
+            const activeStart = isDragging ? dragStartRef.current : start;
+            const selectedStart = activeStart && isSameDay(day, activeStart);
+            const selectedEnd = end && isSameDay(day, end);
+            const highlighted = inRange(day);
+            const disabled = isDisabled(day);
+            return (
+              <button
+                key={`${label}-${day ? day.toISOString() : 'empty'}-${index}`}
+                type="button"
+                onMouseDown={() => startDrag(day)}
+                onMouseUp={() => {
+                  if (isDragging) {
+                    stopDrag(day);
+                    return;
+                  }
+                  handleDayClick(day);
+                }}
+                onMouseEnter={() => {
+                  if (isSelectingEnd && day && !disabled) {
+                    setHoverDate(new Date(day.getFullYear(), day.getMonth(), day.getDate()));
+                  }
+                  if (isDragging && day && !disabled) {
+                    dragMovedRef.current = true;
+                    setHoverDate(new Date(day.getFullYear(), day.getMonth(), day.getDate()));
+                  }
+                }}
+                className={`h-9 rounded-lg text-sm transition ${
+                  disabled
+                    ? 'text-slate-300'
+                    : selectedStart || selectedEnd
+                    ? 'bg-orange-500 text-white'
+                    : highlighted
+                    ? 'bg-orange-100 text-orange-700'
+                    : 'text-slate-700 hover:bg-orange-50'
+                }`}
+                disabled={disabled}
+              >
+                {day ? day.getDate() : ''}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full rounded-2xl border border-[#E3E6EF] bg-white px-4 py-3 text-left text-sm font-medium text-[#0F172A] shadow-sm focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+        aria-expanded={open}
+      >
+        <span className="flex items-center justify-between">
+          <span>{formatShortRange(startDate, endDate)}</span>
+          <span className="text-[#4C5A6B] text-xs">▾</span>
+        </span>
+      </button>
+
+      {open ? (
+        <div className="absolute left-1/2 z-30 mt-2 w-[min(95vw,760px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl shadow-orange-100">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1 text-sm text-[#4C5A6B] hover:bg-orange-50"
+              onClick={() =>
+                setDisplayMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+              }
+            >
+              ←
+            </button>
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#4C5A6B]">
+              Select dates
+            </span>
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1 text-sm text-[#4C5A6B] hover:bg-orange-50"
+              onClick={() =>
+                setDisplayMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+              }
+            >
+              →
+            </button>
+          </div>
+          <div className="mt-4 grid gap-6 md:grid-cols-2">
+            {renderMonthGrid(displayMonth, monthLabel)}
+            {renderMonthGrid(nextMonth, nextMonthLabel)}
+          </div>
+          <div className="mt-3 flex items-center justify-between text-xs text-[#4C5A6B]">
+            <span>{isSelectingEnd ? 'Select an end date' : 'Select a start date'}</span>
+            <button
+              type="button"
+              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-orange-200 hover:text-[#C2461E] transition disabled:opacity-40"
+              onClick={() => setOpen(false)}
+              disabled={Boolean(start && !end)}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function TripRequestPage() {
   const router = useRouter();
@@ -670,9 +966,16 @@ export default function TripRequestPage() {
                   </label>
                 ))}
               </div>
+              <p className="text-xs text-[#6B7280]">
+                {form.travelWindow === 'specific'
+                  ? 'Specific: pick exact start and end dates.'
+                  : form.travelWindow === 'flexible'
+                  ? 'Flexible: pick a month and tell us how long you want to be away.'
+                  : 'Range: pick a date window and the number of days you will travel.'}
+              </p>
               {form.travelWindow === 'flexible' ? (
-                <div className="flex flex-wrap items-end gap-3">
-                  <label className="flex flex-col gap-1 text-sm">
+                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-3">
+                  <label className="flex flex-col gap-1 text-sm w-full">
                     <span className="text-[#4B5563]">Preferred month</span>
                     <select
                       name="flexibleMonthSelect"
@@ -680,7 +983,7 @@ export default function TripRequestPage() {
                       onChange={(event) =>
                         updateFlexibleMonth(flexibleYearValue, event.target.value)
                       }
-                      className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                      className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                     >
                       {availableMonths.map((month) => (
                         <option key={month.value} value={month.value}>
@@ -689,13 +992,13 @@ export default function TripRequestPage() {
                       ))}
                     </select>
                   </label>
-                  <label className="flex flex-col gap-1 text-sm">
+                  <label className="flex flex-col gap-1 text-sm w-full">
                     <span className="text-[#4B5563]">Year</span>
                     <select
                       name="flexibleYearSelect"
                       value={flexibleYearValue}
                       onChange={(event) => updateFlexibleMonth(event.target.value, flexibleMonthValue)}
-                      className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                      className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                     >
                       {yearOptions.map((year) => (
                         <option key={year} value={year}>
@@ -704,7 +1007,7 @@ export default function TripRequestPage() {
                       ))}
                     </select>
                   </label>
-                  <label className="flex flex-col gap-1 text-sm">
+                  <label className="flex flex-col gap-1 text-sm w-full">
                     <span className="text-[#4B5563]">Number of days</span>
                     <input
                       min={1}
@@ -714,58 +1017,73 @@ export default function TripRequestPage() {
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, flexibleDays: event.target.value }))
                       }
-                      className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                      className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
                       placeholder="e.g. 5"
                     />
                   </label>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="text-[#4B5563]">From</span>
-                      <input
-                        type="date"
-                        name="dateFrom"
-                        value={form.dateFrom}
-                        onChange={handleInputChange}
-                        className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                        required={form.travelWindow !== 'flexible'}
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="text-[#4B5563]">To</span>
-                      <input
-                        type="date"
-                        name="dateTo"
-                        value={form.dateTo}
-                        onChange={handleInputChange}
-                        className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                        required={form.travelWindow !== 'flexible'}
-                      />
-                    </label>
-                  </div>
-                  {form.travelWindow === 'range' ? (
-                    <div className="flex flex-col gap-1 text-sm">
-                      <span className="text-[#0F172A] font-medium">Number of days within this range</span>
-                      <input
-                        min={1}
-                        type="number"
-                        name="rangeDays"
-                        value={form.rangeDays}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, rangeDays: event.target.value }))
-                        }
-                        className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                        placeholder="e.g. 5"
-                      />
-                      <p className="text-xs text-[#4B5563]">
-                        {derivedRangeDays
-                          ? `From ${form.dateFrom || '—'} to ${form.dateTo || '—'} is about ${derivedRangeDays} day${derivedRangeDays === 1 ? '' : 's'}.`
-                          : 'Tell us how long you want to be away inside this window.'}
-                      </p>
+                  {form.travelWindow === 'specific' ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <label className="flex flex-col gap-1 text-sm">
+                        <span className="text-[#4B5563]">From</span>
+                        <input
+                          type="date"
+                          name="dateFrom"
+                          value={form.dateFrom}
+                          onChange={handleInputChange}
+                          className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                          required={form.travelWindow !== 'flexible'}
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-sm">
+                        <span className="text-[#4B5563]">To</span>
+                        <input
+                          type="date"
+                          name="dateTo"
+                          value={form.dateTo}
+                          onChange={handleInputChange}
+                          className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                          required={form.travelWindow !== 'flexible'}
+                        />
+                      </label>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <label className="flex flex-col gap-1 text-sm">
+                        <span className="text-[#4B5563]">Dates</span>
+                        <DateRangePicker
+                          startDate={form.dateFrom}
+                          endDate={form.dateTo}
+                          onStartDateChange={(value) =>
+                            setForm((prev) => ({ ...prev, dateFrom: value }))
+                          }
+                          onEndDateChange={(value) =>
+                            setForm((prev) => ({ ...prev, dateTo: value }))
+                          }
+                        />
+                      </label>
+                      {form.travelWindow === 'range' ? (
+                        <label className="flex flex-col gap-1 text-sm">
+                          <span className="text-[#0F172A] font-medium">
+                            Number of days within this range
+                          </span>
+                          <input
+                            min={1}
+                            type="number"
+                            name="rangeDays"
+                            value={form.rangeDays}
+                            onChange={(event) =>
+                              setForm((prev) => ({ ...prev, rangeDays: event.target.value }))
+                            }
+                            className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-3 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                            placeholder="e.g. 5"
+                          />
+                        </label>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

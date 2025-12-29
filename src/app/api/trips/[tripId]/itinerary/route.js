@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getTrip, updateTrip } from '@/lib/db';
+import { sendTripPublishedEmail } from '@/lib/email';
 import {
   applyCardFieldUpdates,
   normalizeFieldUpdates,
@@ -122,6 +123,14 @@ export async function PATCH(request, context) {
       ? sanitizeTimeline(unassignedInput)
       : sanitizeTimeline(trip.itinerary.unassignedActivities);
 
+    if (publishInput === true) {
+      const publishError = validatePublishRequirements(trip, nextCards, nextUnassigned);
+      if (publishError) {
+        return NextResponse.json({ error: publishError }, { status: 400 });
+      }
+    }
+
+    const shouldSendPublishEmail = publishInput === true && !trip.published;
     const updated = await updateTrip(tripId, {
       itinerary: {
         ...trip.itinerary,
@@ -137,6 +146,14 @@ export async function PATCH(request, context) {
         { error: 'Failed to update itinerary.' },
         { status: 500 }
       );
+    }
+
+    if (shouldSendPublishEmail) {
+      try {
+        await sendTripPublishedEmail({ trip: updated, request });
+      } catch (emailError) {
+        console.error('Failed to send trip published email', emailError);
+      }
     }
 
     return NextResponse.json(
@@ -167,4 +184,62 @@ function extractTripIdFromUrl(url) {
   } catch {
     return null;
   }
+}
+
+function validatePublishRequirements(trip, cards, unassignedActivities) {
+  const issues = [];
+
+  const imagePath =
+    typeof trip?.imagePath === 'string' ? trip.imagePath.trim() : '';
+  if (!imagePath) {
+    issues.push('set a trip image');
+  }
+
+  const flightCards = Array.isArray(cards)
+    ? cards.filter((card) => card?.type === 'departure' || card?.type === 'return')
+    : [];
+  const missingFlightLinks = flightCards
+    .filter((card) => isBlank(card?.fields?.bookingLink))
+    .map((card) => (card?.type === 'return' ? 'return flight' : 'departure flight'));
+  if (missingFlightLinks.length > 0) {
+    const unique = Array.from(new Set(missingFlightLinks));
+    issues.push(`add booking links for ${unique.join(' and ')}`);
+  }
+
+  const accommodationCard = Array.isArray(cards)
+    ? cards.find((card) => card?.type === 'accommodation')
+    : null;
+  if (isBlank(accommodationCard?.fields?.bookingLink)) {
+    issues.push('add a booking link for accommodation');
+  }
+
+  const timelineItems = [];
+  if (Array.isArray(cards)) {
+    for (const card of cards) {
+      if (card?.type !== 'day') continue;
+      timelineItems.push(...sanitizeTimeline(card.timeline));
+    }
+  }
+  timelineItems.push(...sanitizeTimeline(unassignedActivities));
+
+  let missingTimelineCount = 0;
+  for (const item of timelineItems) {
+    const title = typeof item?.fields?.title === 'string' ? item.fields.title.trim() : '';
+    const time = typeof item?.fields?.time === 'string' ? item.fields.time.trim() : '';
+    if (!title || !time) missingTimelineCount += 1;
+  }
+  if (missingTimelineCount > 0) {
+    issues.push(
+      `add title and time for ${missingTimelineCount} timeline ${
+        missingTimelineCount === 1 ? 'item' : 'items'
+      }`
+    );
+  }
+
+  if (issues.length === 0) return null;
+  return `Trip cannot be published yet: ${issues.join('; ')}.`;
+}
+
+function isBlank(value) {
+  return typeof value !== 'string' || value.trim().length === 0;
 }

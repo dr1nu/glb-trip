@@ -21,15 +21,52 @@ const IMAGE_PLACEHOLDERS = [
   'from-blue-200 via-cyan-200 to-emerald-200',
 ];
 
-const STATUS_ORDER = ['Pending', 'Confirmed', 'Completed'];
+const STATUS_ORDER = ['Requested', 'Payment required', 'Itinerary Ready', 'Completed'];
 
 function parseDate(value) {
   if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const raw = typeof value === 'string' ? value.trim() : String(value);
+  if (!raw) return null;
+  const direct = new Date(raw);
+  if (!Number.isNaN(direct.getTime())) return direct;
+  const isoMatch = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    const parsed = new Date(`${year}-${month}-${day}`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  const euMatch = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (euMatch) {
+    const [, day, month, year] = euMatch;
+    const parsed = new Date(`${year}-${month}-${day}`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}
+
+function extractItineraryDates(trip) {
+  const cards = Array.isArray(trip?.itinerary?.cards) ? trip.itinerary.cards : [];
+  if (!cards.length) return { start: null, end: null };
+  const departure = cards.find((card) => card?.type === 'departure');
+  const returnCard = cards.find((card) => card?.type === 'return');
+  const start = parseDate(departure?.fields?.departTime || departure?.fields?.arrivalTime);
+  const end = parseDate(returnCard?.fields?.arrivalTime || returnCard?.fields?.departTime);
+  return { start, end };
 }
 
 function formatTripDates(trip) {
+  if (trip?.published) {
+    const { start, end } = extractItineraryDates(trip);
+    if (start && end) {
+      if (start.getTime() === end.getTime()) {
+        return DATE_FORMATTER.format(start);
+      }
+      return `${DATE_FORMATTER.format(start)} to ${DATE_FORMATTER.format(end)}`;
+    }
+    if (start) return DATE_FORMATTER.format(start);
+    if (end) return DATE_FORMATTER.format(end);
+  }
   const start = parseDate(trip.preferences?.dateFrom);
   const end = parseDate(trip.preferences?.dateTo);
   if (start && end) {
@@ -124,14 +161,20 @@ function getTripStatus(trip) {
       badge: 'bg-blue-100 text-blue-700',
     };
   }
+  if (trip.published && trip.billingStatus === 'pending') {
+    return {
+      label: 'Payment required',
+      badge: 'bg-orange-100 text-orange-700',
+    };
+  }
   if (trip.published) {
     return {
-      label: 'Confirmed',
+      label: 'Itinerary Ready',
       badge: 'bg-emerald-100 text-emerald-700',
     };
   }
   return {
-    label: 'Pending',
+    label: 'Requested',
     badge: 'bg-amber-100 text-amber-700',
   };
 }
@@ -145,8 +188,7 @@ function TripInfoItem({ icon, label }) {
   );
 }
 
-function TripCard({ trip, index, onDelete }) {
-  const [isDeleting, setIsDeleting] = useState(false);
+function TripCard({ trip, index }) {
   const gradient =
     IMAGE_PLACEHOLDERS[index % IMAGE_PLACEHOLDERS.length] ??
     IMAGE_PLACEHOLDERS[0];
@@ -158,34 +200,8 @@ function TripCard({ trip, index, onDelete }) {
   const showDuration = travelWindow === 'flexible';
   const imageUrl = trip.imageUrl ?? null;
 
-  const handleDelete = async () => {
-    if (isDeleting) return;
-    const confirmed = window.confirm(
-      'Delete this trip? This action cannot be undone.'
-    );
-    if (!confirmed) return;
-
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/trips/${trip.id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        const message = payload?.error || 'Unable to delete trip.';
-        throw new Error(message);
-      }
-      onDelete(trip.id);
-    } catch (err) {
-      console.error('Failed to delete trip', err);
-      window.alert(err instanceof Error ? err.message : 'Unable to delete trip.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   return (
-    <article className="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
+    <article className="relative flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
       <div className="w-full overflow-hidden rounded-2xl sm:w-48">
         <div
           className="relative h-36 w-full overflow-hidden rounded-2xl bg-gradient-to-br"
@@ -242,14 +258,6 @@ function TripCard({ trip, index, onDelete }) {
         >
           View Details
         </Link>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="inline-flex w-full items-center justify-center rounded-2xl border border-rose-200 bg-white px-5 py-2.5 text-sm font-semibold text-rose-600 shadow shadow-rose-100 transition hover:bg-rose-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isDeleting ? 'Deleting…' : 'Delete trip'}
-        </button>
       </div>
     </article>
   );
@@ -283,10 +291,6 @@ export default function MyTripsClient({ trips }) {
       return statusMatch && destinationMatch;
     });
   }, [tripList, statusFilter, destinationFilter]);
-
-  const handleTripDelete = (tripId) => {
-    setTripList((prev) => prev.filter((trip) => trip.id !== tripId));
-  };
 
   return (
     <>
@@ -380,12 +384,7 @@ export default function MyTripsClient({ trips }) {
       ) : (
         <div className="space-y-5">
           {filteredTrips.map((trip, index) => (
-            <TripCard
-              key={trip.id}
-              trip={trip}
-              index={index}
-              onDelete={handleTripDelete}
-            />
+            <TripCard key={trip.id} trip={trip} index={index} />
           ))}
         </div>
       )}

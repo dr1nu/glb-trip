@@ -50,9 +50,12 @@ export default async function TripBuilderPage({ params }) {
           </div>
           <Link
             href={`/trip/${tripId}?from=admin`}
-            className="text-sm font-medium text-orange-400 hover:text-orange-300"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
           >
-            ← Back to trip
+            <span className="text-sm" aria-hidden>
+              ←
+            </span>
+            Back to trip
           </Link>
         </header>
 
