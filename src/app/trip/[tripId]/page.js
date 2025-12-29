@@ -127,6 +127,11 @@ export default async function TripPage({ params, searchParams }) {
             accommodationLabel={accommodationLabel}
             baggageLabel={baggageLabel}
             interests={interests}
+            fromAdmin={fromAdmin}
+            paymentRequired={paymentRequired}
+            effectiveAmountCents={effectiveAmountCents}
+            billingCurrency={billingCurrency}
+            tripId={id}
           />
         ) : (
           <ConfirmedTripOverview
@@ -190,12 +195,21 @@ function PendingTripOverview({
   accommodationLabel,
   baggageLabel,
   interests,
+  fromAdmin,
+  paymentRequired,
+  effectiveAmountCents,
+  billingCurrency,
+  tripId,
 }) {
   const nearestAirport = contact?.nearestAirport || 'To be confirmed';
   const travellerName =
     contact?.name ||
     [contact?.firstName, contact?.lastName].filter(Boolean).join(' ') ||
     'Traveller details pending';
+  const showPaymentNotice = paymentRequired && !fromAdmin;
+  const amountLabel = formatEuroCents(effectiveAmountCents);
+  const billingContext =
+    billingCurrency && billingCurrency !== 'EUR' ? ` (${billingCurrency})` : '';
 
   return (
     <>
