@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getTrip, updateTrip } from '@/lib/db';
+import { sendTripPublishedEmail } from '@/lib/email';
 import {
   applyCardFieldUpdates,
   normalizeFieldUpdates,
@@ -129,6 +130,7 @@ export async function PATCH(request, context) {
       }
     }
 
+    const shouldSendPublishEmail = publishInput === true && !trip.published;
     const updated = await updateTrip(tripId, {
       itinerary: {
         ...trip.itinerary,
@@ -144,6 +146,14 @@ export async function PATCH(request, context) {
         { error: 'Failed to update itinerary.' },
         { status: 500 }
       );
+    }
+
+    if (shouldSendPublishEmail) {
+      try {
+        await sendTripPublishedEmail({ trip: updated, request });
+      } catch (emailError) {
+        console.error('Failed to send trip published email', emailError);
+      }
     }
 
     return NextResponse.json(
