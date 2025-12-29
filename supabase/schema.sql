@@ -14,6 +14,12 @@ create table if not exists public.trips (
   preferences jsonb,
   itinerary jsonb,
   published boolean default false,
+  billing_status text,
+  billing_currency text default 'EUR',
+  billing_amount_cents integer,
+  billing_custom_amount_cents integer,
+  billing_free_year integer,
+  billing_paid_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

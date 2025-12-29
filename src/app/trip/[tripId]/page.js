@@ -5,6 +5,8 @@ import { COUNTRY_HUBS } from '@/lib/airfare';
 import CreateItineraryButton from './_components/CreateItineraryButton';
 import ItinerarySummary from './_components/ItinerarySummary';
 import TripImagePicker from './_components/TripImagePicker';
+import AdminBillingEditor from './_components/AdminBillingEditor';
+import PayToUnlockButton from './_components/PayToUnlockButton';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,6 +14,15 @@ export const dynamic = 'force-dynamic';
 function euro(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) return '—';
   return `€${Math.round(value)}`;
+}
+
+function formatEuroCents(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '—';
+  const rounded = Math.round(value);
+  if (rounded % 100 === 0) {
+    return `€${rounded / 100}`;
+  }
+  return `€${(rounded / 100).toFixed(2)}`;
 }
 
 export default async function TripPage({ params, searchParams }) {
@@ -36,6 +47,11 @@ export default async function TripPage({ params, searchParams }) {
     preferences = null,
     imagePath = null,
     published = false,
+    billingStatus = null,
+    billingCurrency = 'EUR',
+    billingAmountCents = null,
+    billingCustomAmountCents = null,
+    billingPaidAt = null,
   } = trip;
 
   const createdLabel = createdAt
@@ -48,6 +64,13 @@ export default async function TripPage({ params, searchParams }) {
     : `/trip/${id}/experience`;
   const showTravellerCTA = itineraryReady && !fromAdmin;
   const showAdminCTA = itineraryReady && fromAdmin;
+  const effectiveAmountCents =
+    typeof billingCustomAmountCents === 'number'
+      ? billingCustomAmountCents
+      : typeof billingAmountCents === 'number'
+        ? billingAmountCents
+        : Math.max(0, Math.round((tripLengthDays ?? 0) * 300));
+  const paymentRequired = itineraryReady && !fromAdmin && billingStatus === 'pending';
   const travellers = formatTravellerCount(contact);
   const budgetLabel = formatBudgetLabel(budgetTotal);
   const travelDates = formatTravelDates(preferences);
@@ -60,7 +83,7 @@ export default async function TripPage({ params, searchParams }) {
   const accommodationLabel = formatAccommodation(preferences);
   const baggageLabel = formatBaggage(preferences);
 
-  if (itineraryReady && !fromAdmin) {
+  if (itineraryReady && !fromAdmin && !paymentRequired) {
     redirect(immersiveHref);
   }
 
@@ -120,6 +143,14 @@ export default async function TripPage({ params, searchParams }) {
             travellers={travellers}
             preferences={preferences}
             contact={contact}
+            billingStatus={billingStatus}
+            billingCurrency={billingCurrency}
+            billingAmountCents={billingAmountCents}
+            billingCustomAmountCents={billingCustomAmountCents}
+            billingPaidAt={billingPaidAt}
+            effectiveAmountCents={effectiveAmountCents}
+            paymentRequired={paymentRequired}
+            tripId={id}
           />
         )}
 
@@ -134,6 +165,10 @@ export default async function TripPage({ params, searchParams }) {
             preferences={preferences}
             contact={contact}
             result={result}
+            tripLengthDays={tripLengthDays}
+            billingCurrency={billingCurrency}
+            billingAmountCents={billingAmountCents}
+            billingCustomAmountCents={billingCustomAmountCents}
           />
         ) : null}
       </div>
@@ -164,6 +199,23 @@ function PendingTripOverview({
 
   return (
     <>
+      {showPaymentNotice ? (
+        <section className="rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] p-5 sm:p-6 space-y-4 shadow-sm shadow-[#ff8a00]/10">
+          <SectionHeading
+            title="Payment required to view your itinerary"
+            description="Your trip is ready, but payment is needed before we can show the full details."
+          />
+          <div className="rounded-2xl border border-[#ffd9b3] bg-white/90 p-4 space-y-2 text-sm text-[#4C5A6B]">
+            <p className="text-base font-semibold text-slate-900">
+              Total due: {amountLabel}{billingContext}
+            </p>
+            <p className="text-xs text-[#6a7687]">
+              You will be redirected to Stripe to complete payment securely.
+            </p>
+          </div>
+          <PayToUnlockButton tripId={tripId} />
+        </section>
+      ) : null}
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#ff9f43] via-[#ff8a00] to-[#ff6f00] text-white shadow-lg shadow-[#ff7a00]/20 border border-[#ffd9b3]">
         <div className="px-5 py-6 sm:px-7 sm:py-7 space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold tracking-wide uppercase border border-white/30 shadow-sm shadow-black/10 text-white">
@@ -306,10 +358,30 @@ function ConfirmedTripOverview({
   travellers,
   preferences,
   contact,
+  billingStatus,
+  billingCurrency,
+  billingAmountCents,
+  billingCustomAmountCents,
+  billingPaidAt,
+  effectiveAmountCents,
+  paymentRequired,
+  tripId,
 }) {
+  const showPaymentNotice = paymentRequired && !fromAdmin;
+  const amountLabel = formatEuroCents(effectiveAmountCents);
+  const billingContext =
+    billingCurrency && billingCurrency !== 'EUR' ? ` (${billingCurrency})` : '';
+  const paidLabel = billingPaidAt
+    ? new Date(billingPaidAt).toLocaleString()
+    : null;
+
   return (
     <>
-      <section className="rounded-3xl border border-[#d8deed] bg-white/92 shadow-sm shadow-[#0c2a52]/10 p-5 sm:p-6 space-y-4">
+      <section
+        className={`rounded-3xl border ${
+          showPaymentNotice ? 'border-[#ffd9b3] bg-[#fff7ef]' : 'border-[#d8deed] bg-white/92'
+        } shadow-sm ${showPaymentNotice ? 'shadow-[#ff8a00]/10' : 'shadow-[#0c2a52]/10'} p-5 sm:p-6 space-y-4`}
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#0c2a52]">
@@ -318,7 +390,14 @@ function ConfirmedTripOverview({
             <h1 className="text-2xl font-semibold">
               Trip to {destinationCountry || 'Destination pending'}
             </h1>
-            <p className="text-sm text-[#4C5A6B]">Itinerary created {createdLabel}</p>
+            {showPaymentNotice ? (
+              <p className="text-sm font-semibold text-[#c25a00]">
+                Payment required to view your itinerary
+              </p>
+            ) : null}
+            {!paymentRequired ? (
+              <p className="text-sm text-[#4C5A6B]">Itinerary created {createdLabel}</p>
+            ) : null}
           </div>
           <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2fb] px-3 py-1 text-xs font-semibold text-[#0c2a52] border border-[#d8deed]">
             <CheckIcon />
@@ -341,16 +420,71 @@ function ConfirmedTripOverview({
           <Fact label="Budget" value={budgetLabel} />
           <Fact label="Travellers" value={travellers} />
         </div>
+        {billingStatus && !paymentRequired ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <Fact
+              label="Billing"
+              value={
+                billingStatus === 'paid'
+                  ? `Paid${paidLabel ? ` on ${paidLabel}` : ''}`
+                  : billingStatus === 'free'
+                    ? 'Included (free annual trip)'
+                    : 'Payment required'
+              }
+            />
+            <Fact
+              label="Amount"
+              value={billingStatus === 'free' ? '€0' : `${amountLabel}${billingContext}`}
+            />
+          </div>
+        ) : null}
+
+        {showPaymentNotice ? (
+          <div className="mt-2 rounded-2xl border border-[#ffd9b3] bg-white/90 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-base font-semibold text-slate-900">
+                Total due: {amountLabel}{billingContext}
+              </p>
+              <PayToUnlockButton tripId={tripId} />
+            </div>
+          </div>
+        ) : null}
       </section>
 
-      <ItinerarySummary
-        className="shadow-sm shadow-[#0c2a52]/10 border border-[#ffd9b3] bg-[#fff7ef]"
-        cards={itinerary?.cards || []}
-        title="Your itinerary"
-        description="Jump straight into the plan we created for you."
-      />
+      {showPaymentNotice ? (
+          <section className="relative rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] shadow-sm shadow-[#ff8a00]/10 overflow-hidden">
+            <div className="absolute inset-0 z-10 flex items-center justify-center p-6 text-center">
+              <div className="rounded-2xl border border-[#ff8a00] bg-white px-6 py-5 shadow-xl shadow-[#ff8a00]/30">
+                <p className="text-base font-semibold text-slate-900">
+                  Unlock your full itinerary
+                </p>
+                <p className="text-sm text-[#4C5A6B]">
+                  Pay to view every day, detail, and booking link.
+                </p>
+                <div className="mt-3">
+                  <PayToUnlockButton tripId={tripId} label="Pay to unlock itinerary" />
+                </div>
+              </div>
+            </div>
+            <div className="pointer-events-none z-0 blur-[2px] opacity-60">
+              <ItinerarySummary
+                className="border-0 bg-transparent p-5 sm:p-6 shadow-none"
+                cards={itinerary?.cards || []}
+                title="Your itinerary"
+                description="Jump straight into the plan we created for you."
+              />
+            </div>
+          </section>
+      ) : (
+        <ItinerarySummary
+          className="shadow-sm shadow-[#0c2a52]/10 border border-[#ffd9b3] bg-[#fff7ef]"
+          cards={itinerary?.cards || []}
+          title="Your itinerary"
+          description="Jump straight into the plan we created for you."
+        />
+      )}
 
-      {showTravellerCTA ? (
+      {showTravellerCTA && !showPaymentNotice ? (
         <section className="rounded-2xl border border-[#ffd9b3] bg-[#fff7ef] p-5 space-y-3 shadow-sm shadow-[#ff8a00]/10">
           <div>
             <h2 className="text-lg font-semibold">Ready to explore?</h2>
@@ -378,7 +512,7 @@ function ConfirmedTripOverview({
         </div>
       ) : null}
 
-      {contact || preferences ? (
+      {!paymentRequired && (contact || preferences) ? (
         <section className="rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] p-5 sm:p-6 space-y-4 shadow-sm shadow-[#ff8a00]/10">
           <SectionHeading
             title="Traveller details"
@@ -434,6 +568,10 @@ function AdminActions({
   preferences,
   contact,
   result,
+  tripLengthDays,
+  billingCurrency,
+  billingAmountCents,
+  billingCustomAmountCents,
 }) {
   if (!tripId) return null;
   const { flightsUrl, accommodationUrl } = buildQuickSearchLinks({
@@ -502,6 +640,14 @@ function AdminActions({
         tripId={tripId}
         hasItinerary={itineraryReady}
         cardCount={cardCount}
+      />
+
+      <AdminBillingEditor
+        tripId={tripId}
+        tripLengthDays={tripLengthDays}
+        billingCurrency={billingCurrency}
+        billingAmountCents={billingAmountCents}
+        billingCustomAmountCents={billingCustomAmountCents}
       />
 
       <TripImagePicker
