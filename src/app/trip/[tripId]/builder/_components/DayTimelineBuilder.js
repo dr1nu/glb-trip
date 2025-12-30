@@ -6,10 +6,42 @@ const TYPE_OPTIONS = [
   {
     value: 'attraction',
     label: 'Attraction',
-    description: 'Landmarks, tours, experiences',
+    description: 'Points of interest',
+    accent: 'from-orange-400/15 via-orange-100 to-amber-50',
+    border: 'border-orange-200',
+    text: 'text-orange-700',
+  },
+  {
+    value: 'museum',
+    label: 'Museum',
+    description: 'Galleries, exhibitions',
     accent: 'from-purple-500/15 via-purple-100 to-pink-50',
     border: 'border-purple-200',
     text: 'text-purple-700',
+  },
+  {
+    value: 'park',
+    label: 'Park',
+    description: 'Gardens, nature stops',
+    accent: 'from-emerald-400/15 via-emerald-100 to-green-50',
+    border: 'border-emerald-200',
+    text: 'text-emerald-700',
+  },
+  {
+    value: 'church',
+    label: 'Church',
+    description: 'Cathedrals, chapels',
+    accent: 'from-slate-400/15 via-slate-100 to-white',
+    border: 'border-slate-200',
+    text: 'text-slate-700',
+  },
+  {
+    value: 'shopping',
+    label: 'Shopping',
+    description: 'Markets, boutiques',
+    accent: 'from-rose-400/15 via-pink-100 to-orange-50',
+    border: 'border-rose-200',
+    text: 'text-rose-700',
   },
   {
     value: 'photo',
@@ -29,11 +61,19 @@ const TYPE_OPTIONS = [
   },
   {
     value: 'food',
-    label: 'Food & drink',
+    label: 'Eat & drink',
     description: 'Meals, cafes, bars',
-    accent: 'from-orange-400/15 via-orange-100 to-amber-50',
-    border: 'border-orange-200',
-    text: 'text-orange-700',
+    accent: 'from-amber-400/15 via-amber-100 to-yellow-50',
+    border: 'border-amber-200',
+    text: 'text-amber-700',
+  },
+  {
+    value: 'coffee',
+    label: 'Coffee',
+    description: 'Cafes and breaks',
+    accent: 'from-yellow-400/15 via-amber-100 to-orange-50',
+    border: 'border-amber-200',
+    text: 'text-amber-700',
   },
   {
     value: 'accommodation',
@@ -156,13 +196,49 @@ export function TypeIcon({ type }) {
     case 'attraction':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M4 10h16" />
-          <path d="M4 20h16" />
-          <path d="M5 10V9l7-4 7 4v1" />
-          <path d="M7 10v8" />
-          <path d="M10.5 10v8" />
-          <path d="M14 10v8" />
-          <path d="M17 10v8" />
+          <path d="M12 22s6-6.5 6-11a6 6 0 10-12 0c0 4.5 6 11 6 11z" />
+          <circle cx="12" cy="11" r="2.5" />
+        </svg>
+      );
+    case 'museum':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M3 10h18" />
+          <path d="M4 21h16" />
+          <path d="M5 10V8l7-4 7 4v2" />
+          <path d="M7 10v9" />
+          <path d="M10.5 10v9" />
+          <path d="M13.5 10v9" />
+          <path d="M17 10v9" />
+        </svg>
+      );
+    case 'park':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <circle cx="12" cy="8" r="4" />
+          <circle cx="8" cy="11" r="3" />
+          <circle cx="16" cy="11" r="3" />
+          <path d="M12 12v8" />
+          <path d="M9 20h6" />
+        </svg>
+      );
+    case 'church':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M12 3v4" />
+          <path d="M10.5 5.5h3" />
+          <path d="M6 21h12" />
+          <path d="M7 21V10l5-4 5 4v11" />
+          <path d="M10 21v-4h4v4" />
+        </svg>
+      );
+    case 'shopping':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M6 9h12l-1 11H7L6 9z" />
+          <path d="M9 9V7a3 3 0 016 0v2" />
+          <path d="M8.5 12.5h.01" />
+          <path d="M15.5 12.5h.01" />
         </svg>
       );
     case 'photo':
@@ -177,16 +253,30 @@ export function TypeIcon({ type }) {
     case 'rest':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M21 13a8 8 0 11-8-10 6 6 0 008 10z" />
-          <path d="M16.5 7.5h.01" />
+          <path d="M3 12h18" />
+          <path d="M5 12v6" />
+          <path d="M19 12v6" />
+          <path d="M7 12h9a3 3 0 013 3v3H7v-6z" />
+          <path d="M7 9h5a2 2 0 012 2v1H7V9z" />
         </svg>
       );
     case 'food':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M5 6h9v7a4 4 0 01-4 4H9a4 4 0 01-4-4V6z" />
+          <path d="M5 3v8" />
+          <path d="M3 3v4" />
+          <path d="M7 3v4" />
+          <path d="M5 11v10" />
+          <path d="M13 3v18" />
+          <path d="M17 3v7a2 2 0 01-2 2h-2" />
+        </svg>
+      );
+    case 'coffee':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M5 7h9v6a4 4 0 01-4 4H9a4 4 0 01-4-4V7z" />
           <path d="M14 8h2a3 3 0 010 6h-2" />
-          <path d="M7 4h5" />
+          <path d="M6 4h7" />
         </svg>
       );
     case 'accommodation':
@@ -203,8 +293,8 @@ export function TypeIcon({ type }) {
     case 'flight':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M2.5 15.5l8.5-3V5a2 2 0 014 0v7.5l8.5 3" />
-          <path d="M10.5 12.5v7l1.5-1 1.5 1v-7" />
+          <path d="M2.5 14.5l8.5-3V5a2 2 0 014 0v6.5l8.5 3" />
+          <path d="M10.5 12.5v6l1.5-1 1.5 1v-6" />
         </svg>
       );
     case 'transport':

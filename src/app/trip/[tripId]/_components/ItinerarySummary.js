@@ -62,64 +62,104 @@ function ItinerarySummaryCard({ card }) {
 
 function FlightDisplay({ card }) {
   const fields = card.fields ?? {};
-  const details = [
-    { label: 'Home airport', value: fields.homeAirport },
-    { label: 'Arrival airport', value: fields.arrivalAirport },
-    { label: 'Baggage', value: fields.baggageType },
-    { label: 'Departure', value: fields.departTime },
-    { label: 'Arrival', value: fields.arrivalTime },
-    {
-      label: 'Booking link',
-      value: fields.bookingLink,
-      isLink: true,
-      linkLabel: 'Book this flight',
-    },
-  ];
+  const routeFrom = fields.homeAirport || 'Origin tbc';
+  const routeTo = fields.arrivalAirport || 'Destination tbc';
+  const priceLabel = card.priceLabel || 'Price tbc';
+  const departTime = fields.departTime || 'TBC';
+  const arrivalTime = fields.arrivalTime || 'TBC';
+  const baggage = fields.baggageType;
+  const bookingLink = fields.bookingLink;
 
   return (
-    <SummaryCard
-      accent={CARD_META.flight}
-      iconType={card.type === 'return' ? 'planeReturn' : 'plane'}
-      title={card.type === 'return' ? 'Return flight' : 'Departure flight'}
-      subtitle={card.summary || 'Route forthcoming'}
-      price={card.priceLabel || 'Price tbc'}
+    <article
+      className={`relative overflow-hidden rounded-2xl border ${CARD_META.flight.border} bg-gradient-to-br from-sky-50 via-white to-white shadow-sm`}
     >
-      <DetailList details={details} />
-    </SummaryCard>
+      <div className={`absolute left-0 top-0 h-full w-1 ${CARD_META.flight.rail}`} />
+      <div className="p-5 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span
+              className={`h-11 w-11 rounded-full border flex items-center justify-center ${CARD_META.flight.iconBg}`}
+            >
+              {getIcon(card.type === 'return' ? 'planeReturn' : 'plane')}
+            </span>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+                {card.type === 'return' ? 'Return flight' : 'Departure flight'}
+              </p>
+              <p className="text-lg font-semibold text-slate-900">
+                {routeFrom} <span className="text-[#9aa4b2]">→</span> {routeTo}
+              </p>
+            </div>
+          </div>
+          <span className={`text-xs font-semibold rounded-full px-3 py-1 ${CARD_META.flight.badge}`}>
+            {priceLabel}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <InfoPill label="Departure" value={departTime} />
+          <InfoPill label="Arrival" value={arrivalTime} />
+          <InfoPill label="Baggage" value={baggage} />
+          {bookingLink ? (
+            <div className="rounded-xl border border-slate-100 bg-white/80 px-3 py-2 text-sm">
+              <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">Booking</p>
+              <div className="mt-1">
+                <BookingLink href={bookingLink} label="Book this flight" />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }
 
 function AccommodationDisplay({ card }) {
   const fields = card.fields ?? {};
-  const details = [
-    { label: 'Length of stay', value: fields.lengthOfStay },
-    {
-      label: 'Accommodation type',
-      value: capitalise(fields.accommodationType ?? '') || card.subtitle,
-    },
-    {
-      label: 'Breakfast',
-      value: formatBreakfast(fields.breakfastIncluded),
-    },
-    { label: 'Price', value: fields.price || card.priceLabel },
-    {
-      label: 'Booking link',
-      value: fields.bookingLink,
-      isLink: true,
-      linkLabel: 'Book accommodation',
-    },
-  ];
+  const stayType = capitalise(fields.accommodationType ?? '') || card.subtitle || 'Stay details tbc';
+  const stayLength = fields.lengthOfStay || 'Length tbc';
+  const breakfast = formatBreakfast(fields.breakfastIncluded);
+  const priceLabel = fields.price || card.priceLabel || 'Price tbc';
+  const bookingLink = fields.bookingLink;
 
   return (
-    <SummaryCard
-      accent={CARD_META.accommodation}
-      iconType="home"
-      title="Accommodation"
-      subtitle={card.subtitle ?? 'Awaiting selection'}
-      price={card.priceLabel || 'Price tbc'}
+    <article
+      className={`relative overflow-hidden rounded-2xl border ${CARD_META.accommodation.border} bg-gradient-to-br from-emerald-50 via-white to-white shadow-sm`}
     >
-      <DetailList details={details} />
-    </SummaryCard>
+      <div className={`absolute left-0 top-0 h-full w-1 ${CARD_META.accommodation.rail}`} />
+      <div className="p-5 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span
+              className={`h-11 w-11 rounded-full border flex items-center justify-center ${CARD_META.accommodation.iconBg}`}
+            >
+              {getIcon('home')}
+            </span>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">Accommodation</p>
+              <p className="text-lg font-semibold text-slate-900">{stayType}</p>
+            </div>
+          </div>
+          <span className={`text-xs font-semibold rounded-full px-3 py-1 ${CARD_META.accommodation.badge}`}>
+            {priceLabel}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <InfoPill label="Length of stay" value={stayLength} />
+          <InfoPill label="Breakfast" value={breakfast} />
+          {bookingLink ? (
+            <div className="rounded-xl border border-slate-100 bg-white/80 px-3 py-2 text-sm md:col-span-2">
+              <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">Booking</p>
+              <div className="mt-1">
+                <BookingLink href={bookingLink} label="Book accommodation" />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -224,6 +264,16 @@ function DetailList({ details }) {
   );
 }
 
+function InfoPill({ label, value }) {
+  if (!value || `${value}`.trim() === '') return null;
+  return (
+    <div className="rounded-xl border border-slate-100 bg-white/80 px-3 py-2 text-sm">
+      <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">{label}</p>
+      <p className="mt-1 font-medium text-slate-900">{value}</p>
+    </div>
+  );
+}
+
 function BookingLink({ href, label = 'Book now' }) {
   if (typeof href !== 'string' || !href) return '—';
   return (
@@ -254,7 +304,7 @@ function PlaneIcon() {
       className="h-6 w-6"
       aria-hidden="true"
     >
-      <path d="M21 16.5v-1.764a1 1 0 00-.553-.894L13 10V5.5a1.5 1.5 0 00-3 0V10l-7.447 3.842A1 1 0 002 14.736V16.5l9-1.5v3.764l-2.553.894A1 1 0 008 21.5h2l1.333-.5L12.667 21.5H15a1 1 0 00.553-1.842L13 18.764V15l8 1.5z" />
+      <path d="M21 15.5v-1.6a1 1 0 00-.553-.894L13 10V5.5a1.5 1.5 0 00-3 0V10l-7.447 3.506A1 1 0 002 14.5v1.6l9-1.3v3.364l-2.553.894A1 1 0 008 20.5h2l1.333-.5L12.667 20.5H15a1 1 0 00.553-1.642L13 17.964V14l8 1.5z" />
     </svg>
   );
 }

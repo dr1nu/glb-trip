@@ -299,6 +299,11 @@ const COMMON_TIMELINE_FIELDS = [
 
 const TIMELINE_TYPES = [
   'attraction',
+  'museum',
+  'park',
+  'church',
+  'shopping',
+  'coffee',
   'photo',
   'rest',
   'food',
