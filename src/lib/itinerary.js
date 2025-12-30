@@ -288,6 +288,7 @@ function formatPriceRange(low, high) {
 const COMMON_TIMELINE_FIELDS = [
   'title',
   'time',
+  'duration',
   'price',
   'link',
   'description',

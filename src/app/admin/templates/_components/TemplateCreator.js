@@ -230,7 +230,7 @@ export default function TemplateCreator({ trips = [] }) {
         <div className="space-y-1">
           <p className="text-sm font-semibold text-neutral-200">Or import from CSV</p>
           <p className="text-xs text-neutral-500">
-            Uses the name/destination above; CSV rows should include day, time, title, type, price, description, link.
+            Uses the name/destination above; CSV rows should include day, time, duration, title, type, price, description, link.
           </p>
           {importing ? (
             <p className="text-xs text-neutral-400">Importing…</p>
@@ -282,7 +282,10 @@ export default function TemplateCreator({ trips = [] }) {
                 rows.forEach((row) => {
                   const day = toNumber(row.day);
                   if (!day) return;
-                  const itemType = (row.type || 'attraction').toString().trim().toLowerCase();
+                  const itemType = (row.type || row.category || 'attraction')
+                    .toString()
+                    .trim()
+                    .toLowerCase();
                   const title = row.title || row.activity || row.place || '';
                   const timelineItem = {
                     type: itemType,
@@ -290,6 +293,7 @@ export default function TemplateCreator({ trips = [] }) {
                       title,
                       name: title,
                       time: row.time || '',
+                      duration: row.duration || '',
                       price: row.price || '',
                       link: row.link || '',
                       description: row.description || row.notes || '',

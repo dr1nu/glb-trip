@@ -71,9 +71,17 @@ const TRAVEL_MODES = [
   { value: 'flight', label: 'Flight' },
 ];
 
+const DEFAULT_DURATION_BY_TYPE = {
+  attraction: '45',
+  photo: '10',
+  rest: '90',
+  food: '90',
+};
+
 const FIELD_DEFS_BY_TYPE = {
   default: [
     { name: 'time', label: 'Start time', placeholder: '08:00' },
+    { name: 'duration', label: 'Duration (minutes)', placeholder: '60' },
     { name: 'title', label: 'Title', placeholder: 'Breakfast at hotel' },
     { name: 'price', label: 'Badge or price', placeholder: 'Free or €18' },
     { name: 'link', label: 'Link', placeholder: 'https://experience.com' },
@@ -88,6 +96,7 @@ const FIELD_DEFS_BY_TYPE = {
   ],
   rest: [
     { name: 'time', label: 'Start time', placeholder: '22:00' },
+    { name: 'duration', label: 'Duration (minutes)', placeholder: '60' },
     { name: 'title', label: 'Title', placeholder: 'Rest / downtime' },
     { name: 'link', label: 'Link (optional)', placeholder: 'https://stay.com' },
     {
@@ -101,6 +110,7 @@ const FIELD_DEFS_BY_TYPE = {
   ],
   accommodation: [
     { name: 'time', label: 'Start time', placeholder: '15:00' },
+    { name: 'duration', label: 'Duration (minutes)', placeholder: '60' },
     { name: 'title', label: 'Title', placeholder: 'Check-in' },
     { name: 'link', label: 'Link (optional)', placeholder: 'https://hotel.com' },
     {
@@ -305,6 +315,10 @@ function createEntry(type = 'attraction') {
     acc[field.name] = '';
     return acc;
   }, {});
+  const defaultDuration = DEFAULT_DURATION_BY_TYPE[type];
+  if (typeof defaultDuration === 'string' && fields.duration === '') {
+    fields.duration = defaultDuration;
+  }
   const globalCrypto = typeof globalThis !== 'undefined' ? globalThis.crypto : null;
   return {
     id:
@@ -330,6 +344,64 @@ function parsePriceValue(raw) {
   const normalized = match[0].replace(/,/g, '.');
   const value = Number.parseFloat(normalized);
   return Number.isFinite(value) ? value : 0;
+}
+
+function parseMinutes(raw) {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const value = Number.parseInt(trimmed, 10);
+  return Number.isFinite(value) ? value : null;
+}
+
+function parseTimeToMinutes(raw) {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(':');
+  if (parts.length !== 2) return null;
+  const hours = Number.parseInt(parts[0], 10);
+  const minutes = Number.parseInt(parts[1], 10);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+function formatMinutesToTime(totalMinutes) {
+  if (!Number.isFinite(totalMinutes)) return '';
+  const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(normalized / 60);
+  const minutes = normalized % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function deriveNextTime(entry) {
+  const fields = entry?.fields ?? {};
+  const startMinutes = parseTimeToMinutes(fields.time ?? '');
+  const durationMinutes = parseMinutes(fields.duration ?? '');
+  if (startMinutes == null || durationMinutes == null) return null;
+  const travelMinutes = parseMinutes(fields.travelDuration ?? '');
+  const includeTravel =
+    typeof fields.travelMode === 'string' && fields.travelMode.trim() && travelMinutes != null;
+  const totalMinutes = durationMinutes + (includeTravel ? travelMinutes : 0);
+  return formatMinutesToTime(startMinutes + totalMinutes);
+}
+
+function propagateTimelineTimes(timeline, startIndex) {
+  if (!Array.isArray(timeline)) return timeline;
+  const next = [...timeline];
+  for (let i = startIndex + 1; i < next.length; i += 1) {
+    const derivedTime = deriveNextTime(next[i - 1]);
+    if (!derivedTime) break;
+    next[i] = {
+      ...next[i],
+      fields: {
+        ...next[i].fields,
+        time: derivedTime,
+      },
+    };
+  }
+  return next;
 }
 
 function sumTimelinePrices(timeline) {
@@ -396,6 +468,11 @@ export default function DayTimelineBuilder({
     if (!activeDay) return;
     const safeType = TYPE_META[type] ? type : TYPE_OPTIONS[0]?.value ?? 'attraction';
     const entry = createEntry(safeType);
+    const previousEntry = activeTimeline[index - 1];
+    const derivedNextTime = deriveNextTime(previousEntry);
+    if (derivedNextTime) {
+      entry.fields.time = derivedNextTime;
+    }
     const next = [...activeTimeline];
     next.splice(index, 0, entry);
     commitTimeline(next);
@@ -408,31 +485,50 @@ export default function DayTimelineBuilder({
   }
 
   function handleFieldChange(entryId, field, value) {
-    const next = activeTimeline.map((item) =>
-      item.id === entryId
-        ? {
-            ...item,
-            fields: {
-              ...item.fields,
-              [field]: value,
-            },
-          }
-        : item
-    );
-    commitTimeline(next);
+    const entryIndex = activeTimeline.findIndex((item) => item.id === entryId);
+    if (entryIndex === -1) return;
+    const next = activeTimeline.map((item, index) => {
+      if (item.id !== entryId) return item;
+      return {
+        ...item,
+        fields: {
+          ...item.fields,
+          [field]: value,
+        },
+      };
+    });
+    const shouldPropagate = ['time', 'duration', 'travelMode', 'travelDuration'].includes(field);
+    const finalTimeline = shouldPropagate ? propagateTimelineTimes(next, entryIndex) : next;
+    commitTimeline(finalTimeline);
   }
 
   function handleTypeChange(entryId, type) {
     const safeType = TYPE_META[type] ? type : TYPE_OPTIONS[0]?.value ?? 'attraction';
+    const entryIndex = activeTimeline.findIndex((item) => item.id === entryId);
+    if (entryIndex === -1) return;
     const next = activeTimeline.map((item) =>
       item.id === entryId
         ? {
             ...item,
             type: safeType,
+            fields: (() => {
+              const defaultDuration = DEFAULT_DURATION_BY_TYPE[safeType];
+              if (
+                typeof defaultDuration === 'string' &&
+                (item.fields?.duration == null || item.fields.duration === '')
+              ) {
+                return {
+                  ...(item.fields ?? {}),
+                  duration: defaultDuration,
+                };
+              }
+              return item.fields ?? {};
+            })(),
           }
         : item
     );
-    commitTimeline(next);
+    const finalTimeline = propagateTimelineTimes(next, entryIndex);
+    commitTimeline(finalTimeline);
   }
 
   function handleDrop(event, index) {
