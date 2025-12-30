@@ -385,6 +385,7 @@ export default function TripRequestPage() {
     interests: [],
     details: '',
   });
+  const [nearestAirportSelection, setNearestAirportSelection] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [authReady, setAuthReady] = useState(false);
@@ -552,12 +553,16 @@ export default function TripRequestPage() {
       if (!prev.homeCountry) {
         return prev.nearestAirport ? { ...prev, nearestAirport: '' } : prev;
       }
-      if (prev.nearestAirport || airportsForHomeCountry.length === 0) {
+      if (
+        nearestAirportSelection === 'other' ||
+        prev.nearestAirport ||
+        airportsForHomeCountry.length === 0
+      ) {
         return prev;
       }
       return { ...prev, nearestAirport: airportsForHomeCountry[0] };
     });
-  }, [airportsForHomeCountry]);
+  }, [airportsForHomeCountry, nearestAirportSelection]);
 
   useEffect(() => {
     if (form.travelWindow !== 'range') return;
@@ -732,11 +737,12 @@ export default function TripRequestPage() {
     budgetTotal,
     result = {},
   } = trip;
-  const airportSelectValue = airportsForHomeCountry.includes(form.nearestAirport)
+  const derivedAirportSelectValue = airportsForHomeCountry.includes(form.nearestAirport)
     ? form.nearestAirport
     : form.nearestAirport
       ? 'other'
       : '';
+  const airportSelectValue = nearestAirportSelection || derivedAirportSelectValue;
   const showCustomAirportInput =
     airportSelectValue === 'other' || airportsForHomeCountry.length === 0;
   const travelStyleLabel = result?.styleLabel || trip.travelStyle;
@@ -847,6 +853,7 @@ export default function TripRequestPage() {
                       value={airportSelectValue}
                       onChange={(event) => {
                         const value = event.target.value;
+                        setNearestAirportSelection(value);
                         if (value === 'other') {
                           setForm((prev) => ({ ...prev, nearestAirport: '' }));
                           return;
