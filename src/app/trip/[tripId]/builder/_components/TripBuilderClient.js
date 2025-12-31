@@ -85,6 +85,8 @@ function hydrateCardFields(card, preferences) {
   } else if (card.type === 'accommodation') {
     ensureField('price', card.priceLabel);
     ensureField('lengthOfStay', extractStayLength(card.summary));
+    ensureField('accommodationDateFrom', preferences?.dateFrom);
+    ensureField('accommodationDateTo', preferences?.dateTo);
   } else if (card.type === 'day') {
     ensureField('city', card.subtitle);
     ensureField('dailyCost', card.priceLabel);

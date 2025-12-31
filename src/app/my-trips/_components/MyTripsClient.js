@@ -173,12 +173,24 @@ function formatTravelers(trip) {
 }
 
 function getTripStatus(trip) {
+  const effectiveAmountCents =
+    typeof trip.billingCustomAmountCents === 'number'
+      ? trip.billingCustomAmountCents
+      : typeof trip.billingAmountCents === 'number'
+        ? trip.billingAmountCents
+        : Math.max(0, Math.round((trip.tripLengthDays ?? 0) * 300));
   const endDate = parseDate(trip.preferences?.dateTo);
   const now = new Date();
   if (endDate && endDate < now) {
     return {
       label: 'Completed',
       badge: 'bg-blue-100 text-blue-700',
+    };
+  }
+  if (trip.published && trip.billingStatus === 'pending' && effectiveAmountCents <= 0) {
+    return {
+      label: 'Unlock for free',
+      badge: 'bg-emerald-100 text-emerald-700',
     };
   }
   if (trip.published && trip.billingStatus === 'pending') {

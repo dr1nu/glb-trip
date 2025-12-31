@@ -8,8 +8,11 @@ const FIELD_WHITELIST = [
   'departTime',
   'arrivalTime',
   'bookingLink',
+  'accommodationMapUrl',
   'price',
   'lengthOfStay',
+  'accommodationDateFrom',
+  'accommodationDateTo',
   'accommodationType',
   'breakfastIncluded',
   'city',
@@ -166,6 +169,8 @@ export function buildDefaultItinerary(trip = {}) {
     .join(' · ');
 
   const defaultDailyCost = result.perDay ? euro(result.perDay) : '';
+  const accommodationDateFrom = preferences?.dateFrom ?? '';
+  const accommodationDateTo = preferences?.dateTo ?? '';
 
   const dayCards = Array.from({ length: days }, (_, index) => ({
     id: `day-${index + 1}`,
@@ -215,6 +220,8 @@ export function buildDefaultItinerary(trip = {}) {
       summary: accomSummary || 'Choose ideal hotel or apartment.',
       fields: {
         lengthOfStay: days ? `${days} night${days === 1 ? '' : 's'}` : '',
+        accommodationDateFrom,
+        accommodationDateTo,
         accommodationType: '',
         breakfastIncluded: '',
         bookingLink: '',

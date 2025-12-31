@@ -118,12 +118,14 @@ export default function TripExperienceClient({
               title="Flights"
               description="Your outbound and return routes."
               preferences={preferences}
+              showFlightDisclaimer
             />
             <ItinerarySummary
               cards={accommodationCards}
               title="Accommodation"
               description="Where you're staying each night."
               preferences={preferences}
+              showAccommodationDisclaimer
             />
           </div>
         ),

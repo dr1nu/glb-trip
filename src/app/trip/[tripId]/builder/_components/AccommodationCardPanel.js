@@ -92,6 +92,14 @@ export default function AccommodationCardPanel({
               onChange={handleChange}
               placeholder="3 nights"
             />
+            <Field
+              label="Check-in date"
+              name="accommodationDateFrom"
+              type="date"
+              value={formatDateInputValue(fields.accommodationDateFrom)}
+              onChange={handleChange}
+              placeholder="2024-06-01"
+            />
             <label className="flex flex-col gap-2 text-sm">
               <span className="font-medium text-[#4C5A6B]">
                 Type of accommodation
@@ -136,6 +144,14 @@ export default function AccommodationCardPanel({
               onChange={handleChange}
               placeholder="€140 / night"
             />
+            <Field
+              label="Check-out date"
+              name="accommodationDateTo"
+              type="date"
+              value={formatDateInputValue(fields.accommodationDateTo)}
+              onChange={handleChange}
+              placeholder="2024-06-04"
+            />
           </div>
 
           <Field
@@ -144,6 +160,13 @@ export default function AccommodationCardPanel({
             value={fields.bookingLink ?? ''}
             onChange={handleChange}
             placeholder="https://stay.com/reservation"
+          />
+          <Field
+            label="Google Maps link"
+            name="accommodationMapUrl"
+            value={fields.accommodationMapUrl ?? ''}
+            onChange={handleChange}
+            placeholder="Paste a Google Maps URL or iframe"
           />
 
           <p className="text-[11px] text-[#4C5A6B] text-right">
@@ -155,12 +178,12 @@ export default function AccommodationCardPanel({
   );
 }
 
-function Field({ label, name, value, onChange, placeholder }) {
+function Field({ label, name, value, onChange, placeholder, type = 'text' }) {
   return (
     <label className="flex flex-col gap-2 text-sm">
       <span className="font-medium text-[#4C5A6B]">{label}</span>
       <input
-        type="text"
+        type={type}
         name={name}
         value={value}
         onChange={onChange}
@@ -169,6 +192,19 @@ function Field({ label, name, value, onChange, placeholder }) {
       />
     </label>
   );
+}
+
+function formatDateInputValue(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const dateMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (dateMatch) return dateMatch[1];
+  const dateTimeMatch = trimmed.match(
+    /^(\d{4}-\d{2}-\d{2})[T\s·]+(\d{2}:\d{2})/
+  );
+  if (dateTimeMatch) return dateTimeMatch[1];
+  return '';
 }
 
 function capitalise(value) {

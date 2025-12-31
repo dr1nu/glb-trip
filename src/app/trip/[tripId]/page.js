@@ -62,15 +62,25 @@ export default async function TripPage({ params, searchParams }) {
   const immersiveHref = fromAdmin
     ? `/trip/${id}/experience?from=admin`
     : `/trip/${id}/experience`;
-  const showTravellerCTA = itineraryReady && !fromAdmin;
-  const showAdminCTA = itineraryReady && fromAdmin;
   const effectiveAmountCents =
     typeof billingCustomAmountCents === 'number'
       ? billingCustomAmountCents
       : typeof billingAmountCents === 'number'
         ? billingAmountCents
         : Math.max(0, Math.round((tripLengthDays ?? 0) * 300));
-  const paymentRequired = itineraryReady && !fromAdmin && billingStatus === 'pending';
+  const isFreeUnlock =
+    itineraryReady &&
+    !fromAdmin &&
+    billingStatus === 'pending' &&
+    effectiveAmountCents <= 0;
+  const paymentRequired =
+    itineraryReady &&
+    !fromAdmin &&
+    billingStatus === 'pending' &&
+    effectiveAmountCents > 0;
+  const showTravellerCTA =
+    itineraryReady && !fromAdmin && !paymentRequired && !isFreeUnlock;
+  const showAdminCTA = itineraryReady && fromAdmin;
   const travellers = formatTravellerCount(contact);
   const budgetLabel = formatBudgetLabel(budgetTotal);
   const travelDates = formatTravelDates(preferences);
@@ -83,7 +93,7 @@ export default async function TripPage({ params, searchParams }) {
   const accommodationLabel = formatAccommodation(preferences);
   const baggageLabel = formatBaggage(preferences);
 
-  if (itineraryReady && !fromAdmin && !paymentRequired) {
+  if (itineraryReady && !fromAdmin && !paymentRequired && !isFreeUnlock) {
     redirect(immersiveHref);
   }
 
@@ -129,6 +139,7 @@ export default async function TripPage({ params, searchParams }) {
             interests={interests}
             fromAdmin={fromAdmin}
             paymentRequired={paymentRequired}
+            isFreeUnlock={isFreeUnlock}
             effectiveAmountCents={effectiveAmountCents}
             billingCurrency={billingCurrency}
             tripId={id}
@@ -155,6 +166,7 @@ export default async function TripPage({ params, searchParams }) {
             billingPaidAt={billingPaidAt}
             effectiveAmountCents={effectiveAmountCents}
             paymentRequired={paymentRequired}
+            isFreeUnlock={isFreeUnlock}
             tripId={id}
           />
         )}
@@ -197,6 +209,7 @@ function PendingTripOverview({
   interests,
   fromAdmin,
   paymentRequired,
+  isFreeUnlock,
   effectiveAmountCents,
   billingCurrency,
   tripId,
@@ -206,28 +219,49 @@ function PendingTripOverview({
     contact?.name ||
     [contact?.firstName, contact?.lastName].filter(Boolean).join(' ') ||
     'Traveller details pending';
-  const showPaymentNotice = paymentRequired && !fromAdmin;
+  const showUnlockNotice = (paymentRequired || isFreeUnlock) && !fromAdmin;
   const amountLabel = formatEuroCents(effectiveAmountCents);
   const billingContext =
     billingCurrency && billingCurrency !== 'EUR' ? ` (${billingCurrency})` : '';
 
   return (
     <>
-      {showPaymentNotice ? (
+      {showUnlockNotice ? (
         <section className="rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] p-5 sm:p-6 space-y-4 shadow-sm shadow-[#ff8a00]/10">
           <SectionHeading
-            title="Payment required to view your itinerary"
-            description="Your trip is ready, but payment is needed before we can show the full details."
+            title={
+              isFreeUnlock
+                ? 'Unlock your itinerary for free'
+                : 'Payment required to view your itinerary'
+            }
+            description={
+              isFreeUnlock
+                ? 'Your trip is ready. Unlock to see the full details.'
+                : 'Your trip is ready, but payment is needed before we can show the full details.'
+            }
           />
           <div className="rounded-2xl border border-[#ffd9b3] bg-white/90 p-4 space-y-2 text-sm text-[#4C5A6B]">
             <p className="text-base font-semibold text-slate-900">
-              Total due: {amountLabel}{billingContext}
+              {isFreeUnlock
+                ? 'No payment required.'
+                : `Total due: ${amountLabel}${billingContext}`}
             </p>
-            <p className="text-xs text-[#6a7687]">
-              You will be redirected to Stripe to complete payment securely.
-            </p>
+            {paymentRequired ? (
+              <p className="text-xs text-[#6a7687]">
+                You will be redirected to Stripe to complete payment securely.
+              </p>
+            ) : null}
           </div>
-          <PayToUnlockButton tripId={tripId} />
+          {isFreeUnlock ? (
+            <Link
+              href={`/trip/${tripId}/experience`}
+              className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
+            >
+              Unlock for free
+            </Link>
+          ) : (
+            <PayToUnlockButton tripId={tripId} />
+          )}
         </section>
       ) : null}
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#ff9f43] via-[#ff8a00] to-[#ff6f00] text-white shadow-lg shadow-[#ff7a00]/20 border border-[#ffd9b3]">
@@ -379,9 +413,10 @@ function ConfirmedTripOverview({
   billingPaidAt,
   effectiveAmountCents,
   paymentRequired,
+  isFreeUnlock,
   tripId,
 }) {
-  const showPaymentNotice = paymentRequired && !fromAdmin;
+  const showUnlockNotice = (paymentRequired || isFreeUnlock) && !fromAdmin;
   const amountLabel = formatEuroCents(effectiveAmountCents);
   const billingContext =
     billingCurrency && billingCurrency !== 'EUR' ? ` (${billingCurrency})` : '';
@@ -393,8 +428,8 @@ function ConfirmedTripOverview({
     <>
       <section
         className={`rounded-3xl border ${
-          showPaymentNotice ? 'border-[#ffd9b3] bg-[#fff7ef]' : 'border-[#d8deed] bg-white/92'
-        } shadow-sm ${showPaymentNotice ? 'shadow-[#ff8a00]/10' : 'shadow-[#0c2a52]/10'} p-5 sm:p-6 space-y-4`}
+          showUnlockNotice ? 'border-[#ffd9b3] bg-[#fff7ef]' : 'border-[#d8deed] bg-white/92'
+        } shadow-sm ${showUnlockNotice ? 'shadow-[#ff8a00]/10' : 'shadow-[#0c2a52]/10'} p-5 sm:p-6 space-y-4`}
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
@@ -404,12 +439,14 @@ function ConfirmedTripOverview({
             <h1 className="text-2xl font-semibold">
               Trip to {destinationCountry || 'Destination pending'}
             </h1>
-            {showPaymentNotice ? (
+            {showUnlockNotice ? (
               <p className="text-sm font-semibold text-[#c25a00]">
-                Payment required to view your itinerary
+                {isFreeUnlock
+                  ? 'Unlock your itinerary for free'
+                  : 'Payment required to view your itinerary'}
               </p>
             ) : null}
-            {!paymentRequired ? (
+            {!showUnlockNotice ? (
               <p className="text-sm text-[#4C5A6B]">Itinerary created {createdLabel}</p>
             ) : null}
           </div>
@@ -434,7 +471,7 @@ function ConfirmedTripOverview({
           <Fact label="Budget" value={budgetLabel} />
           <Fact label="Travellers" value={travellers} />
         </div>
-        {billingStatus && !paymentRequired ? (
+        {billingStatus && !showUnlockNotice ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <Fact
               label="Billing"
@@ -453,19 +490,35 @@ function ConfirmedTripOverview({
           </div>
         ) : null}
 
-        {showPaymentNotice ? (
+        {showUnlockNotice ? (
           <div className="mt-2 rounded-2xl border border-[#ffd9b3] bg-white/90 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-base font-semibold text-slate-900">
-                Total due: {amountLabel}{billingContext}
+                {isFreeUnlock
+                  ? 'No payment required.'
+                  : `Total due: ${amountLabel}${billingContext}`}
               </p>
-              <PayToUnlockButton tripId={tripId} />
+              {isFreeUnlock ? (
+                <Link
+                  href={immersiveHref}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
+                >
+                  Unlock for free
+                </Link>
+              ) : (
+                <PayToUnlockButton tripId={tripId} />
+              )}
             </div>
+            {paymentRequired ? (
+              <p className="mt-2 text-xs text-[#6a7687]">
+                You will be redirected to Stripe to complete payment securely.
+              </p>
+            ) : null}
           </div>
         ) : null}
       </section>
 
-      {showPaymentNotice ? (
+      {showUnlockNotice ? (
           <section className="relative rounded-3xl border border-[#ffd9b3] bg-[#fff7ef] shadow-sm shadow-[#ff8a00]/10 overflow-hidden">
             <div className="absolute inset-0 z-10 flex items-center justify-center p-6 text-center">
               <div className="rounded-2xl border border-[#ff8a00] bg-white px-6 py-5 shadow-xl shadow-[#ff8a00]/30">
@@ -473,10 +526,21 @@ function ConfirmedTripOverview({
                   Unlock your full itinerary
                 </p>
                 <p className="text-sm text-[#4C5A6B]">
-                  Pay to view every day, detail, and booking link.
+                  {isFreeUnlock
+                    ? 'Unlock to view every day, detail, and booking link.'
+                    : 'Pay to view every day, detail, and booking link.'}
                 </p>
                 <div className="mt-3">
-                  <PayToUnlockButton tripId={tripId} label="Pay to unlock itinerary" />
+                  {isFreeUnlock ? (
+                    <Link
+                      href={immersiveHref}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
+                    >
+                      Unlock for free
+                    </Link>
+                  ) : (
+                    <PayToUnlockButton tripId={tripId} label="Pay to unlock itinerary" />
+                  )}
                 </div>
               </div>
             </div>

@@ -6,6 +6,8 @@ export default function ItinerarySummary({
   description = 'Finalised trip details shared by your travel specialist.',
   className = '',
   preferences = null,
+  showFlightDisclaimer = false,
+  showAccommodationDisclaimer = false,
 }) {
   const safeCards = Array.isArray(cards) ? cards : [];
 
@@ -34,9 +36,6 @@ export default function ItinerarySummary({
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="text-sm text-[#4C5A6B]">{description}</p>
         </div>
-        <span className="text-xs uppercase tracking-wide text-[#4C5A6B] border border-slate-200 rounded-lg px-3 py-1 bg-white/70">
-          {safeCards.length} item{safeCards.length === 1 ? '' : 's'}
-        </span>
       </header>
 
       <div className="space-y-4">
@@ -48,6 +47,8 @@ export default function ItinerarySummary({
           />
         ))}
       </div>
+      {showFlightDisclaimer ? <FlightDisclaimer /> : null}
+      {showAccommodationDisclaimer ? <AccommodationDisclaimer /> : null}
     </section>
   );
 }
@@ -158,15 +159,15 @@ function formatFlightDate(value) {
   }).format(parsed);
 }
 
-function formatAccommodationDates(preferences) {
-  const from = preferences?.dateFrom;
-  const to = preferences?.dateTo;
+function formatAccommodationDateParts(fields, preferences) {
+  const from = fields?.accommodationDateFrom || preferences?.dateFrom;
+  const to = fields?.accommodationDateTo || preferences?.dateTo;
   const fromLabel = formatShortDate(from);
   const toLabel = formatShortDate(to);
-  if (fromLabel && toLabel) {
-    return fromLabel === toLabel ? fromLabel : `${fromLabel} → ${toLabel}`;
-  }
-  return fromLabel || toLabel || 'Dates tbc';
+  return {
+    fromLabel: fromLabel || 'TBC',
+    toLabel: toLabel || 'TBC',
+  };
 }
 
 function formatShortDate(value) {
@@ -185,10 +186,12 @@ function formatShortDate(value) {
 function AccommodationDisplay({ card, preferences }) {
   const fields = card.fields ?? {};
   const stayType = capitalise(fields.accommodationType ?? '') || card.subtitle || 'Stay details tbc';
-  const stayDates = formatAccommodationDates(preferences);
+  const { fromLabel, toLabel } = formatAccommodationDateParts(fields, preferences);
   const breakfast = formatBreakfast(fields.breakfastIncluded);
   const priceLabel = fields.price || card.priceLabel || 'Price tbc';
   const bookingLink = fields.bookingLink;
+  const mapUrl = fields.accommodationMapUrl;
+  const embedUrl = buildMapsEmbedUrl(mapUrl);
 
   return (
     <article
@@ -218,10 +221,31 @@ function AccommodationDisplay({ card, preferences }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <AccommodationInfoPill label="Dates" value={stayDates} />
+          <AccommodationInfoPill label="From" value={fromLabel} />
+          <AccommodationInfoPill label="To" value={toLabel} />
           <AccommodationInfoPill label="Breakfast" value={breakfast} />
           <AccommodationInfoPill label="Price" value={priceLabel} />
         </div>
+        {mapUrl ? (
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+              Location
+            </p>
+            {embedUrl ? (
+              <div className="overflow-hidden rounded-xl border border-emerald-100 bg-white/80">
+                <iframe
+                  title={`${stayType} map`}
+                  src={embedUrl}
+                  className="h-44 w-full"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            ) : (
+              <MapLink href={mapUrl} label="Open in Google Maps" />
+            )}
+          </div>
+        ) : null}
       </div>
     </article>
   );
@@ -398,6 +422,85 @@ function AccommodationBookingButton({ href, label = 'Book now' }) {
       {label}
     </a>
   );
+}
+
+function FlightDisclaimer() {
+  return (
+    <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs text-amber-900">
+      <span className="mt-0.5 text-amber-700" aria-hidden>
+        ⚠︎
+      </span>
+      <p className="leading-relaxed">
+        Prices are accurate at the time of itinerary creation. Flight prices may
+        fluctuate and should be confirmed at booking.
+      </p>
+    </div>
+  );
+}
+
+function AccommodationDisclaimer() {
+  return (
+    <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs text-amber-900">
+      <span className="mt-0.5 text-amber-700" aria-hidden>
+        ⚠︎
+      </span>
+      <p className="leading-relaxed">
+        Prices and availability are accurate at the time of itinerary creation.
+      </p>
+    </div>
+  );
+}
+
+function MapLink({ href, label }) {
+  if (typeof href !== 'string' || !href) return null;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors"
+    >
+      {label}
+    </a>
+  );
+}
+
+function buildMapsEmbedUrl(rawUrl) {
+  if (typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+  if (trimmed.includes('<iframe')) {
+    const srcMatch = trimmed.match(/src="([^"]+)"/i);
+    if (srcMatch) return srcMatch[1];
+  }
+  if (trimmed.includes('/maps/embed')) return trimmed;
+
+  try {
+    const url = new URL(trimmed);
+    const query =
+      url.searchParams.get('q') ||
+      url.searchParams.get('query') ||
+      url.searchParams.get('ll');
+    if (query) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+    }
+  } catch (err) {
+    return '';
+  }
+
+  const latLngMatch = trimmed.match(/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+  if (latLngMatch) {
+    const [, lat, lng] = latLngMatch;
+    return `https://www.google.com/maps?q=${lat},${lng}&output=embed`;
+  }
+
+  const placeMatch = trimmed.match(/\/place\/([^/]+)/);
+  if (placeMatch) {
+    const place = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+    return `https://www.google.com/maps?q=${encodeURIComponent(place)}&output=embed`;
+  }
+
+  return '';
 }
 
 function getIcon(type) {

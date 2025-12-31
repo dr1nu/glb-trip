@@ -42,7 +42,13 @@ export default async function TripExperiencePage({ params, searchParams }) {
   if (!fromAdmin && !trip.published) {
     redirect(`/trip/${tripId}`);
   }
-  if (!fromAdmin && trip.billingStatus === 'pending') {
+  const effectiveAmountCents =
+    typeof trip.billingCustomAmountCents === 'number'
+      ? trip.billingCustomAmountCents
+      : typeof trip.billingAmountCents === 'number'
+        ? trip.billingAmountCents
+        : Math.max(0, Math.round((trip.tripLengthDays ?? 0) * 300));
+  if (!fromAdmin && trip.billingStatus === 'pending' && effectiveAmountCents > 0) {
     redirect(`/trip/${tripId}`);
   }
 
