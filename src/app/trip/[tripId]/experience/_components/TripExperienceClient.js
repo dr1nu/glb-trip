@@ -12,6 +12,8 @@ export default function TripExperienceClient({
   otherActivities = [],
   preferences = null,
 }) {
+  const [usefulPosts, setUsefulPosts] = useState([]);
+
   const buildPlaceholderDays = (length) => {
     const count = Math.max(1, Number.isFinite(length) && length > 0 ? Math.round(length) : 1);
     return Array.from({ length: count }).map((_, idx) => ({
@@ -50,6 +52,61 @@ export default function TripExperienceClient({
     if (card.fields?.city || card.fields?.dailyCost || card.fields?.highlightAttraction) return true;
     return false;
   };
+
+  useEffect(() => {
+    const baseUrl =
+      typeof process !== 'undefined' && process.env.NEXT_PUBLIC_WP_BASE_URL
+        ? process.env.NEXT_PUBLIC_WP_BASE_URL
+        : 'https://getlostonabudget.com';
+    if (!destinationCountry) {
+      setUsefulPosts([]);
+      return;
+    }
+    const slug = slugifyCategory(destinationCountry);
+    if (!slug) {
+      setUsefulPosts([]);
+      return;
+    }
+
+    let cancelled = false;
+    const loadPosts = async () => {
+      try {
+        const categoryResponse = await fetch(
+          `${baseUrl}/wp-json/wp/v2/categories?slug=${encodeURIComponent(slug)}`
+        );
+        if (!categoryResponse.ok) {
+          throw new Error('Unable to load categories.');
+        }
+        const categoryPayload = await categoryResponse.json();
+        const categoryId = Array.isArray(categoryPayload) ? categoryPayload[0]?.id : null;
+        if (!categoryId) {
+          if (!cancelled) setUsefulPosts([]);
+          return;
+        }
+
+        const postsResponse = await fetch(
+          `${baseUrl}/wp-json/wp/v2/posts?categories=${categoryId}&_embed&per_page=100`
+        );
+        if (!postsResponse.ok) {
+          throw new Error('Unable to load posts.');
+        }
+        const postsPayload = await postsResponse.json();
+        if (!cancelled) {
+          setUsefulPosts(Array.isArray(postsPayload) ? postsPayload : []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to load useful info posts', err);
+          setUsefulPosts([]);
+        }
+      }
+    };
+
+    loadPosts();
+    return () => {
+      cancelled = true;
+    };
+  }, [destinationCountry]);
 
   const tabDefinitions = useMemo(() => {
     const safeSummary = Array.isArray(summaryCards) ? summaryCards : [];
@@ -103,9 +160,6 @@ export default function TripExperienceClient({
     const accommodationCards = safeSummary.filter(
       (card) => isAccommodationCard(card) && !isBudgetCard(card)
     );
-    const summaryCardsFiltered = safeSummary.filter(
-      (card) => !looksLikeFlight(card) && !isBudgetCard(card) && !isAccommodationCard(card)
-    );
 
     const tabs = [
       {
@@ -130,19 +184,14 @@ export default function TripExperienceClient({
           </div>
         ),
       },
-      {
-        id: 'summary',
-        label: 'Summary',
-        content: (
-          <ItinerarySummary
-            cards={summaryCardsFiltered}
-            title="Trip summary"
-            description="High-level overview of stays and daily highlights."
-            preferences={preferences}
-          />
-        ),
-      },
     ];
+    if (usefulPosts.length > 0) {
+      tabs.push({
+        id: 'useful-info',
+        label: 'Useful Info',
+        content: <UsefulInfoGrid posts={usefulPosts} />,
+      });
+    }
 
     daysToRender.forEach((card, index) => {
       tabs.push({
@@ -161,7 +210,14 @@ export default function TripExperienceClient({
     }
 
     return tabs;
-  }, [summaryCards, dayCards, otherActivities, tripLengthDays]);
+  }, [
+    summaryCards,
+    dayCards,
+    otherActivities,
+    tripLengthDays,
+    preferences,
+    usefulPosts,
+  ]);
 
   const [activeTab, setActiveTab] = useState(tabDefinitions[0]?.id);
   useEffect(() => {
@@ -224,6 +280,78 @@ function TabBar({ tabs, activeTab, onSelect }) {
       </div>
     </nav>
   );
+}
+
+function UsefulInfoGrid({ posts }) {
+  return (
+    <div className="grid grid-cols-1 gap-4">
+      {posts.map((post) => (
+        <UsefulPostCard key={post.id} post={post} />
+      ))}
+    </div>
+  );
+}
+
+function UsefulPostCard({ post }) {
+  const title = stripHtml(post?.title?.rendered || 'Untitled');
+  const excerptHtml = post?.excerpt?.rendered || '';
+  const imageUrl = getFeaturedImage(post);
+  const href = post?.link || '#';
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm shadow-orange-100/40">
+      {imageUrl ? (
+        <div className="h-44 w-full overflow-hidden">
+          <img
+            src={imageUrl}
+            alt={title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : null}
+      <div className="p-4 space-y-3">
+        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+        {excerptHtml ? (
+          <div
+            className="text-sm text-[#4C5A6B] leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: excerptHtml }}
+          />
+        ) : null}
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
+        >
+          Read more
+        </a>
+      </div>
+    </article>
+  );
+}
+
+function getFeaturedImage(post) {
+  const media = post?._embedded?.['wp:featuredmedia']?.[0];
+  return media?.source_url || '';
+}
+
+function stripHtml(value) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/<[^>]*>/g, '').trim();
+}
+
+function slugifyCategory(value) {
+  if (typeof value !== 'string') return '';
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  return normalized
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 function DayItineraryDetail({ card }) {
