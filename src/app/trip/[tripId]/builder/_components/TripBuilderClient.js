@@ -742,7 +742,7 @@ export default function TripBuilderClient({
               <select
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
-                className="rounded-xl border border-orange-100 px-3 py-2 text-sm text-slate-900 bg-white min-w-[220px]"
+                className="w-full rounded-xl border border-orange-100 bg-white px-3 py-2 text-sm text-slate-900 sm:w-auto sm:min-w-[220px]"
                 disabled={!templates?.length}
               >
                 <option value="">{templates?.length ? 'Choose a template' : 'No templates'}</option>

@@ -262,21 +262,23 @@ function TabBar({ tabs, activeTab, onSelect }) {
   if (!tabs.length) return null;
   return (
     <nav className="flex justify-center">
-      <div className="inline-flex flex-wrap items-center gap-2 bg-white border border-orange-100 rounded-full px-3 py-2 shadow-sm">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => onSelect(tab.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              tab.id === activeTab
-                ? 'bg-orange-500 text-neutral-900 shadow-sm'
-                : 'text-[#4C5A6B] hover:text-slate-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex w-full justify-start overflow-x-auto sm:w-auto sm:justify-center sm:overflow-visible">
+        <div className="inline-flex w-max items-center gap-2 bg-white border border-orange-100 rounded-full px-3 py-2 shadow-sm sm:w-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onSelect(tab.id)}
+              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                tab.id === activeTab
+                  ? 'bg-orange-500 text-neutral-900 shadow-sm'
+                  : 'text-[#4C5A6B] hover:text-slate-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
     </nav>
   );
@@ -590,9 +592,9 @@ function TimelineEntry({ entry, isLast }) {
       <article className={`relative overflow-hidden rounded-2xl border ${meta.border} bg-white shadow-sm`}>
         <div className={`absolute left-0 top-0 h-full w-1 ${meta.rail}`} />
         <div className="p-5 space-y-3">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-4 min-w-0">
-              <span className="min-w-[64px] text-center text-sm font-semibold text-[#245ad4]">
+              <span className="text-sm font-semibold text-[#245ad4] sm:min-w-[64px] sm:text-center">
                 {time || '—'}
               </span>
               <div className="flex items-center gap-3">
@@ -610,7 +612,7 @@ function TimelineEntry({ entry, isLast }) {
               </div>
             </div>
             {(badge || link) ? (
-              <div className="flex flex-col items-center gap-3 min-w-[96px] text-center">
+              <div className="flex w-full flex-col items-start gap-3 text-left sm:w-auto sm:min-w-[96px] sm:items-center sm:text-center">
                 {badge ? (
                   <span
                     className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-center ${badgeClass}`}
@@ -623,7 +625,7 @@ function TimelineEntry({ entry, isLast }) {
                     href={link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-orange-500 text-orange-600 px-3 py-2 text-sm font-semibold hover:bg-orange-50 transition-colors"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-orange-500 text-orange-600 px-3 py-2 text-sm font-semibold hover:bg-orange-50 transition-colors sm:w-auto"
                   >
                     Book now <ExternalIcon />
                   </a>

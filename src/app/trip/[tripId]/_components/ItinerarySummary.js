@@ -303,7 +303,7 @@ function SummaryCard({ accent, iconType, title, subtitle, price, children }) {
     <article className={`relative overflow-hidden rounded-2xl border ${accent.border} bg-white shadow-sm`}>
       <div className={`absolute left-0 top-0 h-full w-1 ${accent.rail}`} />
       <div className="p-5 space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4 min-w-0">
             <span className={`h-12 w-12 rounded-full border flex items-center justify-center ${accent.iconBg}`}>
               {getIcon(iconType)}
@@ -315,7 +315,7 @@ function SummaryCard({ accent, iconType, title, subtitle, price, children }) {
               </p>
             </div>
           </div>
-          <span className={`text-xs font-semibold rounded-full px-3 py-1 ${accent.badge}`}>
+          <span className={`self-start text-xs font-semibold rounded-full px-3 py-1 ${accent.badge}`}>
             {hasPrice ? price : 'Set soon'}
           </span>
         </div>
