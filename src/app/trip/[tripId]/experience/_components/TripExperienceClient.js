@@ -10,6 +10,7 @@ export default function TripExperienceClient({
   summaryCards,
   dayCards,
   otherActivities = [],
+  preferences = null,
 }) {
   const buildPlaceholderDays = (length) => {
     const count = Math.max(1, Number.isFinite(length) && length > 0 ? Math.round(length) : 1);
@@ -116,11 +117,13 @@ export default function TripExperienceClient({
               cards={flightCards}
               title="Flights"
               description="Your outbound and return routes."
+              preferences={preferences}
             />
             <ItinerarySummary
               cards={accommodationCards}
               title="Accommodation"
               description="Where you're staying each night."
+              preferences={preferences}
             />
           </div>
         ),
@@ -133,6 +136,7 @@ export default function TripExperienceClient({
             cards={summaryCardsFiltered}
             title="Trip summary"
             description="High-level overview of stays and daily highlights."
+            preferences={preferences}
           />
         ),
       },

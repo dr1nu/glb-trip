@@ -13,8 +13,6 @@ const BAGGAGE_OPTIONS = [
   },
 ];
 
-const DATE_FIELDS = new Set(['departTime', 'arrivalTime']);
-
 function planeIconColor(direction) {
   return direction === 'return'
     ? 'bg-purple-500/15 border-purple-400/40 text-purple-200'
@@ -50,8 +48,7 @@ export default function FlightCardPanel({
 
   function handleChange(event) {
     const { name, value } = event.target;
-    const nextValue = DATE_FIELDS.has(name) ? formatDateTimeLabel(value) : value;
-    onFieldChange(card.id, { [name]: nextValue });
+    onFieldChange(card.id, { [name]: value });
   }
 
   return (
@@ -132,20 +129,28 @@ export default function FlightCardPanel({
               </select>
             </label>
             <Field
+              label="Flight date"
+              name="flightDate"
+              type="date"
+              value={formatDateInputValue(fields.flightDate)}
+              onChange={handleChange}
+              placeholder="2024-06-01"
+            />
+            <Field
               label="Flight departure time"
               name="departTime"
-              type="datetime-local"
-              value={formatDateTimeInputValue(fields.departTime)}
+              type="time"
+              value={formatTimeInputValue(fields.departTime)}
               onChange={handleChange}
-              placeholder="2024-06-01T08:45"
+              placeholder="08:45"
             />
             <Field
               label="Flight arrival time"
               name="arrivalTime"
-              type="datetime-local"
-              value={formatDateTimeInputValue(fields.arrivalTime)}
+              type="time"
+              value={formatTimeInputValue(fields.arrivalTime)}
               onChange={handleChange}
-              placeholder="2024-06-01T12:10"
+              placeholder="12:10"
             />
           </div>
 
@@ -198,40 +203,28 @@ function Field({
   );
 }
 
-function formatDateTimeLabel(value) {
+function formatDateInputValue(value) {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
   if (!trimmed) return '';
-  const isoMatch = trimmed.match(
-    /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2})?$/
+  const dateMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (dateMatch) return dateMatch[1];
+  const dateTimeMatch = trimmed.match(
+    /^(\d{4}-\d{2}-\d{2})[T\s·]+(\d{2}:\d{2})/
   );
-  if (isoMatch) {
-    return `${isoMatch[1]} · ${isoMatch[2]}`;
-  }
-  return trimmed;
+  if (dateTimeMatch) return dateTimeMatch[1];
+  return '';
 }
 
-function formatDateTimeInputValue(value) {
+function formatTimeInputValue(value) {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
   if (!trimmed) return '';
-  const isoMatch = trimmed.match(
-    /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2})?$/
+  const timeMatch = trimmed.match(/^(\d{2}:\d{2})$/);
+  if (timeMatch) return timeMatch[1];
+  const dateTimeMatch = trimmed.match(
+    /^(\d{4}-\d{2}-\d{2})[T\s·]+(\d{2}:\d{2})/
   );
-  if (isoMatch) {
-    return `${isoMatch[1]}T${isoMatch[2]}`;
-  }
-  const formattedMatch = trimmed.match(
-    /^(\d{4}-\d{2}-\d{2})\s*·\s*(\d{2}:\d{2})/
-  );
-  if (formattedMatch) {
-    return `${formattedMatch[1]}T${formattedMatch[2]}`;
-  }
-  const spaceMatch = trimmed.match(
-    /^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/
-  );
-  if (spaceMatch) {
-    return `${spaceMatch[1]}T${spaceMatch[2]}`;
-  }
+  if (dateTimeMatch) return dateTimeMatch[2];
   return '';
 }

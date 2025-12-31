@@ -89,6 +89,7 @@ export default async function TripExperiencePage({ params, searchParams }) {
           summaryCards={itinerary.cards}
           dayCards={dayCards}
           otherActivities={otherActivities}
+          preferences={trip.preferences}
         />
       </div>
     </main>

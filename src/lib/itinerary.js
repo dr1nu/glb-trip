@@ -4,6 +4,7 @@ const FIELD_WHITELIST = [
   'homeAirport',
   'arrivalAirport',
   'baggageType',
+  'flightDate',
   'departTime',
   'arrivalTime',
   'bookingLink',
@@ -139,6 +140,7 @@ export function buildDefaultItinerary(trip = {}) {
     destinationCountry,
     result = {},
     budgetTotal,
+    preferences,
   } = trip;
   const flight = result.flight ?? {};
   const days = Math.max(1, Number(tripLengthDays) || 1);
@@ -153,6 +155,8 @@ export function buildDefaultItinerary(trip = {}) {
   };
   const departurePrice = formatPriceRange(flight.low, flight.high);
   const returnPrice = formatPriceRange(flight.low, flight.high);
+  const departureDate = preferences?.dateFrom ?? '';
+  const returnDate = preferences?.dateTo ?? '';
 
   const accomSummary = [
     result.bucket ? `${result.bucket} stay` : null,
@@ -194,6 +198,7 @@ export function buildDefaultItinerary(trip = {}) {
         homeAirport: departureAirports.from,
         arrivalAirport: departureAirports.to,
         baggageType: '',
+        flightDate: departureDate,
         departTime: '',
         arrivalTime: '',
         bookingLink: '',
@@ -229,6 +234,7 @@ export function buildDefaultItinerary(trip = {}) {
         homeAirport: returnAirports.from,
         arrivalAirport: returnAirports.to,
         baggageType: '',
+        flightDate: returnDate,
         departTime: '',
         arrivalTime: '',
         bookingLink: '',

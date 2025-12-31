@@ -5,6 +5,7 @@ export default function ItinerarySummary({
   title = 'Itinerary',
   description = 'Finalised trip details shared by your travel specialist.',
   className = '',
+  preferences = null,
 }) {
   const safeCards = Array.isArray(cards) ? cards : [];
 
@@ -40,19 +41,23 @@ export default function ItinerarySummary({
 
       <div className="space-y-4">
         {safeCards.map((card) => (
-          <ItinerarySummaryCard key={card.id} card={card} />
+          <ItinerarySummaryCard
+            key={card.id}
+            card={card}
+            preferences={preferences}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function ItinerarySummaryCard({ card }) {
+function ItinerarySummaryCard({ card, preferences }) {
   if (card.type === 'departure' || card.type === 'return') {
     return <FlightDisplay card={card} />;
   }
   if (card.type === 'accommodation') {
-    return <AccommodationDisplay card={card} />;
+    return <AccommodationDisplay card={card} preferences={preferences} />;
   }
   if (card.type === 'day') {
     return <DayDisplay card={card} />;
@@ -65,8 +70,10 @@ function FlightDisplay({ card }) {
   const routeFrom = fields.homeAirport || 'Origin tbc';
   const routeTo = fields.arrivalAirport || 'Destination tbc';
   const priceLabel = card.priceLabel || 'Price tbc';
-  const departTime = fields.departTime || 'TBC';
-  const arrivalTime = fields.arrivalTime || 'TBC';
+  const schedule = extractFlightSchedule(fields);
+  const flightDate = formatFlightDate(schedule.date) || 'TBC';
+  const departTime = schedule.departTime || 'TBC';
+  const arrivalTime = schedule.arrivalTime || 'TBC';
   const baggage = fields.baggageType;
   const bookingLink = fields.bookingLink;
 
@@ -87,38 +94,98 @@ function FlightDisplay({ card }) {
               <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
                 {card.type === 'return' ? 'Return flight' : 'Departure flight'}
               </p>
-              <p className="text-lg font-semibold text-slate-900">
-                {routeFrom} <span className="text-[#9aa4b2]">→</span> {routeTo}
-              </p>
+              <p className="text-lg font-semibold text-slate-900">{flightDate}</p>
             </div>
           </div>
-          <span className={`text-xs font-semibold rounded-full px-3 py-1 ${CARD_META.flight.badge}`}>
-            {priceLabel}
-          </span>
+          {bookingLink ? (
+            <FlightBookingButton href={bookingLink} label="Book this flight" />
+          ) : (
+            <span className={`text-xs font-semibold rounded-full px-3 py-1 ${CARD_META.flight.badge}`}>
+              Booking soon
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <InfoPill label="Departure" value={departTime} />
-          <InfoPill label="Arrival" value={arrivalTime} />
-          <InfoPill label="Baggage" value={baggage} />
-          {bookingLink ? (
-            <div className="rounded-xl border border-slate-100 bg-white/80 px-3 py-2 text-sm">
-              <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">Booking</p>
-              <div className="mt-1">
-                <BookingLink href={bookingLink} label="Book this flight" />
-              </div>
-            </div>
-          ) : null}
+          <FlightInfoPill label="Departure airport" value={routeFrom} />
+          <FlightInfoPill label="Arrival airport" value={routeTo} />
+          <FlightInfoPill label="Departure time" value={departTime} />
+          <FlightInfoPill label="Arrival time" value={arrivalTime} />
+          <FlightInfoPill label="Baggage" value={baggage || 'TBC'} />
+          <FlightInfoPill label="Price" value={priceLabel} />
         </div>
       </div>
     </article>
   );
 }
 
-function AccommodationDisplay({ card }) {
+function extractFlightSchedule(fields = {}) {
+  const departParts = parseDateTimeParts(fields.departTime);
+  const arrivalParts = parseDateTimeParts(fields.arrivalTime);
+  const date = fields.flightDate || departParts.date || arrivalParts.date || '';
+  const departTime = departParts.time || fields.departTime || '';
+  const arrivalTime = arrivalParts.time || fields.arrivalTime || '';
+  return { date, departTime, arrivalTime };
+}
+
+function parseDateTimeParts(value) {
+  if (typeof value !== 'string') return { date: '', time: '' };
+  const trimmed = value.trim();
+  if (!trimmed) return { date: '', time: '' };
+  const dateTimeMatch = trimmed.match(
+    /^(\d{4}-\d{2}-\d{2})[T\s·]+(\d{2}:\d{2})/
+  );
+  if (dateTimeMatch) {
+    return { date: dateTimeMatch[1], time: dateTimeMatch[2] };
+  }
+  const dateMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (dateMatch) return { date: dateMatch[1], time: '' };
+  const timeMatch = trimmed.match(/^(\d{2}:\d{2})$/);
+  if (timeMatch) return { date: '', time: timeMatch[1] };
+  return { date: '', time: '' };
+}
+
+function formatFlightDate(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return trimmed;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function formatAccommodationDates(preferences) {
+  const from = preferences?.dateFrom;
+  const to = preferences?.dateTo;
+  const fromLabel = formatShortDate(from);
+  const toLabel = formatShortDate(to);
+  if (fromLabel && toLabel) {
+    return fromLabel === toLabel ? fromLabel : `${fromLabel} → ${toLabel}`;
+  }
+  return fromLabel || toLabel || 'Dates tbc';
+}
+
+function formatShortDate(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return trimmed;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function AccommodationDisplay({ card, preferences }) {
   const fields = card.fields ?? {};
   const stayType = capitalise(fields.accommodationType ?? '') || card.subtitle || 'Stay details tbc';
-  const stayLength = fields.lengthOfStay || 'Length tbc';
+  const stayDates = formatAccommodationDates(preferences);
   const breakfast = formatBreakfast(fields.breakfastIncluded);
   const priceLabel = fields.price || card.priceLabel || 'Price tbc';
   const bookingLink = fields.bookingLink;
@@ -141,22 +208,19 @@ function AccommodationDisplay({ card }) {
               <p className="text-lg font-semibold text-slate-900">{stayType}</p>
             </div>
           </div>
-          <span className={`text-xs font-semibold rounded-full px-3 py-1 ${CARD_META.accommodation.badge}`}>
-            {priceLabel}
-          </span>
+          {bookingLink ? (
+            <AccommodationBookingButton href={bookingLink} label="Book this stay" />
+          ) : (
+            <span className={`text-xs font-semibold rounded-full px-3 py-1 ${CARD_META.accommodation.badge}`}>
+              Booking soon
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <InfoPill label="Length of stay" value={stayLength} />
-          <InfoPill label="Breakfast" value={breakfast} />
-          {bookingLink ? (
-            <div className="rounded-xl border border-slate-100 bg-white/80 px-3 py-2 text-sm md:col-span-2">
-              <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">Booking</p>
-              <div className="mt-1">
-                <BookingLink href={bookingLink} label="Book accommodation" />
-              </div>
-            </div>
-          ) : null}
+          <AccommodationInfoPill label="Dates" value={stayDates} />
+          <AccommodationInfoPill label="Breakfast" value={breakfast} />
+          <AccommodationInfoPill label="Price" value={priceLabel} />
         </div>
       </div>
     </article>
@@ -274,6 +338,26 @@ function InfoPill({ label, value }) {
   );
 }
 
+function FlightInfoPill({ label, value }) {
+  if (!value || `${value}`.trim() === '') return null;
+  return (
+    <div className="rounded-xl border border-sky-100 bg-sky-50/70 px-3 py-2 text-sm">
+      <p className="text-xs uppercase tracking-wide text-sky-700/80">{label}</p>
+      <p className="mt-1 text-base font-semibold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function AccommodationInfoPill({ label, value }) {
+  if (!value || `${value}`.trim() === '') return null;
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-sm">
+      <p className="text-xs uppercase tracking-wide text-emerald-700/80">{label}</p>
+      <p className="mt-1 text-base font-semibold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
 function BookingLink({ href, label = 'Book now' }) {
   if (typeof href !== 'string' || !href) return '—';
   return (
@@ -282,6 +366,34 @@ function BookingLink({ href, label = 'Book now' }) {
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center justify-center rounded-lg border border-orange-500 px-3 py-1.5 text-xs font-semibold text-orange-600 hover:bg-orange-50 transition-colors"
+    >
+      {label}
+    </a>
+  );
+}
+
+function FlightBookingButton({ href, label = 'Book now' }) {
+  if (typeof href !== 'string' || !href) return null;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
+    >
+      {label}
+    </a>
+  );
+}
+
+function AccommodationBookingButton({ href, label = 'Book now' }) {
+  if (typeof href !== 'string' || !href) return null;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
     >
       {label}
     </a>

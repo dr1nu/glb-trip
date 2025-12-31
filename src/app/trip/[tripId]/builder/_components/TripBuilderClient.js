@@ -20,7 +20,28 @@ function extractStayLength(summary) {
   return match ? match[1] : '';
 }
 
-function hydrateCardFields(card) {
+function parseDateTimeParts(value) {
+  if (typeof value !== 'string') return { date: '', time: '', hasDate: false };
+  const trimmed = value.trim();
+  if (!trimmed) return { date: '', time: '', hasDate: false };
+  const dateTimeMatch = trimmed.match(
+    /^(\d{4}-\d{2}-\d{2})[T\s·]+(\d{2}:\d{2})/
+  );
+  if (dateTimeMatch) {
+    return { date: dateTimeMatch[1], time: dateTimeMatch[2], hasDate: true };
+  }
+  const dateMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (dateMatch) {
+    return { date: dateMatch[1], time: '', hasDate: true };
+  }
+  const timeMatch = trimmed.match(/^(\d{2}:\d{2})$/);
+  if (timeMatch) {
+    return { date: '', time: timeMatch[1], hasDate: false };
+  }
+  return { date: '', time: '', hasDate: false };
+}
+
+function hydrateCardFields(card, preferences) {
   if (!card) {
     return { card, mutated: false };
   }
@@ -41,6 +62,26 @@ function hydrateCardFields(card) {
     ensureField('homeAirport', card.airports?.from);
     ensureField('arrivalAirport', card.airports?.to);
     ensureField('price', card.priceLabel);
+
+    const departParts = parseDateTimeParts(nextFields.departTime);
+    const arrivalParts = parseDateTimeParts(nextFields.arrivalTime);
+    if (departParts.hasDate && departParts.time) {
+      nextFields.departTime = departParts.time;
+      mutated = true;
+    }
+    if (arrivalParts.hasDate && arrivalParts.time) {
+      nextFields.arrivalTime = arrivalParts.time;
+      mutated = true;
+    }
+    if (!hasContent(nextFields.flightDate)) {
+      const preferredDate =
+        card.type === 'departure' ? preferences?.dateFrom : preferences?.dateTo;
+      const inferredDate = departParts.date || arrivalParts.date || preferredDate;
+      if (hasContent(inferredDate)) {
+        nextFields.flightDate = inferredDate;
+        mutated = true;
+      }
+    }
   } else if (card.type === 'accommodation') {
     ensureField('price', card.priceLabel);
     ensureField('lengthOfStay', extractStayLength(card.summary));
@@ -63,9 +104,9 @@ function hydrateCardFields(card) {
   };
 }
 
-function prepareCards(rawCards, { resetDirty = false } = {}) {
+function prepareCards(rawCards, preferences, { resetDirty = false } = {}) {
   return (rawCards ?? []).map((card) => {
-    const { card: hydratedCard, mutated } = hydrateCardFields(card);
+    const { card: hydratedCard, mutated } = hydrateCardFields(card, preferences);
     return {
       ...hydratedCard,
       isDirty: resetDirty ? false : Boolean(card.isDirty) || mutated,
@@ -146,8 +187,11 @@ export default function TripBuilderClient({
   destinationCountry,
   tripLengthDays,
   templates = [],
+  preferences = null,
 }) {
-  const [cards, setCards] = useState(() => prepareCards(initialCards));
+  const [cards, setCards] = useState(() =>
+    prepareCards(initialCards, preferences)
+  );
   const [unassignedActivities, setUnassignedActivities] = useState(() =>
     prepareActivities(initialActivities)
   );
@@ -488,7 +532,7 @@ export default function TripBuilderClient({
       if (nextCards.length === 0) {
         throw new Error('Template did not include any itinerary cards.');
       }
-      setCards(prepareCards(nextCards, { resetDirty: true }));
+      setCards(prepareCards(nextCards, preferences, { resetDirty: true }));
       const nextActivities = Array.isArray(data?.itinerary?.unassignedActivities)
         ? data.itinerary.unassignedActivities
         : unassignedActivities;
@@ -623,7 +667,7 @@ export default function TripBuilderClient({
       const nextActivities = Array.isArray(data?.unassignedActivities)
         ? data.unassignedActivities
         : unassignedActivities;
-      setCards(prepareCards(nextCards, { resetDirty: true }));
+      setCards(prepareCards(nextCards, preferences, { resetDirty: true }));
       setUnassignedActivities(prepareActivities(nextActivities, { resetDirty: true }));
       setActivitiesEdited(false);
       setOrderEdited(false);

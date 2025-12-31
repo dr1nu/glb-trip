@@ -486,6 +486,7 @@ function ConfirmedTripOverview({
                 cards={itinerary?.cards || []}
                 title="Your itinerary"
                 description="Jump straight into the plan we created for you."
+                preferences={preferences}
               />
             </div>
           </section>
@@ -495,6 +496,7 @@ function ConfirmedTripOverview({
           cards={itinerary?.cards || []}
           title="Your itinerary"
           description="Jump straight into the plan we created for you."
+          preferences={preferences}
         />
       )}
 
