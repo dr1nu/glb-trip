@@ -66,6 +66,7 @@ export default async function TripBuilderPage({ params }) {
           destinationCountry={trip.destinationCountry}
           tripLengthDays={trip.tripLengthDays}
           templates={sortedTemplates}
+          preferences={trip.preferences}
         />
       </div>
     </main>

@@ -10,7 +10,10 @@ export default function TripExperienceClient({
   summaryCards,
   dayCards,
   otherActivities = [],
+  preferences = null,
 }) {
+  const [usefulPosts, setUsefulPosts] = useState([]);
+
   const buildPlaceholderDays = (length) => {
     const count = Math.max(1, Number.isFinite(length) && length > 0 ? Math.round(length) : 1);
     return Array.from({ length: count }).map((_, idx) => ({
@@ -49,6 +52,61 @@ export default function TripExperienceClient({
     if (card.fields?.city || card.fields?.dailyCost || card.fields?.highlightAttraction) return true;
     return false;
   };
+
+  useEffect(() => {
+    const baseUrl =
+      typeof process !== 'undefined' && process.env.NEXT_PUBLIC_WP_BASE_URL
+        ? process.env.NEXT_PUBLIC_WP_BASE_URL
+        : 'https://getlostonabudget.com';
+    if (!destinationCountry) {
+      setUsefulPosts([]);
+      return;
+    }
+    const slug = slugifyCategory(destinationCountry);
+    if (!slug) {
+      setUsefulPosts([]);
+      return;
+    }
+
+    let cancelled = false;
+    const loadPosts = async () => {
+      try {
+        const categoryResponse = await fetch(
+          `${baseUrl}/wp-json/wp/v2/categories?slug=${encodeURIComponent(slug)}`
+        );
+        if (!categoryResponse.ok) {
+          throw new Error('Unable to load categories.');
+        }
+        const categoryPayload = await categoryResponse.json();
+        const categoryId = Array.isArray(categoryPayload) ? categoryPayload[0]?.id : null;
+        if (!categoryId) {
+          if (!cancelled) setUsefulPosts([]);
+          return;
+        }
+
+        const postsResponse = await fetch(
+          `${baseUrl}/wp-json/wp/v2/posts?categories=${categoryId}&_embed&per_page=100`
+        );
+        if (!postsResponse.ok) {
+          throw new Error('Unable to load posts.');
+        }
+        const postsPayload = await postsResponse.json();
+        if (!cancelled) {
+          setUsefulPosts(Array.isArray(postsPayload) ? postsPayload : []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to load useful info posts', err);
+          setUsefulPosts([]);
+        }
+      }
+    };
+
+    loadPosts();
+    return () => {
+      cancelled = true;
+    };
+  }, [destinationCountry]);
 
   const tabDefinitions = useMemo(() => {
     const safeSummary = Array.isArray(summaryCards) ? summaryCards : [];
@@ -102,9 +160,6 @@ export default function TripExperienceClient({
     const accommodationCards = safeSummary.filter(
       (card) => isAccommodationCard(card) && !isBudgetCard(card)
     );
-    const summaryCardsFiltered = safeSummary.filter(
-      (card) => !looksLikeFlight(card) && !isBudgetCard(card) && !isAccommodationCard(card)
-    );
 
     const tabs = [
       {
@@ -116,27 +171,27 @@ export default function TripExperienceClient({
               cards={flightCards}
               title="Flights"
               description="Your outbound and return routes."
+              preferences={preferences}
+              showFlightDisclaimer
             />
             <ItinerarySummary
               cards={accommodationCards}
               title="Accommodation"
               description="Where you're staying each night."
+              preferences={preferences}
+              showAccommodationDisclaimer
             />
           </div>
         ),
       },
-      {
-        id: 'summary',
-        label: 'Summary',
-        content: (
-          <ItinerarySummary
-            cards={summaryCardsFiltered}
-            title="Trip summary"
-            description="High-level overview of stays and daily highlights."
-          />
-        ),
-      },
     ];
+    if (usefulPosts.length > 0) {
+      tabs.push({
+        id: 'useful-info',
+        label: 'Useful Info',
+        content: <UsefulInfoGrid posts={usefulPosts} />,
+      });
+    }
 
     daysToRender.forEach((card, index) => {
       tabs.push({
@@ -155,7 +210,14 @@ export default function TripExperienceClient({
     }
 
     return tabs;
-  }, [summaryCards, dayCards, otherActivities, tripLengthDays]);
+  }, [
+    summaryCards,
+    dayCards,
+    otherActivities,
+    tripLengthDays,
+    preferences,
+    usefulPosts,
+  ]);
 
   const [activeTab, setActiveTab] = useState(tabDefinitions[0]?.id);
   useEffect(() => {
@@ -200,24 +262,98 @@ function TabBar({ tabs, activeTab, onSelect }) {
   if (!tabs.length) return null;
   return (
     <nav className="flex justify-center">
-      <div className="inline-flex flex-wrap items-center gap-2 bg-white border border-orange-100 rounded-full px-3 py-2 shadow-sm">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => onSelect(tab.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              tab.id === activeTab
-                ? 'bg-orange-500 text-neutral-900 shadow-sm'
-                : 'text-[#4C5A6B] hover:text-slate-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex w-full justify-start overflow-x-auto sm:w-auto sm:justify-center sm:overflow-visible">
+        <div className="inline-flex w-max items-center gap-2 bg-white border border-orange-100 rounded-full px-3 py-2 shadow-sm sm:w-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onSelect(tab.id)}
+              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                tab.id === activeTab
+                  ? 'bg-orange-500 text-neutral-900 shadow-sm'
+                  : 'text-[#4C5A6B] hover:text-slate-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
     </nav>
   );
+}
+
+function UsefulInfoGrid({ posts }) {
+  return (
+    <div className="grid grid-cols-1 gap-4">
+      {posts.map((post) => (
+        <UsefulPostCard key={post.id} post={post} />
+      ))}
+    </div>
+  );
+}
+
+function UsefulPostCard({ post }) {
+  const title = stripHtml(post?.title?.rendered || 'Untitled');
+  const excerptHtml = post?.excerpt?.rendered || '';
+  const imageUrl = getFeaturedImage(post);
+  const href = post?.link || '#';
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm shadow-orange-100/40">
+      {imageUrl ? (
+        <div className="h-44 w-full overflow-hidden">
+          <img
+            src={imageUrl}
+            alt={title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : null}
+      <div className="p-4 space-y-3">
+        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+        {excerptHtml ? (
+          <div
+            className="text-sm text-[#4C5A6B] leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: excerptHtml }}
+          />
+        ) : null}
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
+        >
+          Read more
+        </a>
+      </div>
+    </article>
+  );
+}
+
+function getFeaturedImage(post) {
+  const media = post?._embedded?.['wp:featuredmedia']?.[0];
+  return media?.source_url || '';
+}
+
+function stripHtml(value) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/<[^>]*>/g, '').trim();
+}
+
+function slugifyCategory(value) {
+  if (typeof value !== 'string') return '';
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  return normalized
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 function DayItineraryDetail({ card }) {
@@ -322,10 +458,38 @@ function EmptyState() {
 const ENTRY_META = {
   attraction: {
     label: 'Attraction',
+    border: 'border-orange-100',
+    badge: 'bg-orange-100 text-orange-700',
+    iconBg: 'bg-orange-50 border-orange-200 text-orange-700',
+    rail: 'bg-orange-300',
+  },
+  museum: {
+    label: 'Museum',
     border: 'border-purple-100',
     badge: 'bg-purple-100 text-purple-700',
     iconBg: 'bg-purple-50 border-purple-200 text-purple-700',
     rail: 'bg-purple-300',
+  },
+  park: {
+    label: 'Park',
+    border: 'border-emerald-100',
+    badge: 'bg-emerald-100 text-emerald-700',
+    iconBg: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+    rail: 'bg-emerald-300',
+  },
+  church: {
+    label: 'Church',
+    border: 'border-slate-200',
+    badge: 'bg-slate-100 text-slate-700',
+    iconBg: 'bg-slate-50 border-slate-200 text-slate-700',
+    rail: 'bg-slate-300',
+  },
+  shopping: {
+    label: 'Shopping',
+    border: 'border-rose-100',
+    badge: 'bg-rose-100 text-rose-700',
+    iconBg: 'bg-rose-50 border-rose-200 text-rose-700',
+    rail: 'bg-rose-300',
   },
   photo: {
     label: 'Photo stop',
@@ -342,7 +506,14 @@ const ENTRY_META = {
     rail: 'bg-slate-300',
   },
   food: {
-    label: 'Food & drink',
+    label: 'Eat & drink',
+    border: 'border-amber-100',
+    badge: 'bg-amber-100 text-amber-700',
+    iconBg: 'bg-amber-50 border-amber-200 text-amber-700',
+    rail: 'bg-amber-300',
+  },
+  coffee: {
+    label: 'Coffee',
     border: 'border-amber-100',
     badge: 'bg-amber-100 text-amber-700',
     iconBg: 'bg-amber-50 border-amber-200 text-amber-700',
@@ -421,9 +592,9 @@ function TimelineEntry({ entry, isLast }) {
       <article className={`relative overflow-hidden rounded-2xl border ${meta.border} bg-white shadow-sm`}>
         <div className={`absolute left-0 top-0 h-full w-1 ${meta.rail}`} />
         <div className="p-5 space-y-3">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-4 min-w-0">
-              <span className="min-w-[64px] text-center text-sm font-semibold text-[#245ad4]">
+              <span className="text-sm font-semibold text-[#245ad4] sm:min-w-[64px] sm:text-center">
                 {time || '—'}
               </span>
               <div className="flex items-center gap-3">
@@ -441,7 +612,7 @@ function TimelineEntry({ entry, isLast }) {
               </div>
             </div>
             {(badge || link) ? (
-              <div className="flex flex-col items-center gap-3 min-w-[96px] text-center">
+              <div className="flex w-full flex-col items-start gap-3 text-left sm:w-auto sm:min-w-[96px] sm:items-center sm:text-center">
                 {badge ? (
                   <span
                     className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-center ${badgeClass}`}
@@ -454,7 +625,7 @@ function TimelineEntry({ entry, isLast }) {
                     href={link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-orange-500 text-orange-600 px-3 py-2 text-sm font-semibold hover:bg-orange-50 transition-colors"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-orange-500 text-orange-600 px-3 py-2 text-sm font-semibold hover:bg-orange-50 transition-colors sm:w-auto"
                   >
                     Book now <ExternalIcon />
                   </a>
@@ -495,13 +666,49 @@ function ExperienceIcon({ type }) {
     case 'attraction':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M4 10h16" />
-          <path d="M4 20h16" />
-          <path d="M5 10V9l7-4 7 4v1" />
-          <path d="M7 10v8" />
-          <path d="M10.5 10v8" />
-          <path d="M14 10v8" />
-          <path d="M17 10v8" />
+          <path d="M12 22s6-6.5 6-11a6 6 0 10-12 0c0 4.5 6 11 6 11z" />
+          <circle cx="12" cy="11" r="2.5" />
+        </svg>
+      );
+    case 'museum':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M3 10h18" />
+          <path d="M4 21h16" />
+          <path d="M5 10V8l7-4 7 4v2" />
+          <path d="M7 10v9" />
+          <path d="M10.5 10v9" />
+          <path d="M13.5 10v9" />
+          <path d="M17 10v9" />
+        </svg>
+      );
+    case 'park':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <circle cx="12" cy="8" r="4" />
+          <circle cx="8" cy="11" r="3" />
+          <circle cx="16" cy="11" r="3" />
+          <path d="M12 12v8" />
+          <path d="M9 20h6" />
+        </svg>
+      );
+    case 'church':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M12 3v4" />
+          <path d="M10.5 5.5h3" />
+          <path d="M6 21h12" />
+          <path d="M7 21V10l5-4 5 4v11" />
+          <path d="M10 21v-4h4v4" />
+        </svg>
+      );
+    case 'shopping':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M6 9h12l-1 11H7L6 9z" />
+          <path d="M9 9V7a3 3 0 016 0v2" />
+          <path d="M8.5 12.5h.01" />
+          <path d="M15.5 12.5h.01" />
         </svg>
       );
     case 'photo':
@@ -516,16 +723,30 @@ function ExperienceIcon({ type }) {
     case 'rest':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M21 13a8 8 0 11-8-10 6 6 0 008 10z" />
-          <path d="M16.5 7.5h.01" />
+          <path d="M3 12h18" />
+          <path d="M5 12v6" />
+          <path d="M19 12v6" />
+          <path d="M7 12h9a3 3 0 013 3v3H7v-6z" />
+          <path d="M7 9h5a2 2 0 012 2v1H7V9z" />
         </svg>
       );
     case 'food':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M5 6h9v7a4 4 0 01-4 4H9a4 4 0 01-4-4V6z" />
+          <path d="M5 3v8" />
+          <path d="M3 3v4" />
+          <path d="M7 3v4" />
+          <path d="M5 11v10" />
+          <path d="M13 3v18" />
+          <path d="M17 3v7a2 2 0 01-2 2h-2" />
+        </svg>
+      );
+    case 'coffee':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
+          <path d="M5 7h9v6a4 4 0 01-4 4H9a4 4 0 01-4-4V7z" />
           <path d="M14 8h2a3 3 0 010 6h-2" />
-          <path d="M7 4h5" />
+          <path d="M6 4h7" />
         </svg>
       );
     case 'accommodation':
@@ -641,8 +862,8 @@ function TravelModeIcon({ mode }) {
     case 'flight':
       return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M2.5 15.5l8.5-3V5a2 2 0 014 0v7.5l8.5 3" />
-          <path d="M10.5 12.5v7l1.5-1 1.5 1v-7" />
+          <path d="M2.5 14.5l8.5-3V5a2 2 0 014 0v6.5l8.5 3" />
+          <path d="M10.5 12.5v6l1.5-1 1.5 1v-6" />
         </svg>
       );
     default:

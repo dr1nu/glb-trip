@@ -4,11 +4,15 @@ const FIELD_WHITELIST = [
   'homeAirport',
   'arrivalAirport',
   'baggageType',
+  'flightDate',
   'departTime',
   'arrivalTime',
   'bookingLink',
+  'accommodationMapUrl',
   'price',
   'lengthOfStay',
+  'accommodationDateFrom',
+  'accommodationDateTo',
   'accommodationType',
   'breakfastIncluded',
   'city',
@@ -139,6 +143,7 @@ export function buildDefaultItinerary(trip = {}) {
     destinationCountry,
     result = {},
     budgetTotal,
+    preferences,
   } = trip;
   const flight = result.flight ?? {};
   const days = Math.max(1, Number(tripLengthDays) || 1);
@@ -153,6 +158,8 @@ export function buildDefaultItinerary(trip = {}) {
   };
   const departurePrice = formatPriceRange(flight.low, flight.high);
   const returnPrice = formatPriceRange(flight.low, flight.high);
+  const departureDate = preferences?.dateFrom ?? '';
+  const returnDate = preferences?.dateTo ?? '';
 
   const accomSummary = [
     result.bucket ? `${result.bucket} stay` : null,
@@ -162,6 +169,8 @@ export function buildDefaultItinerary(trip = {}) {
     .join(' · ');
 
   const defaultDailyCost = result.perDay ? euro(result.perDay) : '';
+  const accommodationDateFrom = preferences?.dateFrom ?? '';
+  const accommodationDateTo = preferences?.dateTo ?? '';
 
   const dayCards = Array.from({ length: days }, (_, index) => ({
     id: `day-${index + 1}`,
@@ -194,6 +203,7 @@ export function buildDefaultItinerary(trip = {}) {
         homeAirport: departureAirports.from,
         arrivalAirport: departureAirports.to,
         baggageType: '',
+        flightDate: departureDate,
         departTime: '',
         arrivalTime: '',
         bookingLink: '',
@@ -210,6 +220,8 @@ export function buildDefaultItinerary(trip = {}) {
       summary: accomSummary || 'Choose ideal hotel or apartment.',
       fields: {
         lengthOfStay: days ? `${days} night${days === 1 ? '' : 's'}` : '',
+        accommodationDateFrom,
+        accommodationDateTo,
         accommodationType: '',
         breakfastIncluded: '',
         bookingLink: '',
@@ -229,6 +241,7 @@ export function buildDefaultItinerary(trip = {}) {
         homeAirport: returnAirports.from,
         arrivalAirport: returnAirports.to,
         baggageType: '',
+        flightDate: returnDate,
         departTime: '',
         arrivalTime: '',
         bookingLink: '',
@@ -288,6 +301,7 @@ function formatPriceRange(low, high) {
 const COMMON_TIMELINE_FIELDS = [
   'title',
   'time',
+  'duration',
   'price',
   'link',
   'description',
@@ -298,6 +312,11 @@ const COMMON_TIMELINE_FIELDS = [
 
 const TIMELINE_TYPES = [
   'attraction',
+  'museum',
+  'park',
+  'church',
+  'shopping',
+  'coffee',
   'photo',
   'rest',
   'food',

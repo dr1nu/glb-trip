@@ -50,9 +50,29 @@ function extractItineraryDates(trip) {
   if (!cards.length) return { start: null, end: null };
   const departure = cards.find((card) => card?.type === 'departure');
   const returnCard = cards.find((card) => card?.type === 'return');
-  const start = parseDate(departure?.fields?.departTime || departure?.fields?.arrivalTime);
-  const end = parseDate(returnCard?.fields?.arrivalTime || returnCard?.fields?.departTime);
+  const start = parseDate(extractFlightDate(departure?.fields));
+  const end = parseDate(extractFlightDate(returnCard?.fields));
   return { start, end };
+}
+
+function extractFlightDate(fields = {}) {
+  const explicit = fields.flightDate;
+  if (explicit) return explicit;
+  const departParts = extractDateParts(fields.departTime);
+  if (departParts) return departParts;
+  const arrivalParts = extractDateParts(fields.arrivalTime);
+  return arrivalParts;
+}
+
+function extractDateParts(value) {
+  if (!value) return '';
+  const raw = typeof value === 'string' ? value.trim() : String(value);
+  if (!raw) return '';
+  const dateTimeMatch = raw.match(/^(\d{4}-\d{2}-\d{2})[T\s·]+/);
+  if (dateTimeMatch) return dateTimeMatch[1];
+  const dateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (dateMatch) return dateMatch[1];
+  return '';
 }
 
 function formatTripDates(trip) {
@@ -153,12 +173,24 @@ function formatTravelers(trip) {
 }
 
 function getTripStatus(trip) {
+  const effectiveAmountCents =
+    typeof trip.billingCustomAmountCents === 'number'
+      ? trip.billingCustomAmountCents
+      : typeof trip.billingAmountCents === 'number'
+        ? trip.billingAmountCents
+        : Math.max(0, Math.round((trip.tripLengthDays ?? 0) * 300));
   const endDate = parseDate(trip.preferences?.dateTo);
   const now = new Date();
   if (endDate && endDate < now) {
     return {
       label: 'Completed',
       badge: 'bg-blue-100 text-blue-700',
+    };
+  }
+  if (trip.published && trip.billingStatus === 'pending' && effectiveAmountCents <= 0) {
+    return {
+      label: 'Unlock for free',
+      badge: 'bg-emerald-100 text-emerald-700',
     };
   }
   if (trip.published && trip.billingStatus === 'pending') {

@@ -90,17 +90,21 @@ export default function TemplateImporter() {
       const unassignedActivities = [];
       rows.forEach((row) => {
         const day = toNumber(row.day);
-        const itemTypeRaw = (row.type || 'attraction').toString().trim().toLowerCase();
-        const title = row.title || row.place || '';
+        const itemTypeRaw = (row.type || row.category || 'attraction')
+          .toString()
+          .trim()
+          .toLowerCase();
+        const title = row.title || row.activity || row.place || '';
         const timelineItem = {
           type: itemTypeRaw || 'attraction',
           fields: {
             title,
             name: title,
             time: row.time || '',
+            duration: row.duration || '',
             price: row.price || '',
             link: row.link || '',
-            description: row.description || '',
+            description: row.description || row.notes || '',
           },
         };
         if (!day) {
