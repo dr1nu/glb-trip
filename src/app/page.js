@@ -1210,6 +1210,12 @@ function StyleToggle({ value, onChange }) {
 }
 
 function PopularDestinations({ imagesByPath = {}, destinations = [], templatesById = {} }) {
+  const [imageStatus, setImageStatus] = useState({});
+
+  useEffect(() => {
+    setImageStatus({});
+  }, [destinations, imagesByPath]);
+
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
@@ -1221,10 +1227,11 @@ function PopularDestinations({ imagesByPath = {}, destinations = [], templatesBy
       <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0">
         {destinations.map((item) => {
           const imageUrl = item?.imagePath ? imagesByPath[item.imagePath] : null;
+          const imageKey = item?.imagePath || item?.city || '';
+          const status = imageUrl ? imageStatus[imageKey] || 'loading' : 'none';
+          const showImage = Boolean(imageUrl) && status !== 'error';
+          const showShimmer = Boolean(imageUrl) && status === 'loading';
           const fallbackColor = item?.color || 'from-slate-300 to-slate-200';
-          const backgroundClass = imageUrl
-            ? 'h-48 bg-cover bg-center'
-            : `h-48 bg-gradient-to-r ${fallbackColor}`;
           const hasTemplate = Boolean(
             (item.templateId && templatesById[item.templateId]) ||
               item.templateId ||
@@ -1239,10 +1246,32 @@ function PopularDestinations({ imagesByPath = {}, destinations = [], templatesBy
                 hasTemplate ? 'border-white/70' : 'border-slate-200'
               }`}
             >
-              <div
-                className={`${backgroundClass} transition-transform duration-300 group-hover:scale-105`}
-                style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
-              />
+              <div className="relative h-48 overflow-hidden">
+                {!showImage ? (
+                  <div className={`absolute inset-0 bg-gradient-to-r ${fallbackColor}`} />
+                ) : null}
+                {showImage ? (
+                  <>
+                    {showShimmer ? <div className="absolute inset-0 shimmer" /> : null}
+                    <img
+                      src={imageUrl}
+                      alt={item.city ? `${item.city} preview` : 'Destination preview'}
+                      className={`absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105 ${
+                        status === 'loaded' ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      loading="lazy"
+                      onLoad={() => {
+                        if (!imageKey) return;
+                        setImageStatus((prev) => ({ ...prev, [imageKey]: 'loaded' }));
+                      }}
+                      onError={() => {
+                        if (!imageKey) return;
+                        setImageStatus((prev) => ({ ...prev, [imageKey]: 'error' }));
+                      }}
+                    />
+                  </>
+                ) : null}
+              </div>
               <div className="space-y-1 p-3">
                 <p className="text-sm font-semibold text-neutral-900">{item.city}</p>
                 <p className="text-xs text-[#4C5A6B]">{item.country}</p>
