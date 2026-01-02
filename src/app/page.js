@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
+import { EUROPE_COUNTRIES, HOME_COUNTRIES } from '@/lib/countries-europe';
 import { getDailyBreakdown, STYLE_PRESETS } from '@/lib/pricing';
 import { COUNTRY_HUBS, estimateReturnFare } from '@/lib/airfare';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -21,6 +21,22 @@ const SUMMER_HEAVY_DESTINATIONS = new Set([
 const WINTER_HEAVY_DESTINATIONS = new Set([
   'Switzerland', 'Austria', 'Norway', 'Sweden', 'Finland', 'Iceland', 'Andorra'
 ]);
+
+const DESTINATION_EXCLUSIONS = new Set([
+  'Armenia',
+  'Azerbaijan',
+  'Belarus',
+  'Bosnia and Herzegovina',
+  'Georgia',
+  'Kazakhstan',
+  'Kosovo',
+  'Moldova',
+  'Montenegro',
+  'Norway',
+  'Russia',
+  'Ukraine',
+]);
+
 
 const PEAK_SUMMER_MONTHS = [5, 6, 7]; // Jun-Aug
 const SHOULDER_SUMMER_MONTHS = [3, 4, 8, 9]; // Apr-May, Sep-Oct
@@ -143,8 +159,6 @@ const REGION_TO_COUNTRY = {
   BA: 'Bosnia and Herzegovina',
   AL: 'Albania',
   MK: 'North Macedonia',
-  UA: 'Ukraine',
-  RU: 'Russia',
   GE: 'Georgia',
   AM: 'Armenia',
   AZ: 'Azerbaijan',
@@ -191,8 +205,6 @@ const TZ_TO_COUNTRY = {
   'Europe/Sarajevo': 'Bosnia and Herzegovina',
   'Europe/Tirane': 'Albania',
   'Europe/Skopje': 'North Macedonia',
-  'Europe/Kiev': 'Ukraine',
-  'Europe/Moscow': 'Russia',
   'Europe/Tbilisi': 'Georgia',
   'Asia/Yerevan': 'Armenia',
   'Asia/Baku': 'Azerbaijan',
@@ -1074,7 +1086,7 @@ function FormCard({
             <option value="" disabled>
               Select your country
             </option>
-            {EUROPE_COUNTRIES.map((c) => (
+            {HOME_COUNTRIES.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -1210,7 +1222,7 @@ function PopularDestinations({ images = [], destinations = [], templatesById = {
         </span>
         Popular Destinations
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0">
         {destinations.map((item, index) => {
           const imageUrl = hasImages ? images[index % images.length] : null;
           const backgroundClass = imageUrl
@@ -1226,7 +1238,7 @@ function PopularDestinations({ images = [], destinations = [], templatesById = {
             <Link
               key={item.city}
               href={`/popular/${encodeURIComponent(item.city)}`}
-              className={`group overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-100 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100 ${
+              className={`group min-w-[220px] snap-start overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-100 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100 sm:min-w-0 ${
                 hasTemplate ? 'border-white/70' : 'border-slate-200'
               }`}
             >
@@ -1581,7 +1593,7 @@ function decodeDestination(value) {
 }
 
 function buildDestinationList() {
-  return EUROPE_COUNTRIES.map((country) => {
+  return EUROPE_COUNTRIES.filter((country) => !DESTINATION_EXCLUSIONS.has(country)).map((country) => {
     const cities = DESTINATION_CITIES[country] ?? [];
     return {
       country,

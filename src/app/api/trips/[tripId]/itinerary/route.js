@@ -33,9 +33,18 @@ export async function PATCH(request, context) {
     ? payload.unassignedActivities
     : null;
   const cardOrderInput = Array.isArray(payload?.cardOrder) ? payload.cardOrder : null;
+  const deletedCardIdsInput = Array.isArray(payload?.deletedCardIds)
+    ? payload.deletedCardIds
+    : null;
   const publishInput =
     typeof payload?.publish === 'boolean' ? payload.publish : null;
-  if (!cardsInput && !unassignedInput && !cardOrderInput && publishInput === null) {
+  if (
+    !cardsInput &&
+    !unassignedInput &&
+    !cardOrderInput &&
+    !deletedCardIdsInput &&
+    publishInput === null
+  ) {
     return NextResponse.json(
       { error: 'cards, cardOrder, or unassignedActivities are required.' },
       { status: 400 }
@@ -51,11 +60,14 @@ export async function PATCH(request, context) {
       );
     }
 
+    const existingIds = new Set(trip.itinerary.cards.map((card) => card.id));
     const cardsMap = new Map();
+    const newCards = [];
     if (cardsInput) {
       for (const item of cardsInput) {
-        if (item && typeof item.id === 'string') {
-          const normalizedFields = normalizeFieldUpdates(item.fields ?? {});
+        if (!item || typeof item.id !== 'string') continue;
+        const normalizedFields = normalizeFieldUpdates(item.fields ?? {});
+        if (existingIds.has(item.id)) {
           const update = {};
           if (Object.keys(normalizedFields).length > 0) {
             update.fields = normalizedFields;
@@ -66,11 +78,28 @@ export async function PATCH(request, context) {
           if (Object.keys(update).length > 0) {
             cardsMap.set(item.id, update);
           }
+          continue;
         }
+
+        if (item.type !== 'accommodation') continue;
+        newCards.push({
+          id: item.id,
+          type: item.type,
+          title: typeof item.title === 'string' ? item.title : 'Accommodation',
+          subtitle: typeof item.subtitle === 'string' ? item.subtitle : 'Awaiting selection',
+          summary: typeof item.summary === 'string' ? item.summary : 'Choose ideal hotel or apartment.',
+          priceLabel: typeof item.priceLabel === 'string' ? item.priceLabel : '',
+          fields: normalizedFields,
+          notes: typeof item.notes === 'string' ? item.notes : '',
+        });
       }
     }
 
-    const hasCardUpdates = cardsMap.size > 0;
+    const deleteIds = Array.isArray(deletedCardIdsInput)
+      ? deletedCardIdsInput.filter((id) => typeof id === 'string' && id.trim())
+      : [];
+    const deleteIdSet = new Set(deleteIds);
+    const hasCardUpdates = cardsMap.size > 0 || newCards.length > 0 || deleteIdSet.size > 0;
     const hasUnassignedUpdates = Array.isArray(unassignedInput);
     const hasOrderUpdates = Array.isArray(cardOrderInput) && cardOrderInput.length > 0;
     if (!hasCardUpdates && !hasUnassignedUpdates && !hasOrderUpdates && publishInput === null) {
@@ -80,7 +109,7 @@ export async function PATCH(request, context) {
       );
     }
 
-    let nextCards = hasCardUpdates
+    let nextCards = cardsMap.size > 0
       ? trip.itinerary.cards.map((card) => {
           if (!cardsMap.has(card.id)) return card;
           const updates = cardsMap.get(card.id);
@@ -97,12 +126,26 @@ export async function PATCH(request, context) {
           return nextCard;
         })
       : trip.itinerary.cards;
+    if (newCards.length > 0) {
+      nextCards = [...nextCards, ...newCards];
+    }
+    if (deleteIdSet.size > 0) {
+      nextCards = nextCards.filter(
+        (card) => !(deleteIdSet.has(card.id) && card.type === 'accommodation')
+      );
+    }
 
     if (hasOrderUpdates) {
       const orderIds = cardOrderInput
         .filter((id) => typeof id === 'string' && id.trim())
         .map((id) => id.trim());
       const uniqueOrderIds = Array.from(new Set(orderIds));
+      if (uniqueOrderIds.some((id) => deleteIdSet.has(id))) {
+        return NextResponse.json(
+          { error: 'cardOrder cannot include deleted card IDs.' },
+          { status: 400 }
+        );
+      }
       if (uniqueOrderIds.length !== nextCards.length) {
         return NextResponse.json(
           { error: 'cardOrder must include every itinerary card exactly once.' },
@@ -206,10 +249,13 @@ function validatePublishRequirements(trip, cards, unassignedActivities) {
     issues.push(`add booking links for ${unique.join(' and ')}`);
   }
 
-  const accommodationCard = Array.isArray(cards)
-    ? cards.find((card) => card?.type === 'accommodation')
-    : null;
-  if (isBlank(accommodationCard?.fields?.bookingLink)) {
+  const accommodationCards = Array.isArray(cards)
+    ? cards.filter((card) => card?.type === 'accommodation')
+    : [];
+  const hasAccommodationLink = accommodationCards.some(
+    (card) => !isBlank(card?.fields?.bookingLink)
+  );
+  if (!hasAccommodationLink) {
     issues.push('add a booking link for accommodation');
   }
 

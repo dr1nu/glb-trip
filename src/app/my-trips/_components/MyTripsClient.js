@@ -286,7 +286,7 @@ function TripCard({ trip, index }) {
 
       <div className="flex w-full flex-col gap-2 sm:w-auto sm:self-center">
         <Link
-          href={`/trip/${trip.id}`}
+          href={`/trip/${trip.id}/experience`}
           className="inline-flex w-full items-center justify-center rounded-2xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow shadow-orange-200 transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
         >
           View Details

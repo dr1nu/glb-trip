@@ -20,6 +20,8 @@ export default function AccommodationCardPanel({
   card,
   onFieldChange,
   isDirty,
+  onRemove,
+  canRemove = false,
 }) {
   const [expanded, setExpanded] = useState(false);
   const fields = card.fields ?? {};
@@ -35,6 +37,7 @@ export default function AccommodationCardPanel({
     }
     return card.subtitle || 'Awaiting selection';
   }, [fields.accommodationType, card.subtitle]);
+  const title = card.title || 'Accommodation';
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -53,7 +56,7 @@ export default function AccommodationCardPanel({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">
-              Accommodation
+              {title}
             </p>
             <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
               {subtitle}
@@ -61,6 +64,18 @@ export default function AccommodationCardPanel({
           </div>
         </div>
         <div className="text-right">
+          {canRemove ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRemove?.();
+              }}
+              className="text-xs font-semibold text-rose-500 hover:text-rose-600"
+            >
+              Remove
+            </button>
+          ) : null}
           <div className="text-sm font-semibold text-slate-900">
             {priceDisplay || 'Set price'}
           </div>

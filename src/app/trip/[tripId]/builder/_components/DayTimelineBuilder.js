@@ -122,12 +122,11 @@ const TYPE_OPTIONS = [
 const TRAVEL_MODES = [
   { value: '', label: 'No connector' },
   { value: 'walk', label: 'Walk' },
-  { value: 'train', label: 'Train' },
   { value: 'tube', label: 'Tube / metro' },
   { value: 'taxi', label: 'Taxi' },
   { value: 'car', label: 'Car / transfer' },
-  { value: 'flight', label: 'Flight' },
 ];
+const DISALLOWED_TRAVEL_MODES = new Set(['train', 'flight']);
 
 const DEFAULT_DURATION_BY_TYPE = {
   attraction: '45',
@@ -922,7 +921,7 @@ function TimelineCard({
       ) : (
         <span className="sr-only">Details collapsed</span>
       )}
-      {entry.fields?.travelMode ? (
+      {entry.fields?.travelMode && !DISALLOWED_TRAVEL_MODES.has(entry.fields.travelMode) ? (
         <div className="flex items-center justify-end text-xs text-[#4C5A6B]">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 border border-orange-100 text-[11px] font-semibold text-slate-700">
             <TravelModeIcon mode={entry.fields.travelMode} />

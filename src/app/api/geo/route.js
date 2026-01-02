@@ -32,8 +32,6 @@ const CODE_TO_COUNTRY = {
   BA: 'Bosnia and Herzegovina',
   AL: 'Albania',
   MK: 'North Macedonia',
-  UA: 'Ukraine',
-  RU: 'Russia',
   GE: 'Georgia',
   AM: 'Armenia',
   AZ: 'Azerbaijan',

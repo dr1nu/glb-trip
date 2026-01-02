@@ -7,6 +7,7 @@ import ItinerarySummary from './_components/ItinerarySummary';
 import TripImagePicker from './_components/TripImagePicker';
 import AdminBillingEditor from './_components/AdminBillingEditor';
 import PayToUnlockButton from './_components/PayToUnlockButton';
+import UnlockFreeButton from './_components/UnlockFreeButton';
 import {
   ArrowLeftCircle,
   Bed,
@@ -107,7 +108,7 @@ export default async function TripPage({ params, searchParams }) {
   const accommodationLabel = formatAccommodation(preferences);
   const baggageLabel = formatBaggage(preferences);
 
-  if (itineraryReady && !fromAdmin && !paymentRequired && !isFreeUnlock) {
+  if (itineraryReady && !fromAdmin && !paymentRequired && !isFreeUnlock && billingStatus !== 'free') {
     redirect(immersiveHref);
   }
 
@@ -252,16 +253,11 @@ function PendingTripOverview({
               </p>
             ) : null}
           </div>
-          {isFreeUnlock ? (
-            <Link
-              href={`/trip/${tripId}/experience`}
-              className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
-            >
-              Unlock for free
-            </Link>
-          ) : (
-            <PayToUnlockButton tripId={tripId} />
-          )}
+            {isFreeUnlock ? (
+              <UnlockFreeButton tripId={tripId} redirectHref={immersiveHref} />
+            ) : (
+              <PayToUnlockButton tripId={tripId} />
+            )}
         </section>
       ) : null}
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#ff9f43] via-[#ff8a00] to-[#ff6f00] text-white shadow-lg shadow-[#ff7a00]/20 border border-[#ffd9b3]">
@@ -499,12 +495,7 @@ function ConfirmedTripOverview({
                   : `Total due: ${amountLabel}${billingContext}`}
               </p>
               {isFreeUnlock ? (
-                <Link
-                  href={immersiveHref}
-                  className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
-                >
-                  Unlock for free
-                </Link>
+                <UnlockFreeButton tripId={tripId} redirectHref={immersiveHref} />
               ) : (
                 <PayToUnlockButton tripId={tripId} />
               )}
@@ -532,12 +523,7 @@ function ConfirmedTripOverview({
                 </p>
                 <div className="mt-3">
                   {isFreeUnlock ? (
-                    <Link
-                      href={immersiveHref}
-                      className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
-                    >
-                      Unlock for free
-                    </Link>
+                    <UnlockFreeButton tripId={tripId} redirectHref={immersiveHref} />
                   ) : (
                     <PayToUnlockButton tripId={tripId} label="Pay to unlock itinerary" />
                   )}
@@ -564,7 +550,7 @@ function ConfirmedTripOverview({
         />
       )}
 
-      {showTravellerCTA && !showPaymentNotice ? (
+      {showTravellerCTA && !showUnlockNotice ? (
         <section className="rounded-2xl border border-[#ffd9b3] bg-[#fff7ef] p-5 space-y-3 shadow-sm shadow-[#ff8a00]/10">
           <div>
             <h2 className="text-lg font-semibold">Ready to explore?</h2>

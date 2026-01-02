@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { composeProfilePayload } from '@/lib/profile';
-import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
+import { HOME_COUNTRIES } from '@/lib/countries-europe';
 import {
   ACCOMMODATION_OPTIONS,
   BAGGAGE_OPTIONS,
@@ -836,7 +836,7 @@ export default function TripRequestPage() {
                   <option value="" disabled>
                     Select your country
                   </option>
-                  {EUROPE_COUNTRIES.map((country) => (
+                  {HOME_COUNTRIES.map((country) => (
                     <option key={country} value={country}>
                       {country}
                     </option>

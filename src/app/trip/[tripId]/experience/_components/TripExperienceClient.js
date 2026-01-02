@@ -608,12 +608,11 @@ const DEFAULT_ENTRY_META = {
 
 const TRAVEL_META = {
   walk: { label: 'Walk', border: 'border-slate-200' },
-  train: { label: 'Train', border: 'border-indigo-200' },
   tube: { label: 'Tube / metro', border: 'border-purple-200' },
   taxi: { label: 'Taxi', border: 'border-amber-200' },
   car: { label: 'Car / transfer', border: 'border-emerald-200' },
-  flight: { label: 'Flight', border: 'border-sky-200' },
 };
+const DISALLOWED_TRAVEL_MODES = new Set(['train', 'flight']);
 
 function TimelineEntry({ entry, isLast }) {
   const meta = ENTRY_META[entry?.type] ?? DEFAULT_ENTRY_META;
@@ -638,9 +637,10 @@ function TimelineEntry({ entry, isLast }) {
   const description = typeof fields.description === 'string' ? fields.description.trim() : '';
   const travelMode =
     typeof fields.travelMode === 'string' ? fields.travelMode.trim().toLowerCase() : '';
+  const displayTravelMode = DISALLOWED_TRAVEL_MODES.has(travelMode) ? '' : travelMode;
   const travelDuration =
     typeof fields.travelDuration === 'string' ? fields.travelDuration.trim() : '';
-  const travelMeta = TRAVEL_META[travelMode] ?? null;
+  const travelMeta = TRAVEL_META[displayTravelMode] ?? null;
   const travelDurationLabel = formatDuration(travelDuration);
 
   return (
@@ -734,12 +734,12 @@ function TimelineEntry({ entry, isLast }) {
           </div>
         </div>
       </article>
-      {travelMode || travelDuration ? (
+      {displayTravelMode ? (
         <div className="mt-3 flex items-center gap-2 text-xs text-[#4C5A6B]">
           <span
             className={`inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 ${travelMeta?.border ?? 'border-slate-200'}`}
           >
-            <TravelModeIcon mode={travelMode} />
+            <TravelModeIcon mode={displayTravelMode} />
             <span className="font-semibold text-slate-800">
               {travelMeta?.label ?? 'Travel'}
             </span>

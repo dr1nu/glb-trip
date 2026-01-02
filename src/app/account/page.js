@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { User } from 'lucide-react';
-import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
+import { HOME_COUNTRIES } from '@/lib/countries-europe';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import AuthForm from '@/components/auth/AuthForm';
 import {
@@ -390,7 +390,7 @@ export default function AccountPage() {
                       <option value="" disabled>
                         Select
                       </option>
-                      {EUROPE_COUNTRIES.map((country) => (
+                      {HOME_COUNTRIES.map((country) => (
                         <option key={country} value={country}>
                           {country}
                         </option>
