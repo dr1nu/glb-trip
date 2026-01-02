@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Calendar, Clock, Users } from 'lucide-react';
 import Link from 'next/link';
 
@@ -232,24 +232,37 @@ function TripCard({ trip, index }) {
   const travelers = formatTravelers(trip);
   const showDuration = travelWindow === 'flexible';
   const imageUrl = trip.imageUrl ?? null;
+  const [imageStatus, setImageStatus] = useState(imageUrl ? 'loading' : 'none');
+
+  useEffect(() => {
+    setImageStatus(imageUrl ? 'loading' : 'none');
+  }, [imageUrl]);
+
+  const showImage = Boolean(imageUrl) && imageStatus !== 'error';
+  const showShimmer = Boolean(imageUrl) && imageStatus === 'loading';
 
   return (
     <article className="relative flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/40 sm:flex-row sm:p-6">
       <div className="w-full overflow-hidden rounded-2xl sm:w-48">
-        <div
-          className="relative h-36 w-full overflow-hidden rounded-2xl bg-gradient-to-br"
-          style={!imageUrl ? { backgroundImage: undefined } : undefined}
-        >
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={trip.destinationCountry ? `Trip to ${trip.destinationCountry}` : 'Trip image'}
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className={`h-full w-full bg-gradient-to-br ${gradient}`} />
-          )}
+        <div className="relative h-36 w-full overflow-hidden rounded-2xl">
+          {!showImage ? (
+            <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+          ) : null}
+          {showImage ? (
+            <>
+              {showShimmer ? <div className="absolute inset-0 shimmer" /> : null}
+              <img
+                src={imageUrl}
+                alt={trip.destinationCountry ? `Trip to ${trip.destinationCountry}` : 'Trip image'}
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+                  imageStatus === 'loaded' ? 'opacity-100' : 'opacity-0'
+                }`}
+                loading="lazy"
+                onLoad={() => setImageStatus('loaded')}
+                onError={() => setImageStatus('error')}
+              />
+            </>
+          ) : null}
           <div className="absolute inset-0 bg-black/15" />
           <div className="absolute inset-0 flex flex-col justify-end p-4 text-white">
             <p className="text-xs uppercase tracking-wide opacity-80">Explore</p>
