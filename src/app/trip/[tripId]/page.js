@@ -830,8 +830,19 @@ function formatAccommodation(preferences) {
     airbnb: 'Airbnb',
     none: 'No preference',
     hotel: 'Hotel',
+    apartment: 'Apartment',
+    hostel: 'Hostel',
+    'luxury-hotel': 'Luxury Hotel',
+    'shared-bathroom-room': 'Room w/ shared Bathroom',
   };
-  return map[preferences?.accommodation] ?? '—';
+  const raw = typeof preferences?.accommodation === 'string' ? preferences.accommodation : '';
+  if (!raw.trim()) return '—';
+  const values = raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const labels = values.map((value) => map[value] ?? value);
+  return labels.join(', ');
 }
 
 function formatTravellerCount(contact) {
