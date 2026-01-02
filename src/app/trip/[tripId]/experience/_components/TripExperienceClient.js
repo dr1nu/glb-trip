@@ -272,9 +272,9 @@ export default function TripExperienceClient({
         onSelect={setActiveTab}
       />
 
-      <div className="mt-6 bg-white/60 border border-orange-100 rounded-3xl p-4 min-h-[60vh]">
+      <div className="mt-6 bg-white/60 border border-orange-100 rounded-3xl p-2 sm:p-4 min-h-[60vh]">
         {activeContent ? (
-          <div className="overflow-y-auto max-h-full pr-1">
+          <div className="overflow-y-auto max-h-full pr-0">
             {activeContent.content}
           </div>
         ) : (
@@ -396,7 +396,18 @@ function getFeaturedImage(post) {
 
 function stripHtml(value) {
   if (typeof value !== 'string') return '';
-  return value.replace(/<[^>]*>/g, '').trim();
+  if (typeof window !== 'undefined' && window.DOMParser) {
+    const doc = new DOMParser().parseFromString(value, 'text/html');
+    return (doc.body?.textContent || '').trim();
+  }
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .trim();
 }
 
 function slugifyCategory(value) {

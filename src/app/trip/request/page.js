@@ -35,23 +35,8 @@ function computeDaysBetween(startValue, endValue) {
 function deriveAccommodationFromStyle(style) {
   const normalized = (style || '').toLowerCase();
   if (normalized.includes('shoe') || normalized.includes('budget')) return 'hostel';
-  if (normalized.includes('comfort') || normalized.includes('luxury')) return 'luxury';
+  if (normalized.includes('comfort') || normalized.includes('luxury')) return 'luxury-hotel';
   return 'hotel';
-}
-
-function deriveBathroomPreference(style) {
-  const normalized = (style || '').toLowerCase();
-  if (normalized.includes('shoe') || normalized.includes('budget')) return 'no';
-  return 'yes';
-}
-
-function normalizeAccommodationChoice(value, fallback = '') {
-  const allowed = new Set(['hostel', 'hotel', 'luxury']);
-  if (allowed.has(value)) return value;
-  if (value === 'budget') return 'hostel';
-  if (value === 'b&b' || value === 'flat' || value === 'airbnb') return 'hotel';
-  if (value === 'none') return fallback || 'hotel';
-  return fallback;
 }
 
 const MONTHS = [
@@ -378,9 +363,8 @@ export default function TripRequestPage() {
     flexibleMonth: '',
     flexibleDays: '',
     rangeDays: '',
-    accommodation: '',
+    accommodation: [],
     accommodationBreakfast: 'either',
-    accommodationBathroom: 'either',
     accommodationLocation: 'either',
     interests: [],
     details: '',
@@ -466,16 +450,6 @@ export default function TripRequestPage() {
   useEffect(() => {
     if (!trip) return;
     setForm((prev) => {
-      const styleAccommodation = deriveAccommodationFromStyle(
-        trip.travelStyle || trip.result?.styleLabel
-      );
-      const defaultBathroom = deriveBathroomPreference(
-        trip.travelStyle || trip.result?.styleLabel
-      );
-      const derivedAccommodation = normalizeAccommodationChoice(
-        prev.accommodation,
-        styleAccommodation
-      ) || styleAccommodation;
       return {
         ...prev,
         homeCountry: prev.homeCountry || trip.homeCountry || '',
@@ -484,11 +458,6 @@ export default function TripRequestPage() {
         flexibleMonth: prev.flexibleMonth || trip.startDate?.slice(0, 7) || '',
         flexibleDays: prev.flexibleDays || trip.tripLengthDays || '',
         rangeDays: prev.rangeDays || trip.tripLengthDays || '',
-        accommodation: derivedAccommodation,
-        accommodationBathroom:
-          prev.accommodationBathroom && prev.accommodationBathroom !== 'either'
-            ? prev.accommodationBathroom
-            : defaultBathroom,
       };
     });
   }, [trip]);
@@ -496,13 +465,6 @@ export default function TripRequestPage() {
   useEffect(() => {
     if (!user) return;
     const profile = composeProfilePayload(user);
-    const styleAccommodation = deriveAccommodationFromStyle(
-      trip?.travelStyle || trip?.result?.styleLabel
-    );
-    const defaultBathroom = deriveBathroomPreference(
-      trip?.travelStyle || trip?.result?.styleLabel
-    );
-    const profileBathroom = profile.travelPreferences.accommodationBathroom;
     setForm((prev) => ({
       ...prev,
       firstName: profile.firstName || profile.fullName || prev.firstName || '',
@@ -525,19 +487,9 @@ export default function TripRequestPage() {
         profile.travelPreferences.rangeDays ||
         trip?.tripLengthDays ||
         '',
-      accommodation:
-        normalizeAccommodationChoice(
-          prev.accommodation || profile.travelPreferences.accommodation,
-          styleAccommodation
-        ) || styleAccommodation,
+      accommodation: prev.accommodation,
       accommodationBreakfast:
         prev.accommodationBreakfast || profile.travelPreferences.accommodationBreakfast || 'either',
-      accommodationBathroom:
-        profileBathroom && profileBathroom !== 'either'
-          ? profileBathroom
-          : prev.accommodationBathroom && prev.accommodationBathroom !== 'either'
-            ? prev.accommodationBathroom
-            : defaultBathroom,
       accommodationLocation:
         prev.accommodationLocation || profile.travelPreferences.accommodationLocation || 'either',
       interests:
@@ -625,6 +577,19 @@ export default function TripRequestPage() {
     }));
   }
 
+  function toggleAccommodationType(key) {
+    setForm((prev) => {
+      const current = Array.isArray(prev.accommodation) ? prev.accommodation : [];
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return { ...prev, accommodation: Array.from(next) };
+    });
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (!trip || isSubmitting) return;
@@ -637,11 +602,9 @@ export default function TripRequestPage() {
     setError('');
 
     try {
-      const styleAccommodation = deriveAccommodationFromStyle(
-        trip?.travelStyle || trip?.result?.styleLabel
-      );
-      const accommodationChoice =
-        normalizeAccommodationChoice(form.accommodation, styleAccommodation) || styleAccommodation;
+      const accommodationChoice = Array.isArray(form.accommodation) && form.accommodation.length > 0
+        ? form.accommodation.join(', ')
+        : '';
       const flexibleDays =
         form.travelWindow === 'flexible' && form.flexibleDays
           ? Number(form.flexibleDays)
@@ -681,7 +644,6 @@ export default function TripRequestPage() {
         accommodation: accommodationChoice,
         accommodationDetails: {
           breakfast: form.accommodationBreakfast,
-          bathroom: form.accommodationBathroom,
           location: form.accommodationLocation,
         },
         interests: form.interests,
@@ -746,6 +708,10 @@ export default function TripRequestPage() {
   const showCustomAirportInput =
     airportSelectValue === 'other' || airportsForHomeCountry.length === 0;
   const travelStyleLabel = result?.styleLabel || trip.travelStyle;
+  const styleAccommodationKey = deriveAccommodationFromStyle(travelStyleLabel);
+  const styleAccommodationLabel =
+    ACCOMMODATION_OPTIONS.find((option) => option.key === styleAccommodationKey)?.label ||
+    'a matching stay';
   const flexibleYearValue = yearOptionStrings.includes(flexibleMonthParts.year)
     ? flexibleMonthParts.year
     : `${currentYear}`;
@@ -753,6 +719,9 @@ export default function TripRequestPage() {
     availableMonths.find((m) => m.value === flexibleMonthParts.month)?.value ||
     availableMonths[0]?.value ||
     '';
+  const selectedAccommodationTypes = Array.isArray(form.accommodation)
+    ? form.accommodation
+    : [];
 
   const {
     perDay,
@@ -1097,34 +1066,48 @@ export default function TripRequestPage() {
 
             <div className="space-y-3 rounded-2xl border border-[#E3E6EF] bg-white p-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-[#0F172A]">Accommodation</span>
-                <span className="text-xs text-[#6B7280]">Defaults to your travel style</span>
+                <span className="font-medium text-[#0F172A]">Accommodation Preference</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-[#4B5563]">Stay type</span>
-                  <select
-                    required
-                    name="accommodation"
-                    value={form.accommodation || ''}
-                    onChange={handleInputChange}
-                    className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                  >
-                    <option value="" disabled>
-                      Select an option
-                    </option>
-                    {ACCOMMODATION_OPTIONS.map((option) => (
-                      <option key={option.key} value={option.key}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-xs text-[#6B7280]">
-                    {travelStyleLabel
-                      ? `Based on your ${travelStyleLabel} style we start with ${form.accommodation || 'a matching stay'}.`
-                      : 'We use this to shortlist stays.'}
-                  </span>
-                </label>
+              <div className="space-y-2">
+                <span className="text-xs text-[#6B7280]">Select one or more</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                  {ACCOMMODATION_OPTIONS.map((option) => {
+                    const active = selectedAccommodationTypes.includes(option.key);
+                    return (
+                      <label
+                        key={option.key}
+                        className={`flex min-h-[52px] items-center justify-between rounded-xl border px-3 py-2 cursor-pointer transition ${
+                          active
+                            ? 'border-[#FF6B35] bg-gradient-to-br from-white via-[#FFF4EC] to-white text-[#C2461E] shadow-sm shadow-orange-100'
+                            : 'border-orange-100 text-[#0F172A] bg-white hover:border-orange-200 hover:bg-orange-50/50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          value={option.key}
+                          checked={active}
+                          onChange={() => toggleAccommodationType(option.key)}
+                          className="hidden"
+                        />
+                        <span className="pr-2">{option.label}</span>
+                        <span
+                          className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold leading-none ${
+                            active
+                              ? 'bg-[#FF6B35] text-white'
+                              : 'border border-orange-200 text-[#C2461E]'
+                          }`}
+                        >
+                          {active ? '✓' : '+'}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <span className="text-xs text-[#6B7280]">
+                  {travelStyleLabel
+                    ? `Based on your ${travelStyleLabel} style we suggest ${styleAccommodationLabel}.`
+                    : 'We use this to shortlist stays.'}
+                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -1143,33 +1126,6 @@ export default function TripRequestPage() {
                           type="button"
                           onClick={() =>
                             setForm((prev) => ({ ...prev, accommodationBreakfast: opt.value }))
-                          }
-                          className={`flex-1 rounded-xl border px-3 py-2 transition ${
-                            active
-                              ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
-                              : 'border-orange-100 text-[#0F172A] bg-white hover:border-orange-200 hover:bg-orange-50/60'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <span className="font-medium text-[#0F172A]">Private bathroom required?</span>
-                  <div className="mt-1 flex flex-nowrap gap-3 overflow-x-auto">
-                    {[
-                      { value: 'yes', label: 'Yes' },
-                      { value: 'no', label: 'Can be shared' },
-                    ].map((opt) => {
-                      const active = form.accommodationBathroom === opt.value;
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() =>
-                            setForm((prev) => ({ ...prev, accommodationBathroom: opt.value }))
                           }
                           className={`flex-1 rounded-xl border px-3 py-2 transition ${
                             active

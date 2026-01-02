@@ -11,9 +11,12 @@ export const TRAVEL_WINDOW_OPTIONS = [
 ];
 
 export const ACCOMMODATION_OPTIONS = [
-  { key: 'hostel', label: 'Hostel' },
   { key: 'hotel', label: 'Hotel' },
-  { key: 'luxury', label: 'Luxury hotel' },
+  { key: 'apartment', label: 'Apartment' },
+  { key: 'hostel', label: 'Hostel' },
+  { key: 'airbnb', label: 'Airbnb' },
+  { key: 'shared-bathroom-room', label: 'Room w/ shared Bathroom' },
+  { key: 'luxury-hotel', label: 'Luxury Hotel' },
 ];
 
 export const TRAVEL_INTERESTS = [

@@ -4,10 +4,12 @@ import { useMemo, useState } from 'react';
 import { Hotel } from 'lucide-react';
 
 const OPTIONS = [
-  { value: '', label: 'Select type' },
-  { value: 'hostel', label: 'Hostel' },
-  { value: 'apartment', label: 'Apartment' },
   { value: 'hotel', label: 'Hotel' },
+  { value: 'apartment', label: 'Apartment' },
+  { value: 'hostel', label: 'Hostel' },
+  { value: 'airbnb', label: 'Airbnb' },
+  { value: 'shared-bathroom-room', label: 'Room w/ shared Bathroom' },
+  { value: 'luxury-hotel', label: 'Luxury Hotel' },
 ];
 
 const BREAKFAST_OPTIONS = [
@@ -32,8 +34,12 @@ export default function AccommodationCardPanel({
   );
 
   const subtitle = useMemo(() => {
-    if (fields.accommodationType) {
-      return capitalise(fields.accommodationType);
+    const selected =
+      typeof fields.accommodationType === 'string'
+        ? fields.accommodationType.trim()
+        : '';
+    if (selected) {
+      return OPTIONS.find((option) => option.value === selected)?.label || selected;
     }
     return card.subtitle || 'Awaiting selection';
   }, [fields.accommodationType, card.subtitle]);
@@ -118,6 +124,9 @@ export default function AccommodationCardPanel({
                 onChange={handleChange}
                 className="bg-white border border-orange-100 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
+                <option value="" disabled>
+                  Select an option
+                </option>
                 {OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
