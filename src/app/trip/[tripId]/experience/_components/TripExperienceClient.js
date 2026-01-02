@@ -272,9 +272,9 @@ export default function TripExperienceClient({
         onSelect={setActiveTab}
       />
 
-      <div className="mt-6 bg-white/60 border border-orange-100 rounded-3xl p-4 min-h-[60vh]">
+      <div className="mt-6 bg-white/60 border border-orange-100 rounded-3xl p-2 sm:p-4 min-h-[60vh]">
         {activeContent ? (
-          <div className="overflow-y-auto max-h-full pr-1">
+          <div className="overflow-y-auto max-h-full pr-0">
             {activeContent.content}
           </div>
         ) : (
