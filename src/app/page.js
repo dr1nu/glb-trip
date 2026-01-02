@@ -112,12 +112,12 @@ const VALUE_CARDS = [
   {
     key: 'award',
     title: 'Best Value',
-    body: 'Competitive pricing with transparent cost breakdowns and smart tweaks.',
+    body: 'No added on travel agent fees, just great prices on unforgettable trips.',
   },
   {
     key: 'compass',
     title: 'Full Support',
-    body: '24/7 assistance before, during, and after your journey.',
+    body: 'Every detail covered, from flights to hotels to attractions.',
   },
 ];
 
@@ -403,28 +403,6 @@ function labelForDestination(country, city) {
   return city ? `${city}, ${country}` : country;
 }
 
-async function getAllHomeImages(supabase) {
-  if (!supabase) return [];
-
-  const { data, error } = await supabase.storage
-    .from(HOME_IMAGES_BUCKET)
-    .list('', { limit: 100, sortBy: { column: 'name', order: 'asc' } });
-
-  if (error) {
-    throw error;
-  }
-
-  return (data ?? [])
-    .filter((file) => file && file.name && !file.name.endsWith('/'))
-    .map((file) => {
-      const { data: publicData } = supabase.storage
-        .from(HOME_IMAGES_BUCKET)
-        .getPublicUrl(file.name);
-      return publicData?.publicUrl ?? null;
-    })
-    .filter(Boolean);
-}
-
 export default function Home() {
   const router = useRouter();
   // --- form state ---
@@ -446,8 +424,20 @@ export default function Home() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authIntent, setAuthIntent] = useState(null);
   const [pendingTrip, setPendingTrip] = useState(null);
-  const [popularImages, setPopularImages] = useState([]);
   const destinationOptions = useMemo(() => buildDestinationList(), []);
+  const homeImageUrlsByPath = useMemo(() => {
+    const next = {};
+    if (!supabase) return next;
+    homepageDestinations.forEach((item) => {
+      const path = item?.imagePath;
+      if (!path || next[path]) return;
+      const { data } = supabase.storage.from(HOME_IMAGES_BUCKET).getPublicUrl(path);
+      if (data?.publicUrl) {
+        next[path] = data.publicUrl;
+      }
+    });
+    return next;
+  }, [homepageDestinations, supabase]);
 
   const tripLengthDays = useMemo(
     () => daysBetweenDates(startDate, endDate),
@@ -639,27 +629,6 @@ export default function Home() {
     };
   }, [homepageDestinations, homepageTemplatesById]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadImages() {
-      try {
-        const urls = await getAllHomeImages(supabase);
-        if (!cancelled) {
-          setPopularImages(urls);
-        }
-      } catch (err) {
-        console.error('Failed to load home images', err);
-      }
-    }
-
-    loadImages();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
-
   function handleStartDateChange(value) {
     const next = value || '';
     setStartDate(next);
@@ -771,11 +740,11 @@ export default function Home() {
 
         {!showResult ? (
           <>
-            <PopularDestinations
-              images={popularImages}
-              destinations={homepageDestinations}
-              templatesById={homepageTemplatesById}
-            />
+              <PopularDestinations
+                imagesByPath={homeImageUrlsByPath}
+                destinations={homepageDestinations}
+                templatesById={homepageTemplatesById}
+              />
             <ValueProps />
           </>
         ) : null}
@@ -1211,9 +1180,7 @@ function StyleToggle({ value, onChange }) {
   );
 }
 
-function PopularDestinations({ images = [], destinations = [], templatesById = {} }) {
-  const hasImages = Array.isArray(images) && images.length > 0;
-
+function PopularDestinations({ imagesByPath = {}, destinations = [], templatesById = {} }) {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
@@ -1223,11 +1190,12 @@ function PopularDestinations({ images = [], destinations = [], templatesById = {
         Popular Destinations
       </div>
       <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0">
-        {destinations.map((item, index) => {
-          const imageUrl = hasImages ? images[index % images.length] : null;
+        {destinations.map((item) => {
+          const imageUrl = item?.imagePath ? imagesByPath[item.imagePath] : null;
+          const fallbackColor = item?.color || 'from-slate-300 to-slate-200';
           const backgroundClass = imageUrl
             ? 'h-48 bg-cover bg-center'
-            : `h-48 bg-gradient-to-r ${item.color}`;
+            : `h-48 bg-gradient-to-r ${fallbackColor}`;
           const hasTemplate = Boolean(
             (item.templateId && templatesById[item.templateId]) ||
               item.templateId ||

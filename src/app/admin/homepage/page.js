@@ -1,22 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_HOMEPAGE_DESTINATIONS } from '@/data/homepageDefaults';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
-const COLOR_OPTIONS = [
-  { label: 'Sunset', value: 'from-rose-400 to-orange-300' },
-  { label: 'Slate Sky', value: 'from-slate-500 to-blue-500' },
-  { label: 'Amber Red', value: 'from-amber-500 to-red-400' },
-  { label: 'Emerald Teal', value: 'from-emerald-500 to-teal-400' },
-  { label: 'Indigo', value: 'from-indigo-500 to-purple-400' },
-  { label: 'Ocean', value: 'from-sky-500 to-blue-500' },
-];
+const HOME_IMAGES_BUCKET = 'home-page-images';
 
 export default function AdminHomepagePage() {
   const [destinations, setDestinations] = useState(DEFAULT_HOMEPAGE_DESTINATIONS);
   const [templates, setTemplates] = useState([]);
+  const [homeImages, setHomeImages] = useState([]);
   const [status, setStatus] = useState({ type: '', message: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   useEffect(() => {
     let ignore = false;
@@ -58,6 +54,44 @@ export default function AdminHomepagePage() {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+    async function loadHomeImages() {
+      try {
+        const { data, error } = await supabase.storage
+          .from(HOME_IMAGES_BUCKET)
+          .list('', { limit: 100, sortBy: { column: 'name', order: 'asc' } });
+
+        if (error) {
+          throw error;
+        }
+
+        const images = (data ?? [])
+          .filter((file) => file?.name && !file.name.endsWith('/'))
+          .map((file) => {
+            const { data: publicData } = supabase.storage
+              .from(HOME_IMAGES_BUCKET)
+              .getPublicUrl(file.name);
+            return {
+              path: file.name,
+              url: publicData?.publicUrl ?? '',
+            };
+          })
+          .filter((image) => image.url);
+
+        if (!ignore) {
+          setHomeImages(images);
+        }
+      } catch (err) {
+        console.warn('Failed to load homepage images', err);
+      }
+    }
+    loadHomeImages();
+    return () => {
+      ignore = true;
+    };
+  }, [supabase]);
+
   function updateDestination(index, patch) {
     setDestinations((prev) => {
       const next = [...prev];
@@ -69,7 +103,13 @@ export default function AdminHomepagePage() {
   function addDestination() {
     setDestinations((prev) => [
       ...prev,
-      { city: '', country: '', color: COLOR_OPTIONS[0].value, templateId: null },
+      {
+        city: '',
+        country: '',
+        color: 'from-slate-500 to-blue-500',
+        templateId: null,
+        imagePath: '',
+      },
     ]);
   }
 
@@ -129,13 +169,14 @@ export default function AdminHomepagePage() {
               className="rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-500 focus:border-orange-400 focus:outline-none"
             />
             <select
-              value={item.color}
-              onChange={(event) => updateDestination(index, { color: event.target.value })}
+              value={item.imagePath ?? ''}
+              onChange={(event) => updateDestination(index, { imagePath: event.target.value })}
               className="rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white focus:border-orange-400 focus:outline-none"
             >
-              {COLOR_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              <option value="">No image</option>
+              {homeImages.map((image) => (
+                <option key={image.path} value={image.path}>
+                  {image.path}
                 </option>
               ))}
             </select>
