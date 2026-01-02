@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Lock } from 'lucide-react';
 import { listTripsByOwner } from '@/lib/db';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import MyTripsClient from './_components/MyTripsClient';
@@ -30,20 +31,7 @@ export default async function MyTripsPage() {
         <div className="mx-auto flex min-h-[70vh] w-full max-w-4xl items-center justify-center">
           <div className="w-full rounded-[28px] border border-neutral-200 bg-white px-6 py-12 text-center shadow-xl shadow-orange-100/60 sm:px-10">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-orange-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-7 w-7"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.5 10.5V8.25a4.5 4.5 0 1 0-9 0v2.25m-.75 0h10.5a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5v-6a1.5 1.5 0 0 1 1.5-1.5Z"
-                />
-              </svg>
+              <Lock className="h-7 w-7" strokeWidth={1.5} aria-hidden="true" />
             </div>
             <h1 className="text-xl font-semibold text-neutral-900">Sign in to view your trips</h1>
             <p className="mt-3 text-sm text-neutral-600">

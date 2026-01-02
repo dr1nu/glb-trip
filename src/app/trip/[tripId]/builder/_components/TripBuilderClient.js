@@ -211,6 +211,7 @@ export default function TripBuilderClient({
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [activeView, setActiveView] = useState('summary');
+  const [deletedCardIds, setDeletedCardIds] = useState(() => new Set());
 
   const departureCard = useMemo(
     () => cards.find((card) => card.id === 'departure-flight') ?? null,
@@ -220,8 +221,8 @@ export default function TripBuilderClient({
     () => cards.find((card) => card.id === 'return-flight') ?? null,
     [cards]
   );
-  const accommodationCard = useMemo(
-    () => cards.find((card) => card.type === 'accommodation') ?? null,
+  const accommodationCards = useMemo(
+    () => cards.filter((card) => card.type === 'accommodation'),
     [cards]
   );
   const dayCards = useMemo(
@@ -259,6 +260,62 @@ export default function TripBuilderClient({
         };
       })
     );
+  }
+
+  function buildAccommodationCard(labelIndex = 1) {
+    const globalCrypto = typeof globalThis !== 'undefined' ? globalThis.crypto : null;
+    const id = globalCrypto?.randomUUID?.() ?? `accommodation-${Date.now()}-${labelIndex}`;
+    const dateFrom = preferences?.dateFrom ?? '';
+    const dateTo = preferences?.dateTo ?? '';
+    return {
+      id,
+      type: 'accommodation',
+      title: `Accommodation option ${labelIndex}`,
+      subtitle: 'Awaiting selection',
+      priceLabel: '',
+      summary: 'Choose ideal hotel or apartment.',
+      fields: {
+        lengthOfStay: '',
+        accommodationDateFrom: dateFrom,
+        accommodationDateTo: dateTo,
+        accommodationType: '',
+        breakfastIncluded: '',
+        bookingLink: '',
+        price: '',
+      },
+      notes: '',
+      isDirty: true,
+    };
+  }
+
+  function handleAddAccommodation() {
+    setCards((prev) => {
+      const count = prev.filter((card) => card.type === 'accommodation').length;
+      const nextCard = buildAccommodationCard(count + 1);
+      let insertIndex = prev.length;
+      for (let i = prev.length - 1; i >= 0; i -= 1) {
+        if (prev[i]?.type === 'accommodation') {
+          insertIndex = i + 1;
+          break;
+        }
+      }
+      return [
+        ...prev.slice(0, insertIndex),
+        nextCard,
+        ...prev.slice(insertIndex),
+      ];
+    });
+    setOrderEdited(true);
+  }
+
+  function handleRemoveAccommodation(cardId) {
+    setCards((prev) => prev.filter((card) => card.id !== cardId));
+    setDeletedCardIds((prev) => {
+      const next = new Set(prev);
+      next.add(cardId);
+      return next;
+    });
+    setOrderEdited(true);
   }
 
   function handleMoveEntry(entryId, fromDayId, toDayId) {
@@ -624,6 +681,12 @@ export default function TripBuilderClient({
         .filter((card) => card.isDirty)
         .map(({ isDirty, ...card }) => ({
           id: card.id,
+          type: card.type,
+          title: card.title,
+          subtitle: card.subtitle,
+          summary: card.summary,
+          priceLabel: card.priceLabel,
+          notes: card.notes,
           fields: card.fields,
           ...(Array.isArray(card.timeline) ? { timeline: card.timeline } : {}),
         }));
@@ -631,6 +694,9 @@ export default function TripBuilderClient({
       const payload = {};
       if (dirtyCards.length > 0) {
         payload.cards = dirtyCards;
+      }
+      if (deletedCardIds.size > 0) {
+        payload.deletedCardIds = Array.from(deletedCardIds);
       }
       if (hasDirtyActivities) {
         payload.unassignedActivities = unassignedActivities.map(({ isDirty, ...activity }) => activity);
@@ -642,7 +708,13 @@ export default function TripBuilderClient({
         payload.publish = true;
       }
 
-      if (!payload.cards && !payload.unassignedActivities && !payload.cardOrder && !publish) {
+      if (
+        !payload.cards &&
+        !payload.deletedCardIds &&
+        !payload.unassignedActivities &&
+        !payload.cardOrder &&
+        !publish
+      ) {
         setFeedback({
           type: 'info',
           message: 'No changes to save.',
@@ -672,6 +744,7 @@ export default function TripBuilderClient({
       setCards(prepareCards(nextCards, preferences, { resetDirty: true }));
       setUnassignedActivities(prepareActivities(nextActivities, { resetDirty: true }));
       setActivitiesEdited(false);
+      setDeletedCardIds(new Set());
       setOrderEdited(false);
       setFeedback({
         type: 'success',
@@ -818,18 +891,34 @@ export default function TripBuilderClient({
           </section>
 
           <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-            <header>
-              <h2 className="text-lg font-semibold">Accommodation</h2>
-              <p className="text-sm text-[#4C5A6B]">
-                Capture stay details so travellers know where they&apos;ll unwind.
-              </p>
+            <header className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Accommodation</h2>
+                <p className="text-sm text-[#4C5A6B]">
+                  Capture stay details so travellers know where they&apos;ll unwind.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddAccommodation}
+                className="inline-flex items-center justify-center rounded-2xl border border-orange-100 bg-white px-4 py-2 text-sm font-semibold text-orange-600 shadow shadow-orange-100 hover:bg-orange-50"
+              >
+                Add accommodation option
+              </button>
             </header>
-            {accommodationCard ? (
-              <AccommodationCardPanel
-                card={accommodationCard}
-                onFieldChange={handleFieldChange}
-                isDirty={accommodationCard.isDirty}
-              />
+            {accommodationCards.length > 0 ? (
+              <div className="space-y-4">
+                {accommodationCards.map((card, index) => (
+                  <AccommodationCardPanel
+                    key={card.id}
+                    card={card}
+                    onFieldChange={handleFieldChange}
+                    isDirty={card.isDirty}
+                    canRemove={index > 0}
+                    onRemove={() => handleRemoveAccommodation(card.id)}
+                  />
+                ))}
+              </div>
             ) : (
               <MissingCardNotice label="Accommodation" />
             )}

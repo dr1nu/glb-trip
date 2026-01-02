@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
+import { HOME_COUNTRIES } from '@/lib/countries-europe';
 import {
   DEFAULT_TRAVEL_PREFERENCES,
   mergeTravelPreferences,
@@ -302,7 +302,7 @@ export default function AuthForm({
                 <option value="" disabled>
                   Select your country
                 </option>
-                {EUROPE_COUNTRIES.map((country) => (
+                {HOME_COUNTRIES.map((country) => (
                   <option key={country} value={country}>
                     {country}
                   </option>

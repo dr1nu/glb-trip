@@ -7,6 +7,21 @@ import ItinerarySummary from './_components/ItinerarySummary';
 import TripImagePicker from './_components/TripImagePicker';
 import AdminBillingEditor from './_components/AdminBillingEditor';
 import PayToUnlockButton from './_components/PayToUnlockButton';
+import UnlockFreeButton from './_components/UnlockFreeButton';
+import {
+  ArrowLeftCircle,
+  Bed,
+  Calendar,
+  Check,
+  Heart,
+  Home,
+  MapPin,
+  Plane,
+  StickyNote,
+  User,
+  Users,
+  Wallet,
+} from 'lucide-react';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -93,7 +108,7 @@ export default async function TripPage({ params, searchParams }) {
   const accommodationLabel = formatAccommodation(preferences);
   const baggageLabel = formatBaggage(preferences);
 
-  if (itineraryReady && !fromAdmin && !paymentRequired && !isFreeUnlock) {
+  if (itineraryReady && !fromAdmin && !paymentRequired && !isFreeUnlock && billingStatus !== 'free') {
     redirect(immersiveHref);
   }
 
@@ -104,21 +119,7 @@ export default async function TripPage({ params, searchParams }) {
           href={fromAdmin ? '/admin' : '/'}
           className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
         >
-          <span aria-hidden>
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M13.5 8.5L10 12l3.5 3.5" />
-              <path d="M10.5 12h6" />
-            </svg>
-          </span>
+          <ArrowLeftCircle className="h-5 w-5" strokeWidth={1.6} aria-hidden="true" />
           {fromAdmin ? 'Back to admin' : 'Plan another trip'}
         </Link>
 
@@ -252,16 +253,11 @@ function PendingTripOverview({
               </p>
             ) : null}
           </div>
-          {isFreeUnlock ? (
-            <Link
-              href={`/trip/${tripId}/experience`}
-              className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
-            >
-              Unlock for free
-            </Link>
-          ) : (
-            <PayToUnlockButton tripId={tripId} />
-          )}
+            {isFreeUnlock ? (
+              <UnlockFreeButton tripId={tripId} redirectHref={immersiveHref} />
+            ) : (
+              <PayToUnlockButton tripId={tripId} />
+            )}
         </section>
       ) : null}
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#ff9f43] via-[#ff8a00] to-[#ff6f00] text-white shadow-lg shadow-[#ff7a00]/20 border border-[#ffd9b3]">
@@ -499,12 +495,7 @@ function ConfirmedTripOverview({
                   : `Total due: ${amountLabel}${billingContext}`}
               </p>
               {isFreeUnlock ? (
-                <Link
-                  href={immersiveHref}
-                  className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
-                >
-                  Unlock for free
-                </Link>
+                <UnlockFreeButton tripId={tripId} redirectHref={immersiveHref} />
               ) : (
                 <PayToUnlockButton tripId={tripId} />
               )}
@@ -532,12 +523,7 @@ function ConfirmedTripOverview({
                 </p>
                 <div className="mt-3">
                   {isFreeUnlock ? (
-                    <Link
-                      href={immersiveHref}
-                      className="inline-flex items-center justify-center rounded-xl bg-[#ff8a00] px-4 py-2 text-sm font-semibold text-white shadow shadow-[#ff8a00]/30 transition hover:bg-[#ff7a00]"
-                    >
-                      Unlock for free
-                    </Link>
+                    <UnlockFreeButton tripId={tripId} redirectHref={immersiveHref} />
                   ) : (
                     <PayToUnlockButton tripId={tripId} label="Pay to unlock itinerary" />
                   )}
@@ -564,7 +550,7 @@ function ConfirmedTripOverview({
         />
       )}
 
-      {showTravellerCTA && !showPaymentNotice ? (
+      {showTravellerCTA && !showUnlockNotice ? (
         <section className="rounded-2xl border border-[#ffd9b3] bg-[#fff7ef] p-5 space-y-3 shadow-sm shadow-[#ff8a00]/10">
           <div>
             <h2 className="text-lg font-semibold">Ready to explore?</h2>
@@ -1026,89 +1012,45 @@ function StatusDot() {
 }
 
 function PinIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 2C8.13 2 5 5.067 5 8.857 5 14.571 12 22 12 22s7-7.429 7-13.143C19 5.067 15.87 2 12 2zm0 9.714a2.857 2.857 0 110-5.714 2.857 2.857 0 010 5.714z" />
-    </svg>
-  );
+  return <MapPin className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function CalendarIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H5V9h14v9z" />
-    </svg>
-  );
+  return <Calendar className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function UsersIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M16 11c1.66 0 2.99-1.57 2.99-3.5S17.66 4 16 4s-3 1.57-3 3.5S14.34 11 16 11zm-8 0c1.66 0 2.99-1.57 2.99-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-    </svg>
-  );
+  return <Users className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function WalletIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M21 7H5c-.55 0-1 .45-1 1v10c0 1.1.9 2 2 2h15c.55 0 1-.45 1-1V8c0-.55-.45-1-1-1zm-2 7h-3v-2h3v2zm0-9H4c-.55 0-1 .45-1 1v12h2V6h14v1z" />
-    </svg>
-  );
+  return <Wallet className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function PlaneIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M21 16.5v-1.764a1 1 0 00-.553-.894L13 10V5.5a1.5 1.5 0 00-3 0V10l-7.447 3.842A1 1 0 002 14.736V16.5l9-1.5v3.764l-2.553.894A1 1 0 008 21.5h2l1.333-.5L12.667 21.5H15a1 1 0 00.553-1.842L13 18.764V15l8 1.5z" />
-    </svg>
-  );
+  return <Plane className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function BedIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M21 10.5c0-.83-.67-1.5-1.5-1.5H13V6c0-.55-.45-1-1-1H4C2.9 5 2 5.9 2 7v10h2v-2h16v2h2v-6.5c0-.83-.67-1.5-1.5-1.5zM4 9V7h7v2H4zm0 4v-2h15.5c.28 0 .5.22.5.5V13H4z" />
-    </svg>
-  );
+  return <Bed className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function HeartIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 21s-6.716-4.42-9.192-8.15C.204 10.287 1.228 6.13 4.82 5.246c1.916-.482 3.61.33 4.68 1.88C10.57 5.576 12.264 4.764 14.18 5.246c3.592.884 4.616 5.041 2.012 7.604C18.716 16.58 12 21 12 21z" />
-    </svg>
-  );
+  return <Heart className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function NoteIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 9H8v-2h8v2zm0-3H8V7h8v2z" />
-    </svg>
-  );
+  return <StickyNote className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function ContactIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-    </svg>
-  );
+  return <User className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function HomeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 3l9 6v12a1 1 0 01-1 1h-6v-6h-4v6H4a1 1 0 01-1-1V9l9-6z" />
-    </svg>
-  );
+  return <Home className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-    </svg>
-  );
+  return <Check className="h-4 w-4" strokeWidth={2} aria-hidden="true" />;
 }

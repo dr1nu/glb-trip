@@ -1,6 +1,24 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import {
+  Bed,
+  Camera,
+  Car,
+  CarTaxiFront,
+  Church,
+  Coffee,
+  Footprints,
+  Hotel,
+  Landmark,
+  MapPin,
+  Plane,
+  ShoppingBag,
+  TrainFront,
+  TramFront,
+  Trees,
+  Utensils,
+} from 'lucide-react';
 
 const TYPE_OPTIONS = [
   {
@@ -104,12 +122,11 @@ const TYPE_OPTIONS = [
 const TRAVEL_MODES = [
   { value: '', label: 'No connector' },
   { value: 'walk', label: 'Walk' },
-  { value: 'train', label: 'Train' },
   { value: 'tube', label: 'Tube / metro' },
   { value: 'taxi', label: 'Taxi' },
   { value: 'car', label: 'Car / transfer' },
-  { value: 'flight', label: 'Flight' },
 ];
+const DISALLOWED_TRAVEL_MODES = new Set(['train', 'flight']);
 
 const DEFAULT_DURATION_BY_TYPE = {
   attraction: '45',
@@ -185,217 +202,55 @@ function getTypeMeta(type) {
 
 export function TypeIcon({ type }) {
   const className = 'h-5 w-5';
-  const strokeProps = {
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.6,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-  };
+  const iconProps = { className, strokeWidth: 1.6, 'aria-hidden': true };
   switch (type) {
     case 'attraction':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M12 22s6-6.5 6-11a6 6 0 10-12 0c0 4.5 6 11 6 11z" />
-          <circle cx="12" cy="11" r="2.5" />
-        </svg>
-      );
+      return <MapPin {...iconProps} />;
     case 'museum':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M3 10h18" />
-          <path d="M4 21h16" />
-          <path d="M5 10V8l7-4 7 4v2" />
-          <path d="M7 10v9" />
-          <path d="M10.5 10v9" />
-          <path d="M13.5 10v9" />
-          <path d="M17 10v9" />
-        </svg>
-      );
+      return <Landmark {...iconProps} />;
     case 'park':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <circle cx="12" cy="8" r="4" />
-          <circle cx="8" cy="11" r="3" />
-          <circle cx="16" cy="11" r="3" />
-          <path d="M12 12v8" />
-          <path d="M9 20h6" />
-        </svg>
-      );
+      return <Trees {...iconProps} />;
     case 'church':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M12 3v4" />
-          <path d="M10.5 5.5h3" />
-          <path d="M6 21h12" />
-          <path d="M7 21V10l5-4 5 4v11" />
-          <path d="M10 21v-4h4v4" />
-        </svg>
-      );
+      return <Church {...iconProps} />;
     case 'shopping':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M6 9h12l-1 11H7L6 9z" />
-          <path d="M9 9V7a3 3 0 016 0v2" />
-          <path d="M8.5 12.5h.01" />
-          <path d="M15.5 12.5h.01" />
-        </svg>
-      );
+      return <ShoppingBag {...iconProps} />;
     case 'photo':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <rect x="3" y="7" width="18" height="12" rx="2" />
-          <path d="M8 7l1.5-2h5L16 7" />
-          <circle cx="12" cy="13" r="3" />
-          <circle cx="17" cy="10" r="1" />
-        </svg>
-      );
+      return <Camera {...iconProps} />;
     case 'rest':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M3 12h18" />
-          <path d="M5 12v6" />
-          <path d="M19 12v6" />
-          <path d="M7 12h9a3 3 0 013 3v3H7v-6z" />
-          <path d="M7 9h5a2 2 0 012 2v1H7V9z" />
-        </svg>
-      );
+      return <Bed {...iconProps} />;
     case 'food':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M5 3v8" />
-          <path d="M3 3v4" />
-          <path d="M7 3v4" />
-          <path d="M5 11v10" />
-          <path d="M13 3v18" />
-          <path d="M17 3v7a2 2 0 01-2 2h-2" />
-        </svg>
-      );
+      return <Utensils {...iconProps} />;
     case 'coffee':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M5 7h9v6a4 4 0 01-4 4H9a4 4 0 01-4-4V7z" />
-          <path d="M14 8h2a3 3 0 010 6h-2" />
-          <path d="M6 4h7" />
-        </svg>
-      );
+      return <Coffee {...iconProps} />;
     case 'accommodation':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M4 20V6a2 2 0 012-2h12a2 2 0 012 2v14" />
-          <path d="M9 20v-3a3 3 0 013-3h0a3 3 0 013 3v3" />
-          <rect x="7" y="7.5" width="2" height="2" rx="0.4" />
-          <rect x="15" y="7.5" width="2" height="2" rx="0.4" />
-          <rect x="7" y="11" width="2" height="2" rx="0.4" />
-          <rect x="15" y="11" width="2" height="2" rx="0.4" />
-        </svg>
-      );
+      return <Hotel {...iconProps} />;
     case 'flight':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M2.5 14.5l8.5-3V5a2 2 0 014 0v6.5l8.5 3" />
-          <path d="M10.5 12.5v6l1.5-1 1.5 1v-6" />
-        </svg>
-      );
+      return <Plane {...iconProps} />;
     case 'transport':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M6 7a4 4 0 014-4h4a4 4 0 014 4v8a3 3 0 01-3 3H9a3 3 0 01-3-3V7z" />
-          <path d="M8 7h8" />
-          <path d="M8 11h8" />
-          <circle cx="10" cy="15" r="1" />
-          <circle cx="14" cy="15" r="1" />
-          <path d="M9 18l-2 2" />
-          <path d="M15 18l2 2" />
-        </svg>
-      );
+      return <TrainFront {...iconProps} />;
     default:
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M12 22s7-7 7-13a7 7 0 10-14 0c0 6 7 13 7 13z" />
-          <circle cx="12" cy="9" r="2.5" />
-        </svg>
-      );
+      return <MapPin {...iconProps} />;
   }
 }
 
 function TravelModeIcon({ mode }) {
   const className = 'h-4 w-4';
-  const strokeProps = {
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.6,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-  };
+  const iconProps = { className, strokeWidth: 1.6, 'aria-hidden': true };
   switch (mode) {
     case 'walk':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <circle cx="12" cy="5" r="2" />
-          <path d="M8 22l2-5-2-3 2-4 4 1 2 3" />
-          <path d="M14 10l-1 4 3 3" />
-          <path d="M6 15l-2 3" />
-        </svg>
-      );
+      return <Footprints {...iconProps} />;
     case 'train':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M7 4h10a4 4 0 014 4v7a3 3 0 01-3 3H6a3 3 0 01-3-3V8a4 4 0 014-4z" />
-          <path d="M7 8h10" />
-          <path d="M7 11h10" />
-          <circle cx="9" cy="16" r="1" />
-          <circle cx="15" cy="16" r="1" />
-          <path d="M8 19l-2 2" />
-          <path d="M16 19l2 2" />
-        </svg>
-      );
+      return <TrainFront {...iconProps} />;
     case 'tube':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <rect x="5" y="3" width="14" height="16" rx="5" />
-          <path d="M8 9h8" />
-          <path d="M8 12h8" />
-          <circle cx="9" cy="16" r="1" />
-          <circle cx="15" cy="16" r="1" />
-          <path d="M8 19l-2 2" />
-          <path d="M16 19l2 2" />
-        </svg>
-      );
+      return <TramFront {...iconProps} />;
     case 'taxi':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11" />
-          <path d="M4 11h16a2 2 0 012 2v3" />
-          <path d="M4 16v-3a2 2 0 012-2" />
-          <circle cx="8" cy="17" r="1.5" />
-          <circle cx="16" cy="17" r="1.5" />
-          <path d="M10 5h4" />
-        </svg>
-      );
+      return <CarTaxiFront {...iconProps} />;
     case 'car':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11" />
-          <path d="M4 11h16a2 2 0 012 2v3" />
-          <path d="M4 16v-3a2 2 0 012-2" />
-          <circle cx="8" cy="17" r="1.5" />
-          <circle cx="16" cy="17" r="1.5" />
-        </svg>
-      );
+      return <Car {...iconProps} />;
     case 'flight':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <path d="M2.5 15.5l8.5-3V5a2 2 0 014 0v7.5l8.5 3" />
-          <path d="M10.5 12.5v7l1.5-1 1.5 1v-7" />
-        </svg>
-      );
+      return <Plane {...iconProps} />;
     default:
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} {...strokeProps}>
-          <circle cx="12" cy="12" r="2" />
-        </svg>
-      );
+      return <MapPin {...iconProps} />;
   }
 }
 
@@ -1066,7 +921,7 @@ function TimelineCard({
       ) : (
         <span className="sr-only">Details collapsed</span>
       )}
-      {entry.fields?.travelMode ? (
+      {entry.fields?.travelMode && !DISALLOWED_TRAVEL_MODES.has(entry.fields.travelMode) ? (
         <div className="flex items-center justify-end text-xs text-[#4C5A6B]">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 border border-orange-100 text-[11px] font-semibold text-slate-700">
             <TravelModeIcon mode={entry.fields.travelMode} />

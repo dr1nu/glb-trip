@@ -10,3 +10,7 @@ export const EUROPE_COUNTRIES = [
   "Ukraine","United Kingdom","Vatican City"
   // Optional territories: "Åland Islands","Faroe Islands","Gibraltar","Guernsey","Isle of Man","Jersey"
 ];
+
+export const HOME_COUNTRIES = EUROPE_COUNTRIES.filter(
+  (country) => !['Belarus', 'Russia', 'Ukraine'].includes(country)
+);

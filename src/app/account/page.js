@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { EUROPE_COUNTRIES } from '@/lib/countries-europe';
+import { User } from 'lucide-react';
+import { HOME_COUNTRIES } from '@/lib/countries-europe';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import AuthForm from '@/components/auth/AuthForm';
 import {
@@ -254,20 +255,7 @@ export default function AccountPage() {
         <div className="mx-auto flex min-h-[80vh] w-full max-w-5xl flex-col items-center justify-center px-2">
           <div className="mb-8 flex flex-col items-center gap-3 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-500 shadow-sm shadow-blue-100">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 19.5a7.5 7.5 0 1 1 15 0v.75a.75.75 0 0 1-.75.75h-13.5a.75.75 0 0 1-.75-.75Z"
-                />
-              </svg>
+              <User className="h-8 w-8" strokeWidth={1.5} aria-hidden="true" />
             </div>
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold text-[#0F172A]">Welcome Back</h1>
@@ -402,7 +390,7 @@ export default function AccountPage() {
                       <option value="" disabled>
                         Select
                       </option>
-                      {EUROPE_COUNTRIES.map((country) => (
+                      {HOME_COUNTRIES.map((country) => (
                         <option key={country} value={country}>
                           {country}
                         </option>

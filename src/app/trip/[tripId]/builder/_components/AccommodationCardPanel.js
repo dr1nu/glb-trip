@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Hotel } from 'lucide-react';
 
 const OPTIONS = [
   { value: '', label: 'Select type' },
@@ -19,6 +20,8 @@ export default function AccommodationCardPanel({
   card,
   onFieldChange,
   isDirty,
+  onRemove,
+  canRemove = false,
 }) {
   const [expanded, setExpanded] = useState(false);
   const fields = card.fields ?? {};
@@ -34,6 +37,7 @@ export default function AccommodationCardPanel({
     }
     return card.subtitle || 'Awaiting selection';
   }, [fields.accommodationType, card.subtitle]);
+  const title = card.title || 'Accommodation';
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -48,19 +52,11 @@ export default function AccommodationCardPanel({
       >
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 rounded-full border bg-emerald-500/10 border-emerald-400/40 text-emerald-200 flex items-center justify-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-6 w-6"
-              aria-hidden="true"
-            >
-              <path d="M12 3l9 6v12a1 1 0 01-1 1h-6v-6h-4v6H4a1 1 0 01-1-1V9l9-6z" />
-            </svg>
+            <Hotel className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">
-              Accommodation
+              {title}
             </p>
             <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
               {subtitle}
@@ -68,6 +64,18 @@ export default function AccommodationCardPanel({
           </div>
         </div>
         <div className="text-right">
+          {canRemove ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRemove?.();
+              }}
+              className="text-xs font-semibold text-rose-500 hover:text-rose-600"
+            >
+              Remove
+            </button>
+          ) : null}
           <div className="text-sm font-semibold text-slate-900">
             {priceDisplay || 'Set price'}
           </div>
