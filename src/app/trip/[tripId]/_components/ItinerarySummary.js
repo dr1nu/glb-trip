@@ -1,5 +1,7 @@
 'use client';
 
+import { Home, MapPin, Plane } from 'lucide-react';
+
 export default function ItinerarySummary({
   cards,
   title = 'Itinerary',
@@ -511,45 +513,15 @@ function getIcon(type) {
 }
 
 function PlaneIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className="h-6 w-6"
-      aria-hidden="true"
-    >
-      <path d="M21 15.5v-1.6a1 1 0 00-.553-.894L13 10V5.5a1.5 1.5 0 00-3 0V10l-7.447 3.506A1 1 0 002 14.5v1.6l9-1.3v3.364l-2.553.894A1 1 0 008 20.5h2l1.333-.5L12.667 20.5H15a1 1 0 00.553-1.642L13 17.964V14l8 1.5z" />
-    </svg>
-  );
+  return <Plane className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function HomeIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className="h-6 w-6"
-      aria-hidden="true"
-    >
-      <path d="M12 3l9 6v12a1 1 0 01-1 1h-6v-6h-4v6H4a1 1 0 01-1-1V9l9-6z" />
-    </svg>
-  );
+  return <Home className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function PinIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className="h-6 w-6"
-      aria-hidden="true"
-    >
-      <path d="M12 2C8.134 2 5 5.067 5 8.857 5 14.571 12 22 12 22s7-7.429 7-13.143C19 5.067 15.866 2 12 2zm0 9.714a2.857 2.857 0 110-5.714 2.857 2.857 0 010 5.714z" />
-    </svg>
-  );
+  return <MapPin className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function formatBreakfast(value) {

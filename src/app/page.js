@@ -11,6 +11,7 @@ import { composeProfilePayload } from '@/lib/profile';
 import AuthForm from '@/components/auth/AuthForm';
 import { HOMEPAGE_TEMPLATES } from '@/data/homepageTemplates';
 import { DEFAULT_HOMEPAGE_DESTINATIONS } from '@/data/homepageDefaults';
+import { ArrowUpRight, Award, Compass, Plane, Search, Star, Ticket, Hotel } from 'lucide-react';
 
 const SUMMER_HEAVY_DESTINATIONS = new Set([
   'Spain', 'Portugal', 'France', 'Italy', 'Croatia', 'Greece', 'Malta', 'Cyprus', 'Türkiye',
@@ -1205,21 +1206,7 @@ function PopularDestinations({ images = [], destinations = [], templatesById = {
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-3.5 w-3.5"
-            aria-hidden="true"
-          >
-            <path d="M11 5h8v8" />
-            <path d="M19 5l-9 9" />
-            <path d="M5 19h8" />
-          </svg>
+          <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
         </span>
         Popular Destinations
       </div>
@@ -1267,19 +1254,7 @@ function ValueProps() {
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-3.5 w-3.5"
-            aria-hidden="true"
-          >
-            <path d="M12 3l2.2 4.5L19 8l-3.5 3.4.8 4.8L12 14.8 7.7 16.2l.8-4.8L5 8l4.8-.5L12 3z" />
-          </svg>
+          <Star className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
         </span>
         Why travel with us?
       </div>
@@ -1537,66 +1512,15 @@ function euro(n) { return '€' + Math.round(n); }
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
 const BREAKDOWN_ICONS = {
-  flight: (props) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
-    </svg>
-  ),
-  stay: (props) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M10 22v-6.57" />
-      <path d="M12 11h.01" />
-      <path d="M12 7h.01" />
-      <path d="M14 15.43V22" />
-      <path d="M15 16a5 5 0 0 0-6 0" />
-      <path d="M16 11h.01" />
-      <path d="M16 7h.01" />
-      <path d="M8 11h.01" />
-      <path d="M8 7h.01" />
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-    </svg>
-  ),
-  fun: (props) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-      <path d="M13 5v2" />
-      <path d="M13 17v2" />
-      <path d="M13 11v2" />
-    </svg>
-  ),
+  flight: Plane,
+  stay: Hotel,
+  fun: Ticket,
 };
 
 function BreakdownIcon({ name, className }) {
   const Icon = BREAKDOWN_ICONS[name];
   if (!Icon) return null;
-  return <Icon className={className} aria-hidden="true" />;
+  return <Icon className={className} strokeWidth={2} aria-hidden="true" />;
 }
 
 function EstimateRow({ label, value, color, icon }) {
@@ -1616,30 +1540,15 @@ function EstimateRow({ label, value, color, icon }) {
 }
 
 const ICONS = {
-  search: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
-      <circle cx="11" cy="11" r="6" />
-      <path d="M16 16l4 4" strokeLinecap="round" />
-    </svg>
-  ),
-  award: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M8 13l-1 7 5-3 5 3-1-7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  compass: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
-      <circle cx="12" cy="12" r="8" />
-      <path d="M10 10l5-2-2 5-5 2z" strokeLinejoin="round" />
-    </svg>
-  ),
+  search: Search,
+  award: Award,
+  compass: Compass,
 };
 
 function ValueIcon({ name }) {
   const Icon = ICONS[name];
   if (!Icon) return null;
-  return <Icon className="h-5 w-5" aria-hidden="true" />;
+  return <Icon className="h-5 w-5" strokeWidth={1.5} aria-hidden="true" />;
 }
 
 function AuthOverlay({ children, onClose }) {

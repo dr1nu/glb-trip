@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { MapPin } from 'lucide-react';
 
 export default function DayCardPanel({ card, onFieldChange, isDirty }) {
   const [expanded, setExpanded] = useState(false);
@@ -29,15 +30,7 @@ export default function DayCardPanel({ card, onFieldChange, isDirty }) {
       >
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 rounded-full border bg-rose-500/10 border-rose-400/40 text-rose-200 flex items-center justify-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-6 w-6"
-              aria-hidden="true"
-            >
-              <path d="M12 2C8.134 2 5 5.067 5 8.857 5 14.571 12 22 12 22s7-7.429 7-13.143C19 5.067 15.866 2 12 2zm0 9.714a2.857 2.857 0 110-5.714 2.857 2.857 0 010 5.714z" />
-            </svg>
+            <MapPin className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">{card.title}</p>

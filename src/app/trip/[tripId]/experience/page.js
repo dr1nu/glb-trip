@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowLeftCircle } from 'lucide-react';
 import { notFound, redirect } from 'next/navigation';
 import { getTrip } from '@/lib/db';
 import { extractUnassignedActivities } from '@/lib/itinerary';
@@ -68,21 +69,7 @@ export default async function TripExperiencePage({ params, searchParams }) {
           href="/my-trips"
           className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
         >
-          <span aria-hidden>
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M13.5 8.5L10 12l3.5 3.5" />
-              <path d="M10.5 12h6" />
-            </svg>
-          </span>
+          <ArrowLeftCircle className="h-5 w-5" strokeWidth={1.6} aria-hidden="true" />
           Back to my trips
         </Link>
 

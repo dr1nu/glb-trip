@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Plane } from 'lucide-react';
 
 const BAGGAGE_OPTIONS = [
   { value: '', label: 'Select baggage' },
@@ -61,15 +62,7 @@ export default function FlightCardPanel({
           <div
             className={`h-12 w-12 rounded-full border flex items-center justify-center ${iconColors}`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-6 w-6"
-              aria-hidden="true"
-            >
-              <path d="M21 16.5v-1.764a1 1 0 00-.553-.894L13 10V5.5a1.5 1.5 0 00-3 0V10l-7.447 3.842A1 1 0 002 14.736V16.5l9-1.5v3.764l-2.553.894A1 1 0 008 21.5h2l1.333-.5L12.667 21.5H15a1 1 0 00.553-1.842L13 18.764V15l8 1.5z" />
-            </svg>
+            <Plane className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">{title}</p>

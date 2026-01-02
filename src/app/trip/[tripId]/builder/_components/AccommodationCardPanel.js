@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Hotel } from 'lucide-react';
 
 const OPTIONS = [
   { value: '', label: 'Select type' },
@@ -48,15 +49,7 @@ export default function AccommodationCardPanel({
       >
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 rounded-full border bg-emerald-500/10 border-emerald-400/40 text-emerald-200 flex items-center justify-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-6 w-6"
-              aria-hidden="true"
-            >
-              <path d="M12 3l9 6v12a1 1 0 01-1 1h-6v-6h-4v6H4a1 1 0 01-1-1V9l9-6z" />
-            </svg>
+            <Hotel className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">
