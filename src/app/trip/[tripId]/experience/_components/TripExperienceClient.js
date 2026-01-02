@@ -396,7 +396,18 @@ function getFeaturedImage(post) {
 
 function stripHtml(value) {
   if (typeof value !== 'string') return '';
-  return value.replace(/<[^>]*>/g, '').trim();
+  if (typeof window !== 'undefined' && window.DOMParser) {
+    const doc = new DOMParser().parseFromString(value, 'text/html');
+    return (doc.body?.textContent || '').trim();
+  }
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .trim();
 }
 
 function slugifyCategory(value) {

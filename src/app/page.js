@@ -239,7 +239,7 @@ function formatShortDate(value) {
 }
 
 function formatShortRange(startValue, endValue) {
-  if (!startValue && !endValue) return 'Select dates';
+  if (!startValue && !endValue) return 'Select your dates';
   if (startValue && !endValue) return `${formatShortDate(startValue)} - --/--`;
   return `${formatShortDate(startValue)} - ${formatShortDate(endValue)}`;
 }
@@ -390,7 +390,7 @@ function deriveWeekendFactor(startValue, endValue) {
     : { factor: 1.0, label: 'Weekday travel' };
 }
 
-const DEFAULT_DATES = getDefaultDates();
+const DEFAULT_DATES = { start: '', end: '' };
 
 function getDestinationHub(country, city) {
   const cityList = DESTINATION_CITIES[country] ?? [];
@@ -406,7 +406,7 @@ function labelForDestination(country, city) {
 export default function Home() {
   const router = useRouter();
   // --- form state ---
-  const [destinationCountry, setDestinationCountry] = useState('Slovenia');
+  const [destinationCountry, setDestinationCountry] = useState('');
   const [destinationCity, setDestinationCity] = useState('');
   const [budgetTotal, setBudgetTotal] = useState(500);
   const [startDate, setStartDate] = useState(DEFAULT_DATES.start);
@@ -978,7 +978,7 @@ function DateRangePicker({
               ←
             </button>
             <span className="text-xs font-semibold uppercase tracking-wide text-[#4C5A6B]">
-              Select dates
+              Select your dates
             </span>
             <button
               type="button"
@@ -1031,6 +1031,7 @@ function FormCard({
 }) {
   const destinationValue = encodeDestination(destinationCountry, destinationCity);
   const [dateError, setDateError] = useState('');
+  const [styleInfoOpen, setStyleInfoOpen] = useState(false);
   return (
     <form
       className="relative rounded-[32px] border border-[#E3E6EF] bg-white p-6 shadow-[0_24px_90px_-60px_rgba(15,23,42,0.35)] backdrop-blur-sm ring-1 ring-white/70 space-y-6 sm:p-7"
@@ -1111,7 +1112,34 @@ function FormCard({
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-[#4B5563]">Travel style</label>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-[#4B5563]">Travel style</label>
+          <button
+            type="button"
+            className="sm:hidden inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 text-[11px] font-semibold text-[#4B5563]"
+            onClick={() => setStyleInfoOpen((prev) => !prev)}
+            aria-expanded={styleInfoOpen}
+            aria-controls="travel-style-info"
+          >
+            i
+          </button>
+        </div>
+        {styleInfoOpen ? (
+          <div
+            id="travel-style-info"
+            className="sm:hidden rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-[#4C5A6B] shadow-sm"
+          >
+            {TRAVEL_STYLE_INFO.map((item) => (
+              <div key={item.k} className="py-1">
+                <div className="font-semibold text-slate-900">{item.label}</div>
+                <div>{item.detail}</div>
+                <div className="text-[10px] uppercase tracking-wide text-[#9A6B3B]">
+                  {item.hint}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <StyleToggle value={travelStyle} onChange={setTravelStyle} />
       </div>
 
@@ -1125,30 +1153,31 @@ function FormCard({
   );
 }
 
+const TRAVEL_STYLE_INFO = [
+  {
+    k: 'shoestring',
+    label: STYLE_PRESETS.shoestring.label,
+    hint: '−€25/day',
+    detail: 'Budget-friendly stays, simple transport, and fewer paid activities.',
+  },
+  {
+    k: 'value',
+    label: STYLE_PRESETS.value.label,
+    hint: 'baseline',
+    detail: 'Balanced mix of comfort, local experiences, and flexibility.',
+  },
+  {
+    k: 'comfort',
+    label: STYLE_PRESETS.comfort.label,
+    hint: '+€40/day',
+    detail: 'Upgraded stays, premium experiences, and extra convenience.',
+  },
+];
+
 function StyleToggle({ value, onChange }) {
-  const items = [
-    {
-      k: 'shoestring',
-      label: STYLE_PRESETS.shoestring.label,
-      hint: '−€25/day',
-      detail: 'Budget-friendly stays, simple transport, and fewer paid activities.',
-    },
-    {
-      k: 'value',
-      label: STYLE_PRESETS.value.label,
-      hint: 'baseline',
-      detail: 'Balanced mix of comfort, local experiences, and flexibility.',
-    },
-    {
-      k: 'comfort',
-      label: STYLE_PRESETS.comfort.label,
-      hint: '+€40/day',
-      detail: 'Upgraded stays, premium experiences, and extra convenience.',
-    }
-  ];
   return (
     <div className="grid grid-cols-3 gap-2">
-      {items.map(it => {
+      {TRAVEL_STYLE_INFO.map((it) => {
         const active = value === it.k;
         return (
           <div key={it.k} className="relative group">
@@ -1289,7 +1318,7 @@ function ResultCard({
   const totalEstimate = flightsEstimate + accommodationEstimate + activitiesEstimate;
   const dateRangeLabel = formatDateRange(startDate, endDate);
   const destinationLabel = destinationCity ? `${destinationCity}, ${destinationCountry}` : destinationCountry;
-  const destinationLabelShort = destinationLabel || destinationCountry;
+  const destinationLabelShort = destinationLabel || destinationCountry || 'Select a destination';
   const handleContinue = () => {
     if (isContinuing) return;
     setIsContinuing(true);
@@ -1459,7 +1488,7 @@ function BudgetGauge({ budget, low, high }) {
 function formatDateRange(startValue, endValue) {
   const start = toDate(startValue);
   const end = toDate(endValue);
-  if (!start && !end) return 'Dates pending';
+  if (!start && !end) return 'Select your dates';
   if (start && !end) {
     return start.toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -1578,7 +1607,7 @@ function CascadingDestinationSelect({ options = [], value, onChange }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState('');
   const { country, city } = decodeDestination(value);
-  const selectedLabel = labelForDestination(country, city) || 'Select destination';
+  const selectedLabel = labelForDestination(country, city) || 'Select a destination';
   const activeCountry = expanded;
   const activeCities = options.find((opt) => opt.country === activeCountry)?.options ?? [];
 
