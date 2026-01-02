@@ -592,12 +592,55 @@ function TimelineEntry({ entry, isLast }) {
       <article className={`relative overflow-hidden rounded-2xl border ${meta.border} bg-white shadow-sm`}>
         <div className={`absolute left-0 top-0 h-full w-1 ${meta.rail}`} />
         <div className="p-5 space-y-3">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-4 min-w-0">
-              <span className="text-sm font-semibold text-[#245ad4] sm:min-w-[64px] sm:text-center">
+          <div className="sm:hidden">
+            <div className="flex items-start gap-3">
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-[12px] font-semibold text-[#245ad4]">
+                  {time || '—'}
+                </span>
+                <span
+                  className={`h-9 w-9 rounded-full border ${meta.iconBg} flex items-center justify-center`}
+                >
+                  <ExperienceIcon type={entry?.type} />
+                </span>
+              </div>
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <div className="relative pr-6">
+                  <p className="text-[13px] font-semibold text-slate-900 break-words leading-snug pr-6">
+                    {title}
+                  </p>
+                  {badge ? (
+                    <span
+                      className={`absolute right-0 top-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-center ${badgeClass}`}
+                    >
+                      {badge}
+                    </span>
+                  ) : null}
+                </div>
+                {description ? (
+                  <p className="mt-1 text-[11px] text-[#4C5A6B] break-words leading-snug">
+                    {description}
+                  </p>
+                ) : null}
+                {link ? (
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl border border-orange-500 text-orange-600 px-3 py-2 text-xs font-semibold hover:bg-orange-50 transition-colors"
+                  >
+                    Book now <ExternalIcon />
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          <div className="hidden sm:flex sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <span className="min-w-[64px] text-center text-sm font-semibold text-[#245ad4]">
                 {time || '—'}
               </span>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <span
                   className={`h-12 w-12 rounded-full border ${meta.iconBg} flex items-center justify-center`}
                 >
@@ -612,7 +655,7 @@ function TimelineEntry({ entry, isLast }) {
               </div>
             </div>
             {(badge || link) ? (
-              <div className="flex w-full flex-col items-start gap-3 text-left sm:w-auto sm:min-w-[96px] sm:items-center sm:text-center">
+              <div className="flex flex-col items-end gap-3 min-w-[96px]">
                 {badge ? (
                   <span
                     className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-center ${badgeClass}`}
@@ -625,7 +668,7 @@ function TimelineEntry({ entry, isLast }) {
                     href={link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-orange-500 text-orange-600 px-3 py-2 text-sm font-semibold hover:bg-orange-50 transition-colors sm:w-auto"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-orange-500 text-orange-600 px-3 py-2 text-sm font-semibold hover:bg-orange-50 transition-colors"
                   >
                     Book now <ExternalIcon />
                   </a>
