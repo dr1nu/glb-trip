@@ -18,6 +18,7 @@ import {
   TramFront,
   Trees,
   Utensils,
+  ExternalLink,
 } from 'lucide-react';
 
 const TYPE_OPTIONS = [
@@ -631,6 +632,7 @@ export default function DayTimelineBuilder({
               key={entry.id}
               entry={entry}
               index={index}
+              nextEntry={activeTimeline[index + 1]}
               dayOptions={dayOptions}
               activeDayId={activeDay.id}
               onDropCard={(event) => handleDrop(event, index)}
@@ -761,6 +763,7 @@ function Palette({ onAdd }) {
 function TimelineCard({
   entry,
   index,
+  nextEntry,
   dayOptions,
   activeDayId,
   onDragStart,
@@ -779,6 +782,13 @@ function TimelineCard({
     typeof entry.fields?.title === 'string' && entry.fields.title.trim()
       ? entry.fields.title.trim()
       : null;
+  const travelMode = typeof entry.fields?.travelMode === 'string' ? entry.fields.travelMode.trim() : '';
+  const currentTitle = titleValue ?? meta.label;
+  const nextTitle = getEntryTitle(nextEntry);
+  const directionsUrl =
+    travelMode && !DISALLOWED_TRAVEL_MODES.has(travelMode) && nextTitle
+      ? buildDirectionsUrl(currentTitle, nextTitle, travelMode)
+      : '';
   const [moveTargetId, setMoveTargetId] = useState('');
   return (
     <div
@@ -921,14 +931,23 @@ function TimelineCard({
       ) : (
         <span className="sr-only">Details collapsed</span>
       )}
-      {entry.fields?.travelMode && !DISALLOWED_TRAVEL_MODES.has(entry.fields.travelMode) ? (
-        <div className="flex items-center justify-end text-xs text-[#4C5A6B]">
+      {travelMode && !DISALLOWED_TRAVEL_MODES.has(travelMode) ? (
+        <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-[#4C5A6B]">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 border border-orange-100 text-[11px] font-semibold text-slate-700">
-            <TravelModeIcon mode={entry.fields.travelMode} />
-            {TRAVEL_MODES.find((mode) => mode.value === entry.fields.travelMode)?.label ??
-              entry.fields.travelMode}
+            <TravelModeIcon mode={travelMode} />
+            {TRAVEL_MODES.find((mode) => mode.value === travelMode)?.label ?? travelMode}
             {entry.fields.travelDuration ? ` • ${entry.fields.travelDuration}` : ''}
           </span>
+          {directionsUrl ? (
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 border border-orange-100 text-[11px] font-semibold text-slate-700 hover:bg-white"
+            >
+              Directions <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -1090,4 +1109,32 @@ function UnassignedActivityCard({ activity, dayCards, onAssign, onChange, onType
       </div>
     </article>
   );
+}
+
+function getEntryTitle(entry) {
+  if (!entry) return '';
+  const fields = entry?.fields ?? {};
+  if (typeof fields.title === 'string' && fields.title.trim()) {
+    return fields.title.trim();
+  }
+  const meta = getTypeMeta(entry.type);
+  return meta.label;
+}
+
+function buildDirectionsUrl(origin, destination, travelMode) {
+  if (!origin || !destination) return '';
+  const modeMap = {
+    walk: 'walking',
+    tube: 'transit',
+    taxi: 'driving',
+    car: 'driving',
+  };
+  const params = new URLSearchParams({
+    api: '1',
+    origin,
+    destination,
+  });
+  const mappedMode = modeMap[travelMode];
+  if (mappedMode) params.set('travelmode', mappedMode);
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
