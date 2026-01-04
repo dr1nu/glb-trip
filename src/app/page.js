@@ -403,6 +403,18 @@ function labelForDestination(country, city) {
   return city ? `${city}, ${country}` : country;
 }
 
+function estimateGenericReturnFare(budgetTotal) {
+  const budget = Number.isFinite(budgetTotal) ? budgetTotal : 0;
+  const mid = clamp(Math.round(budget * 0.25), 120, 360);
+  return {
+    low: Math.round(mid * 0.8),
+    high: Math.round(mid * 1.2),
+    from: 'N/A',
+    to: 'N/A',
+    distanceKm: 0,
+  };
+}
+
 export default function Home() {
   const router = useRouter();
   // --- form state ---
@@ -446,18 +458,34 @@ export default function Home() {
 
   // --- compute result model when needed ---
   const result = useMemo(() => {
-    const { perDay, bucket, accom, other, styleLabel } =
-      getDailyBreakdown(destinationCountry, travelStyle);
+    const isAnywhere = destinationCountry === 'Anywhere';
+    const breakdown = getDailyBreakdown(isAnywhere ? '' : destinationCountry, travelStyle);
+    let { perDay, bucket, accom, other, styleLabel } = breakdown;
+    if (isAnywhere) {
+      const days = Math.max(tripLengthDays || 1, 1);
+      const budgetPerDay = budgetTotal > 0 ? budgetTotal / days : perDay;
+      const blendedPerDay = Math.round((budgetPerDay + perDay) / 2);
+      const adjustedPerDay = clamp(blendedPerDay, 70, 140);
+      const ratio = perDay > 0 ? accom / perDay : 0.6;
+      const adjustedAccom = Math.max(30, Math.round(adjustedPerDay * ratio));
+      const adjustedOther = Math.max(18, adjustedPerDay - adjustedAccom);
+      perDay = adjustedAccom + adjustedOther;
+      accom = adjustedAccom;
+      other = adjustedOther;
+      bucket = 'mid-range';
+    }
 
     const seasonality = deriveSeasonality(destinationCountry, startDate, endDate);
     const weekend = deriveWeekendFactor(startDate, endDate);
     const destHubOverride = getDestinationHub(destinationCountry, destinationCity);
 
-    const flight = estimateReturnFare(homeCountry, destinationCountry, {
-      seasonFactor: seasonality.factor,
-      weekendFactor: weekend.factor,
-      destHubOverride,
-    });
+    const flight = isAnywhere
+      ? estimateGenericReturnFare(budgetTotal)
+      : estimateReturnFare(homeCountry, destinationCountry, {
+          seasonFactor: seasonality.factor,
+          weekendFactor: weekend.factor,
+          destHubOverride,
+        });
 
     const totalLow  = perDay * tripLengthDays + flight.low;
     const totalHigh = perDay * tripLengthDays + flight.high;
@@ -492,6 +520,31 @@ export default function Home() {
       destinationLabel: labelForDestination(destinationCountry, destinationCity),
     };
   }, [destinationCountry, destinationCity, homeCountry, tripLengthDays, budgetTotal, travelStyle, startDate, endDate]);
+
+  const directRequestPayload = useMemo(
+    () => ({
+      destinationCountry,
+      destinationCity,
+      homeCountry,
+      startDate,
+      endDate,
+      tripLengthDays,
+      budgetTotal,
+      travelStyle,
+      result,
+    }),
+    [
+      destinationCountry,
+      destinationCity,
+      homeCountry,
+      startDate,
+      endDate,
+      tripLengthDays,
+      budgetTotal,
+      travelStyle,
+      result,
+    ]
+  );
 
   useEffect(() => {
     let active = true;
@@ -719,6 +772,7 @@ export default function Home() {
                 travelStyle={travelStyle}
                 setTravelStyle={setTravelStyle}
                 onSubmit={() => setShowResult(true)}
+                onRequestDirect={() => handleRequestTrip(directRequestPayload)}
               />
             ) : (
               <ResultCard
@@ -1028,16 +1082,18 @@ function FormCard({
   travelStyle,
   setTravelStyle,
   onSubmit,
+  onRequestDirect,
 }) {
   const destinationValue = encodeDestination(destinationCountry, destinationCity);
   const [dateError, setDateError] = useState('');
   const [styleInfoOpen, setStyleInfoOpen] = useState(false);
+  const hasDates = Boolean(startDate && endDate);
   return (
     <form
       className="relative rounded-[32px] border border-[#E3E6EF] bg-white p-6 shadow-[0_24px_90px_-60px_rgba(15,23,42,0.35)] backdrop-blur-sm ring-1 ring-white/70 space-y-6 sm:p-7"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!startDate || !endDate) {
+        if (!hasDates) {
           setDateError('Please select a start and end date.');
           return;
         }
@@ -1143,12 +1199,28 @@ function FormCard({
         <StyleToggle value={travelStyle} onChange={setTravelStyle} />
       </div>
 
-      <button
-        type="submit"
-        className="w-full rounded-2xl bg-gradient-to-r from-[#FF8A3C] via-[#FF6B35] to-[#FF5B24] py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:from-[#FF9B55] hover:via-[#FF6B35] hover:to-[#FF4A12] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-      >
-        Get instant estimate
-      </button>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button
+          type="submit"
+          className="w-full rounded-2xl bg-gradient-to-r from-[#FF8A3C] via-[#FF6B35] to-[#FF5B24] py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:from-[#FF9B55] hover:via-[#FF6B35] hover:to-[#FF4A12] focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+        >
+          Get Instant Estimate
+        </button>
+        <button
+          type="button"
+          className="w-full rounded-2xl border border-[#FFB38A] bg-white py-3 text-sm font-semibold text-[#C2461E] shadow-sm transition hover:-translate-y-[1px] hover:border-[#FF6B35] hover:text-[#9E3B18]"
+          onClick={() => {
+            if (!hasDates) {
+              setDateError('Please select a start and end date.');
+              return;
+            }
+            setDateError('');
+            onRequestDirect?.();
+          }}
+        >
+          Request Itinerary →
+        </button>
+      </div>
     </form>
   );
 }
@@ -1447,8 +1519,8 @@ function ResultCard({
         </button>
 
         <div className="rounded-2xl border border-blue-100 bg-blue-50 text-blue-700 text-sm p-3">
-          This is an estimated range. Final pricing will be refined once we review your dates and
-          must-haves.
+          This is a ballpark estimate based on mid-range costs. Final pricing can change with live
+          flight fares, date availability, and your confirmed must-haves.
         </div>
 
         <div className="rounded-2xl border border-white/80 bg-white p-4 shadow-inner shadow-orange-50 space-y-3">
@@ -1619,7 +1691,7 @@ function decodeDestination(value) {
 }
 
 function buildDestinationList() {
-  return EUROPE_COUNTRIES.filter((country) => !DESTINATION_EXCLUSIONS.has(country)).map((country) => {
+  const baseOptions = EUROPE_COUNTRIES.filter((country) => !DESTINATION_EXCLUSIONS.has(country)).map((country) => {
     const cities = DESTINATION_CITIES[country] ?? [];
     return {
       country,
@@ -1630,6 +1702,10 @@ function buildDestinationList() {
       })),
     };
   });
+  return [
+    { country: 'Anywhere', options: [] },
+    ...baseOptions,
+  ];
 }
 
 function CascadingDestinationSelect({ options = [], value, onChange }) {
