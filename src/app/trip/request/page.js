@@ -366,6 +366,11 @@ export default function TripRequestPage() {
     accommodation: [],
     accommodationBreakfast: 'either',
     accommodationLocation: 'either',
+    hasBookedFlights: false,
+    flightNumber: '',
+    flightDate: '',
+    hasBookedAccommodation: false,
+    accommodationUrl: '',
     interests: [],
     details: '',
   });
@@ -570,10 +575,15 @@ export default function TripRequestPage() {
   }
 
   function handleInputChange(event) {
-    const { name, value } = event.target;
+    const { name, value, type, checked } = event.target;
     setForm((prev) => ({
       ...prev,
-      [name]: name === 'adults' || name === 'children' ? Number(value) : value,
+      [name]:
+        type === 'checkbox'
+          ? checked
+          : name === 'adults' || name === 'children'
+            ? Number(value)
+            : value,
     }));
   }
 
@@ -646,6 +656,11 @@ export default function TripRequestPage() {
           breakfast: form.accommodationBreakfast,
           location: form.accommodationLocation,
         },
+        hasBookedFlights: form.hasBookedFlights,
+        flightNumber: form.flightNumber.trim(),
+        flightDate: form.flightDate,
+        hasBookedAccommodation: form.hasBookedAccommodation,
+        accommodationUrl: form.accommodationUrl.trim(),
         interests: form.interests,
         details: form.details.trim(),
       };
@@ -744,156 +759,162 @@ export default function TripRequestPage() {
             <div className="text-sm text-[#4B5563]">Checking your account…</div>
           ) : user ? (
             <form className="space-y-5" onSubmit={handleSubmit}>
-            <div>
-              <h2 className="text-xl font-semibold">Tell us about you</h2>
-              <p className="text-sm text-[#4B5563] mt-1">
-                We use these details to lock in dates, find the best routes, and
-                get back to you with a tailored itinerary.
-              </p>
-            </div>
+            <div className="space-y-4 rounded-2xl border border-[#E3E6EF] bg-white p-5 shadow-sm">
+              <div>
+                <h2 className="text-2xl font-semibold text-[#0F172A]">
+                  Tell us about you
+                </h2>
+                <p className="text-sm text-[#4B5563] mt-1">
+                  We use these details to lock in dates, find the best routes, and
+                  get back to you with a tailored itinerary.
+                </p>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium">First name</span>
-                <input
-                  required
-                  type="text"
-                  name="firstName"
-                  value={form.firstName}
-                  onChange={handleInputChange}
-                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                  placeholder="Jane"
-                />
-              </label>
-              <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium">Surname</span>
-                <input
-                  required
-                  type="text"
-                  name="lastName"
-                  value={form.lastName}
-                  onChange={handleInputChange}
-                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                  placeholder="Doe"
-                />
-              </label>
-            </div>
-
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Email</span>
-              <input
-                required
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleInputChange}
-                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                placeholder="jane@example.com"
-              />
-            </label>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium">Home country</span>
-                <select
-                  required
-                  name="homeCountry"
-                  value={form.homeCountry}
-                  onChange={handleInputChange}
-                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                >
-                  <option value="" disabled>
-                    Select your country
-                  </option>
-                  {HOME_COUNTRIES.map((country) => (
-                    <option key={country} value={country}>
-                      {country}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium">Nearest airport</span>
-                {airportsForHomeCountry.length > 0 ? (
-                  <div className="flex flex-col gap-2 w-full">
-                    <select
-                      required
-                      name="nearestAirportSelect"
-                      value={airportSelectValue}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setNearestAirportSelection(value);
-                        if (value === 'other') {
-                          setForm((prev) => ({ ...prev, nearestAirport: '' }));
-                          return;
-                        }
-                        setForm((prev) => ({ ...prev, nearestAirport: value }));
-                      }}
-                      className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                    >
-                      <option value="" disabled>
-                        Select an airport
-                      </option>
-                      {airportsForHomeCountry.map((airport) => (
-                        <option key={airport} value={airport}>
-                          {airport}
-                        </option>
-                      ))}
-                      <option value="other">Other / not listed</option>
-                    </select>
-                    {showCustomAirportInput ? (
-                      <input
-                        required
-                        type="text"
-                        name="nearestAirport"
-                        value={form.nearestAirport}
-                        onChange={handleInputChange}
-                        className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                        placeholder="Type your closest airport"
-                      />
-                    ) : null}
-                  </div>
-                ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium text-[#0F172A]">First name</span>
                   <input
                     required
                     type="text"
-                    name="nearestAirport"
-                    value={form.nearestAirport}
+                    name="firstName"
+                    value={form.firstName}
                     onChange={handleInputChange}
                     className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                    placeholder="Start typing your nearest airport"
+                    placeholder="Jane"
                   />
-                )}
-              </label>
-            </div>
+                </label>
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium text-[#0F172A]">Surname</span>
+                  <input
+                    required
+                    type="text"
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={handleInputChange}
+                    className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                    placeholder="Doe"
+                  />
+                </label>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium">Adults</span>
+                <span className="font-medium text-[#0F172A]">Email</span>
                 <input
-                  min={1}
-                  type="number"
-                  name="adults"
-                  value={form.adults}
+                  required
+                  type="email"
+                  name="email"
+                  value={form.email}
                   onChange={handleInputChange}
                   className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                  placeholder="jane@example.com"
                 />
               </label>
-              <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium">Children</span>
-                <input
-                  min={0}
-                  type="number"
-                  name="children"
-                  value={form.children}
-                  onChange={handleInputChange}
-                  className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                />
-              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium text-[#0F172A]">Home country</span>
+                  <select
+                    required
+                    name="homeCountry"
+                    value={form.homeCountry}
+                    onChange={handleInputChange}
+                    className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                  >
+                    <option value="" disabled>
+                      Select your country
+                    </option>
+                    {HOME_COUNTRIES.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium text-[#0F172A]">Nearest airport</span>
+                  {airportsForHomeCountry.length > 0 ? (
+                    <div className="flex flex-col gap-2 w-full">
+                      <select
+                        required
+                        name="nearestAirportSelect"
+                        value={airportSelectValue}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setNearestAirportSelection(value);
+                          if (value === 'other') {
+                            setForm((prev) => ({ ...prev, nearestAirport: '' }));
+                            return;
+                          }
+                          setForm((prev) => ({ ...prev, nearestAirport: value }));
+                        }}
+                        className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                      >
+                        <option value="" disabled>
+                          Select an airport
+                        </option>
+                        {airportsForHomeCountry.map((airport) => (
+                          <option key={airport} value={airport}>
+                            {airport}
+                          </option>
+                        ))}
+                        <option value="other">Other / not listed</option>
+                      </select>
+                      {showCustomAirportInput ? (
+                        <input
+                          required
+                          type="text"
+                          name="nearestAirport"
+                          value={form.nearestAirport}
+                          onChange={handleInputChange}
+                          className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                          placeholder="Type your closest airport"
+                        />
+                      ) : null}
+                    </div>
+                  ) : (
+                    <input
+                      required
+                      type="text"
+                      name="nearestAirport"
+                      value={form.nearestAirport}
+                      onChange={handleInputChange}
+                      className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                      placeholder="Start typing your nearest airport"
+                    />
+                  )}
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium text-[#0F172A]">Adults</span>
+                  <input
+                    min={1}
+                    type="number"
+                    name="adults"
+                    value={form.adults}
+                    onChange={handleInputChange}
+                    className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium text-[#0F172A]">Children</span>
+                  <input
+                    min={0}
+                    type="number"
+                    name="children"
+                    value={form.children}
+                    onChange={handleInputChange}
+                    className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                  />
+                </label>
+              </div>
             </div>
 
-            <div className="border border-[#E3E6EF] rounded-xl p-4 bg-white space-y-3">
-              <span className="block text-sm font-medium">Baggage preference</span>
+            <div className="border border-[#E3E6EF] rounded-2xl p-4 bg-white space-y-3 shadow-sm">
+              <span className="block text-lg font-semibold text-[#0F172A]">
+                Baggage preference
+              </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                 {BAGGAGE_OPTIONS.map((option) => (
                   <label
@@ -918,8 +939,10 @@ export default function TripRequestPage() {
               </div>
             </div>
 
-            <div className="space-y-3 border border-[#E3E6EF] rounded-xl p-4 bg-white">
-              <span className="block text-sm font-medium">When do you want to travel?</span>
+            <div className="space-y-3 border border-[#E3E6EF] rounded-2xl p-4 bg-white shadow-sm">
+              <span className="block text-lg font-semibold text-[#0F172A]">
+                When do you want to travel?
+              </span>
               <div className="flex flex-wrap gap-3 text-sm">
                 {TRAVEL_WINDOW_OPTIONS.map((option) => (
                   <label
@@ -1064,9 +1087,11 @@ export default function TripRequestPage() {
               )}
             </div>
 
-            <div className="space-y-3 rounded-2xl border border-[#E3E6EF] bg-white p-4">
+            <div className="space-y-3 rounded-2xl border border-[#E3E6EF] bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-[#0F172A]">Accommodation Preference</span>
+                <span className="text-lg font-semibold text-[#0F172A]">
+                  Accommodation preference
+                </span>
               </div>
               <div className="space-y-2">
                 <span className="text-xs text-[#6B7280]">Select one or more</span>
@@ -1110,41 +1135,10 @@ export default function TripRequestPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div className="space-y-2">
-                  <span className="font-medium text-[#0F172A]">Breakfast included?</span>
-                  <div className="mt-1 flex flex-nowrap gap-3 overflow-x-auto">
-                    {[
-                      { value: 'yes', label: 'Yes' },
-                      { value: 'either', label: 'Either' },
-                      { value: 'no', label: 'No' },
-                    ].map((opt) => {
-                      const active = form.accommodationBreakfast === opt.value;
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() =>
-                            setForm((prev) => ({ ...prev, accommodationBreakfast: opt.value }))
-                          }
-                          className={`flex-1 rounded-xl border px-3 py-2 transition ${
-                            active
-                              ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
-                              : 'border-orange-100 text-[#0F172A] bg-white hover:border-orange-200 hover:bg-orange-50/60'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
             </div>
 
-            <div className="space-y-2">
-              <span className="text-sm font-medium">Travel interests</span>
+            <div className="space-y-3 rounded-2xl border border-[#E3E6EF] bg-white p-4 shadow-sm">
+              <span className="text-lg font-semibold text-[#0F172A]">Travel interests</span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 {TRAVEL_INTERESTS.map((interest) => (
                   <label
@@ -1185,17 +1179,94 @@ export default function TripRequestPage() {
               </div>
             </div>
 
-            <label className="flex flex-col gap-2 text-sm">
-              <span className="font-medium">Special requests / preferences</span>
+            <div className="space-y-3 rounded-2xl border border-[#E3E6EF] bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-lg font-semibold text-[#0F172A]">
+                  Existing bookings
+                </span>
+              </div>
+              <p className="text-xs text-[#6B7280]">
+                Sharing confirmed flights or accommodation helps us refine timing, transport, and
+                costs for a more accurate itinerary.
+              </p>
+              <div className="space-y-3 text-sm">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    name="hasBookedFlights"
+                    checked={form.hasBookedFlights}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 accent-[#FF6B35]"
+                  />
+                  <span>I already have flights booked</span>
+                </label>
+                {form.hasBookedFlights ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-[#4B5563]">Flight number</span>
+                      <input
+                        type="text"
+                        name="flightNumber"
+                        value={form.flightNumber}
+                        onChange={handleInputChange}
+                        required={form.hasBookedFlights}
+                        className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                        placeholder="e.g. BA248"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-[#4B5563]">Flight date</span>
+                      <input
+                        type="date"
+                        name="flightDate"
+                        value={form.flightDate}
+                        onChange={handleInputChange}
+                        required={form.hasBookedFlights}
+                        className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    name="hasBookedAccommodation"
+                    checked={form.hasBookedAccommodation}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 accent-[#FF6B35]"
+                  />
+                  <span>I already have accommodation booked</span>
+                </label>
+                {form.hasBookedAccommodation ? (
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-[#4B5563]">Accommodation URL (optional)</span>
+                    <input
+                      type="url"
+                      name="accommodationUrl"
+                      value={form.accommodationUrl}
+                      onChange={handleInputChange}
+                      className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                      placeholder="https://"
+                    />
+                  </label>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 rounded-2xl border border-[#E3E6EF] bg-white p-4 shadow-sm">
+              <span className="text-lg font-semibold text-[#0F172A]">
+                Special requests / preferences
+              </span>
               <textarea
                 name="details"
                 value={form.details}
                 onChange={handleInputChange}
                 rows={4}
-                className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A] resize-none"
+                className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A] resize-none"
                 placeholder="Tell us about any other information not mentioned in the form... Must see experiences, travel style, what you want to do, location preferences, do you already have flights booked and just want an itinerary etc... The more detail the better the result!"
               />
-            </label>
+            </div>
 
             <div className="rounded-xl border border-[#E3E6EF] bg-[#F4F6FB] text-sm text-[#0F172A] p-3 flex gap-3">
               <span className="mt-0.5 text-[#FF6B35]">•</span>

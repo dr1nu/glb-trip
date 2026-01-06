@@ -3,8 +3,6 @@ export const runtime = 'nodejs';
 
 export default function AdminLayout({ children }) {
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="max-w-4xl mx-auto px-4 py-10">{children}</div>
-    </div>
+    <div className="min-h-screen bg-[#f5f6fb] text-slate-900">{children}</div>
   );
 }

@@ -473,6 +473,7 @@ function DayItineraryDetail({ card }) {
               <TimelineEntry
                 key={entry.id ?? index}
                 entry={entry}
+                nextEntry={timeline[index + 1]}
                 isLast={index === timeline.length - 1}
               />
             ))}
@@ -506,6 +507,7 @@ function OtherActivitiesList({ activities }) {
           <TimelineEntry
             key={entry.id ?? index}
             entry={entry}
+            nextEntry={activities[index + 1]}
             isLast={index === activities.length - 1}
           />
         ))}
@@ -625,7 +627,7 @@ const TRAVEL_META = {
 };
 const DISALLOWED_TRAVEL_MODES = new Set(['train', 'flight']);
 
-function TimelineEntry({ entry, isLast }) {
+function TimelineEntry({ entry, nextEntry, isLast }) {
   const meta = ENTRY_META[entry?.type] ?? DEFAULT_ENTRY_META;
   const fields = entry?.fields ?? {};
   const title =
@@ -639,11 +641,12 @@ function TimelineEntry({ entry, isLast }) {
       : typeof fields.tag === 'string' && fields.tag.trim()
       ? fields.tag.trim()
       : '';
-  const isFree = rawBadge.toLowerCase() === 'free';
+  const normalizedBadge = normalizePriceBadge(rawBadge);
+  const isFree = normalizedBadge.toLowerCase() === 'free';
   const badgeClass = isFree
     ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
     : 'bg-slate-100 text-slate-900 border border-slate-200';
-  const badge = rawBadge;
+  const badge = normalizedBadge;
   const link = typeof fields.link === 'string' ? fields.link.trim() : '';
   const description = typeof fields.description === 'string' ? fields.description.trim() : '';
   const travelMode =
@@ -653,6 +656,11 @@ function TimelineEntry({ entry, isLast }) {
     typeof fields.travelDuration === 'string' ? fields.travelDuration.trim() : '';
   const travelMeta = TRAVEL_META[displayTravelMode] ?? null;
   const travelDurationLabel = formatDuration(travelDuration);
+  const nextTitle = getEntryTitle(nextEntry);
+  const directionsUrl =
+    displayTravelMode && nextTitle
+      ? buildDirectionsUrl(title, nextTitle, displayTravelMode)
+      : '';
 
   return (
     <div className="relative flex flex-col pb-8">
@@ -746,7 +754,7 @@ function TimelineEntry({ entry, isLast }) {
         </div>
       </article>
       {displayTravelMode ? (
-        <div className="mt-3 flex items-center gap-2 text-xs text-[#4C5A6B]">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[#4C5A6B]">
           <span
             className={`inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 ${travelMeta?.border ?? 'border-slate-200'}`}
           >
@@ -756,6 +764,16 @@ function TimelineEntry({ entry, isLast }) {
             </span>
             {travelDurationLabel ? <span className="text-[#4C5A6B]">• {travelDurationLabel}</span> : null}
           </span>
+          {directionsUrl ? (
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
+            >
+              Directions <ExternalIcon />
+            </a>
+          ) : null}
         </div>
       ) : null}
       {!isLast ? <span className="absolute left-5 right-5 bottom-2 h-px bg-slate-200" /> : null}
@@ -819,6 +837,51 @@ function TravelModeIcon({ mode }) {
 
 function ExternalIcon() {
   return <ExternalLink className="h-4 w-4" strokeWidth={1.6} aria-hidden="true" />;
+}
+
+function normalizePriceBadge(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.toLowerCase() === 'free') return 'Free';
+  if (isZeroPrice(trimmed)) return 'Free';
+  return trimmed;
+}
+
+function isZeroPrice(value) {
+  if (!value) return false;
+  if (/^[\s$€£]*0+(\.0+)?[\s$€£]*$/.test(value)) return true;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric === 0) return true;
+  return false;
+}
+
+function getEntryTitle(entry) {
+  if (!entry) return '';
+  const fields = entry?.fields ?? {};
+  if (typeof fields.title === 'string' && fields.title.trim()) {
+    return fields.title.trim();
+  }
+  const meta = ENTRY_META[entry?.type] ?? DEFAULT_ENTRY_META;
+  return meta.label;
+}
+
+function buildDirectionsUrl(origin, destination, travelMode) {
+  if (!origin || !destination) return '';
+  const modeMap = {
+    walk: 'walking',
+    tube: 'transit',
+    taxi: 'driving',
+    car: 'driving',
+  };
+  const params = new URLSearchParams({
+    api: '1',
+    origin,
+    destination,
+  });
+  const mappedMode = modeMap[travelMode];
+  if (mappedMode) params.set('travelmode', mappedMode);
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
 function formatDuration(raw) {

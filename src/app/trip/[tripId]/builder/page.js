@@ -64,9 +64,12 @@ export default async function TripBuilderPage({ params }) {
           initialCards={itinerary.cards}
           initialActivities={unassignedActivities}
           destinationCountry={trip.destinationCountry}
+          homeCountry={trip.homeCountry}
           tripLengthDays={trip.tripLengthDays}
           templates={sortedTemplates}
           preferences={trip.preferences}
+          contact={trip.contact}
+          budgetTotal={trip.budgetTotal}
         />
       </div>
     </main>

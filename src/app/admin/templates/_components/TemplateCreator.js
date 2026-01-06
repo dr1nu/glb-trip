@@ -45,7 +45,7 @@ function toNumber(value) {
   return Number.isFinite(num) ? num : null;
 }
 
-export default function TemplateCreator({ trips = [] }) {
+export default function TemplateCreator({ trips = [], onCreated }) {
   const router = useRouter();
   const fileInputRef = useRef(null);
   const [name, setName] = useState('');
@@ -123,6 +123,7 @@ export default function TemplateCreator({ trips = [] }) {
           text: 'Template created. You can refine it in the builder.',
         });
         router.refresh();
+        onCreated?.();
       } catch (err) {
         console.error('Failed to create template', err);
         setMessage({
@@ -134,67 +135,60 @@ export default function TemplateCreator({ trips = [] }) {
   }
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-4">
-      <header>
-        <h2 className="text-lg font-semibold">Create a template</h2>
-        <p className="text-sm text-neutral-400">
-          Start from a past trip or a blank scaffold for this destination.
-        </p>
-      </header>
-
+    <div className="space-y-4">
       <form className="space-y-4" onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="space-y-1 text-sm">
-            <span className="text-neutral-300">Template name</span>
+            <span className="text-slate-600">Template name</span>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Paris long-weekend"
-              className="w-full rounded-xl bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-neutral-50 placeholder:text-neutral-500"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 shadow-sm focus:border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-100"
               required
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-neutral-300">Destination</span>
+            <span className="text-slate-600">Destination</span>
             <input
               type="text"
               value={destinationCountry}
               onChange={(e) => setDestinationCountry(e.target.value)}
               placeholder="France"
-              className="w-full rounded-xl bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-neutral-50 placeholder:text-neutral-500"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 shadow-sm focus:border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-100"
               required
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-neutral-300">Trip length (days)</span>
+            <span className="text-slate-600">Trip length (days)</span>
             <input
               type="number"
               min="1"
               value={tripLengthDays}
               onChange={(e) => setTripLengthDays(e.target.value)}
               placeholder="5"
-              className="w-full rounded-xl bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-neutral-50 placeholder:text-neutral-500"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 shadow-sm focus:border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-100"
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="text-neutral-300">Optional notes</span>
+            <span className="text-slate-600">Optional notes</span>
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Family-friendly, summer picks…"
-              className="w-full rounded-xl bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-neutral-50 placeholder:text-neutral-500"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 shadow-sm focus:border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-100"
             />
           </label>
         </div>
 
-        <label className="space-y-1 text-sm block">
-          <span className="text-neutral-300">Start from a past trip</span>
+        <label className="block space-y-1 text-sm">
+          <span className="text-slate-600">Start from a past trip</span>
           <select
             value={sourceTripId}
             onChange={(e) => handleTripSelect(e.target.value)}
-            className="w-full rounded-xl bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-neutral-50"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-100"
           >
             <option value="">No base trip</option>
             {tripOptions.map((trip) => (
@@ -203,13 +197,13 @@ export default function TemplateCreator({ trips = [] }) {
               </option>
             ))}
           </select>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-slate-500">
             If selected, the itinerary from that trip will be copied into the template.
           </p>
         </label>
 
-        <div className="flex flex-wrap items-center gap-3 justify-between">
-          <p className="text-xs text-neutral-500">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-slate-500">
             Templates can be refined later in the builder.
           </p>
           <button
@@ -217,8 +211,8 @@ export default function TemplateCreator({ trips = [] }) {
             disabled={isPending}
             className={`inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
               isPending
-                ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-                : 'bg-orange-500 hover:bg-orange-400 text-neutral-900'
+                ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                : 'bg-orange-500 text-white hover:bg-orange-400'
             }`}
           >
             {isPending ? 'Creating…' : 'Create template'}
@@ -226,15 +220,13 @@ export default function TemplateCreator({ trips = [] }) {
         </div>
       </form>
 
-      <div className="flex flex-wrap items-center gap-3 justify-between border-t border-neutral-800 pt-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-neutral-200">Or import from CSV</p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-sm font-semibold text-slate-700">Or import from CSV</p>
+          <p className="text-xs text-slate-500">
             Uses the name/destination above; CSV rows should include day, time, duration, title, type, price, description, link.
           </p>
-          {importing ? (
-            <p className="text-xs text-neutral-400">Importing…</p>
-          ) : null}
+          {importing ? <p className="text-xs text-slate-400">Importing…</p> : null}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -251,10 +243,10 @@ export default function TemplateCreator({ trips = [] }) {
               fileInputRef.current?.click();
             }}
             disabled={isPending || importing}
-            className={`inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-colors border ${
+            className={`inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${
               isPending || importing
-                ? 'bg-neutral-900 text-neutral-500 border-neutral-800 cursor-not-allowed'
-                : 'bg-neutral-900 text-orange-300 border-orange-400 hover:border-orange-300'
+                ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                : 'border-orange-300 text-orange-600 hover:bg-orange-50'
             }`}
           >
             {importing ? 'Importing…' : 'Import CSV'}
@@ -368,6 +360,7 @@ export default function TemplateCreator({ trips = [] }) {
                 startTransition(() => {
                   router.refresh();
                 });
+                onCreated?.();
               } catch (err) {
                 console.error('Failed to import template', err);
                 setMessage({
@@ -384,10 +377,10 @@ export default function TemplateCreator({ trips = [] }) {
 
       {message.text ? (
         <div
-          className={`text-sm rounded-xl px-3 py-2 border ${
+          className={`rounded-xl border px-3 py-2 text-sm ${
             message.type === 'success'
-              ? 'bg-green-500/10 border-green-500/30 text-green-200'
-              : 'bg-red-500/10 border-red-500/30 text-red-200'
+              ? 'border-green-200 bg-green-50 text-green-700'
+              : 'border-red-200 bg-red-50 text-red-700'
           }`}
         >
           {message.text}

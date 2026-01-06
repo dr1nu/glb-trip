@@ -187,9 +187,12 @@ export default function TripBuilderClient({
   initialCards,
   initialActivities = [],
   destinationCountry,
+  homeCountry,
   tripLengthDays,
   templates = [],
   preferences = null,
+  contact = null,
+  budgetTotal = null,
 }) {
   const [cards, setCards] = useState(() =>
     prepareCards(initialCards, preferences)
@@ -949,19 +952,30 @@ export default function TripBuilderClient({
 
         </>
       ) : (
-        <DayTimelineBuilder
-          dayCards={dayCards}
-          onTimelineChange={handleTimelineChange}
-          onMoveEntry={handleMoveEntry}
-          onSwapDays={handleSwapDays}
-          onReorderDay={handleReorderDay}
-          unassignedActivities={unassignedActivities}
-          onAssignActivity={handleAssignActivity}
-          onUnassignedChange={handleUnassignedChange}
-          onUnassignedTypeChange={handleUnassignedTypeChange}
-          onUnassignedDelete={handleUnassignedDelete}
-          onAddUnassigned={handleAddUnassigned}
-        />
+        <div className="relative left-1/2 right-1/2 w-screen max-w-none -translate-x-1/2 px-6">
+          <DayTimelineBuilder
+            dayCards={dayCards}
+            onTimelineChange={handleTimelineChange}
+            onMoveEntry={handleMoveEntry}
+            onSwapDays={handleSwapDays}
+            onReorderDay={handleReorderDay}
+            unassignedActivities={unassignedActivities}
+            onAssignActivity={handleAssignActivity}
+            onUnassignedChange={handleUnassignedChange}
+            onUnassignedTypeChange={handleUnassignedTypeChange}
+            onUnassignedDelete={handleUnassignedDelete}
+            onAddUnassigned={handleAddUnassigned}
+            requestSummary={{
+              route: `${homeCountry || 'Home'} → ${destinationCountry || 'Destination'}`,
+              travellers: formatTravellerCount(contact),
+              dates: formatTravelWindow(preferences),
+              length: formatDuration(tripLengthDays, preferences),
+              budget: formatBudget(budgetTotal),
+              airport: contact?.nearestAirport || 'Airport TBD',
+              interests: formatPreferences(preferences),
+            }}
+          />
+        </div>
       )}
 
       <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
@@ -1047,4 +1061,80 @@ export default function TripBuilderClient({
       </section>
     </div>
   );
+}
+
+function formatBudget(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return 'Budget TBD';
+  return `€${Math.round(value)}`;
+}
+
+function formatPreferences(preferences) {
+  const interests = Array.isArray(preferences?.interests)
+    ? preferences.interests.filter(Boolean)
+    : [];
+  if (interests.length > 0) return interests.join(', ');
+  return 'No preferences listed';
+}
+
+function formatTravellerCount(contact) {
+  if (!contact) return 'Travellers TBD';
+  const adults = typeof contact.adults === 'number' ? contact.adults : null;
+  const children = typeof contact.children === 'number' ? contact.children : 0;
+  if (adults === null) return 'Travellers TBD';
+  const adultLabel = `${adults} adult${adults === 1 ? '' : 's'}`;
+  const childLabel =
+    children > 0 ? ` · ${children} child${children === 1 ? '' : 'ren'}` : '';
+  return `${adultLabel}${childLabel}`;
+}
+
+function formatTravelWindow(preferences) {
+  if (!preferences) return 'Dates TBD';
+  const { travelWindow, dateFrom, dateTo, flexibleMonth, flexibleDays, rangeDays } =
+    preferences;
+  if (travelWindow === 'flexible' && flexibleMonth) {
+    const parsed = new Date(`${flexibleMonth}-01`);
+    if (!Number.isNaN(parsed.getTime())) {
+      const days = Number(flexibleDays) || Number(rangeDays) || 0;
+      const daysLabel = days > 0 ? `${days} days` : 'Flexible days';
+      const monthLabel = new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        year: 'numeric',
+      }).format(parsed);
+      return `${daysLabel} during ${monthLabel}`;
+    }
+  }
+  if ((travelWindow === 'range' || travelWindow === 'specific') && dateFrom && dateTo) {
+    return `${formatDateLabel(dateFrom)} → ${formatDateLabel(dateTo)}`;
+  }
+  if (dateFrom) return `From ${formatDateLabel(dateFrom)}`;
+  return 'Dates TBD';
+}
+
+function formatDateLabel(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date)) return value;
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatDuration(tripLengthDays, preferences) {
+  if (tripLengthDays) {
+    return `${tripLengthDays} day${tripLengthDays === 1 ? '' : 's'}`;
+  }
+  const { dateFrom, dateTo } = preferences || {};
+  if (dateFrom && dateTo) {
+    const start = new Date(dateFrom);
+    const end = new Date(dateTo);
+    if (!Number.isNaN(start) && !Number.isNaN(end)) {
+      const ms = end - start;
+      if (ms > 0) {
+        const days = Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
+        return `${days} day${days === 1 ? '' : 's'}`;
+      }
+    }
+  }
+  return 'Length TBD';
 }

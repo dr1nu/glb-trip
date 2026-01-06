@@ -18,6 +18,7 @@ import {
   TramFront,
   Trees,
   Utensils,
+  ExternalLink,
 } from 'lucide-react';
 
 const TYPE_OPTIONS = [
@@ -368,6 +369,7 @@ export default function DayTimelineBuilder({
   onUnassignedTypeChange,
   onUnassignedDelete,
   onAddUnassigned,
+  requestSummary,
 }) {
   const dayOptions = useMemo(() => dayCards ?? [], [dayCards]);
   const [activeDayId, setActiveDayId] = useState(dayOptions[0]?.id ?? null);
@@ -536,197 +538,228 @@ export default function DayTimelineBuilder({
   }
 
   return (
-    <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-      <header className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Day-by-day builder</h2>
-            <p className="text-sm text-[#4C5A6B]">
-              Add a single itinerary card, pick its type for the icon, and attach optional travel to
-              the next stop.
-            </p>
-          </div>
-          <div className="inline-flex flex-wrap gap-2">
-            {dayOptions.map((card) => (
-              <button
-                key={card.id}
-                type="button"
-                onClick={() => {
-                  setActiveDayId(card.id);
-                }}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  card.id === activeDayId
-                    ? 'bg-orange-500 text-neutral-900'
-                    : 'bg-orange-50 text-[#4C5A6B] hover:text-slate-900'
-                }`}
-              >
-                {card.title}
-              </button>
-            ))}
-          </div>
+    <div className="grid gap-6 justify-center lg:grid-cols-[240px_minmax(0,56rem)_260px]">
+      <aside className="space-y-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+            Building blocks
+          </p>
+          <p className="text-sm font-semibold text-slate-900 mt-1">Add items</p>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-wide text-[#4C5A6B]">
-          <span>{activeDay.subtitle}</span>
-          <span>{dayTotal > 0 ? `Day total: €${dayTotal}` : 'Day total: —'}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[#4C5A6B]">
-          <button
-            type="button"
-            onClick={() => onReorderDay?.(activeDay.id, -1)}
-            disabled={activeDayIndex <= 0}
-            className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
-          >
-            Move earlier
-          </button>
-          <button
-            type="button"
-            onClick={() => onReorderDay?.(activeDay.id, 1)}
-            disabled={activeDayIndex === -1 || activeDayIndex >= dayOptions.length - 1}
-            className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
-          >
-            Move later
-          </button>
-          <label className="flex items-center gap-2">
-            <span>Swap with</span>
-            <select
-              value={swapTargetId}
-              onChange={(event) => setSwapTargetId(event.target.value)}
-              className="rounded-full border border-orange-100 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            >
-              <option value="">Select day</option>
-              {dayOptions
-                .filter((card) => card.id !== activeDay.id)
-                .map((card) => (
-                  <option key={card.id} value={card.id}>
+        <Palette onAdd={handleAddItem} />
+      </aside>
+
+      <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
+        <header className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Day-by-day builder</h2>
+                <p className="text-sm text-[#4C5A6B]">
+                  Add a single itinerary card, pick its type for the icon, and attach optional
+                  travel to the next stop.
+                </p>
+              </div>
+              <div className="inline-flex flex-wrap gap-2">
+                {dayOptions.map((card) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveDayId(card.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      card.id === activeDayId
+                        ? 'bg-orange-500 text-neutral-900'
+                        : 'bg-orange-50 text-[#4C5A6B] hover:text-slate-900'
+                    }`}
+                  >
                     {card.title}
-                  </option>
+                  </button>
                 ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            onClick={handleSwapDays}
-            disabled={!swapTargetId}
-            className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
-          >
-            Swap
-          </button>
-        </div>
-      </header>
-
-      <Palette onAdd={handleAddItem} />
-
-      <div
-        className="space-y-3"
-        onDragOver={handleDragOver}
-        onDrop={(event) => handleDrop(event, activeTimeline.length)}
-      >
-        {activeTimeline.length === 0 ? (
-          <div className="border border-dashed border-orange-100 rounded-2xl p-6 text-center text-sm text-[#4C5A6B]">
-            Drag cards here or click a type above to start building {activeDay.title}.
-          </div>
-        ) : (
-          activeTimeline.map((entry, index) => (
-            <TimelineCard
-              key={entry.id}
-              entry={entry}
-              index={index}
-              dayOptions={dayOptions}
-              activeDayId={activeDay.id}
-              onDropCard={(event) => handleDrop(event, index)}
-              onDragOverCard={handleDragOver}
-              onDragStart={(event) => {
-                event.dataTransfer.setData(
-                  'application/json',
-                  JSON.stringify({ kind: 'existing', entryId: entry.id })
-                );
-                event.dataTransfer.effectAllowed = 'move';
-              }}
-              onFieldChange={handleFieldChange}
-              onTypeChange={handleTypeChange}
-              onDelete={handleDelete}
-              onMoveEntry={(entryId, targetDayId) =>
-                onMoveEntry?.(entryId, activeDay.id, targetDayId)
-              }
-              isExpanded={expandedEntryId === entry.id}
-              onToggle={() =>
-                setExpandedEntryId((prev) => (prev === entry.id ? null : entry.id))
-              }
-            />
-          ))
-        )}
-        <button
-          type="button"
-          onClick={handleAddAttraction}
-          className="flex items-center justify-center gap-2 w-full border border-dashed border-orange-200 rounded-2xl px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50"
-        >
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600">
-            +
-          </span>
-          Add attraction
-        </button>
-      </div>
-
-      {showUnassignedSection ? (
-        <section className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4 space-y-3">
-          <header className="flex flex-wrap items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setShowUnassigned((prev) => !prev)}
-              className="text-sm font-semibold text-slate-900"
-            >
-              {showUnassigned ? 'Hide' : 'Show'} unassigned activities
-            </button>
-            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-[#4C5A6B]">
-              <span>
-                {unassignedActivities.length
-                  ? `${unassignedActivities.length} in pool`
-                  : 'None yet'}
-              </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-wide text-[#4C5A6B]">
+              <span>{activeDay.subtitle}</span>
+              <span>{dayTotal > 0 ? `Day total: €${dayTotal}` : 'Day total: —'}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-[#4C5A6B]">
               <button
                 type="button"
-                onClick={() => onAddUnassigned?.()}
-                className="inline-flex items-center justify-center rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-orange-600"
+                onClick={() => onReorderDay?.(activeDay.id, -1)}
+                disabled={activeDayIndex <= 0}
+                className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
               >
-                Add activity
+                Move earlier
+              </button>
+              <button
+                type="button"
+                onClick={() => onReorderDay?.(activeDay.id, 1)}
+                disabled={activeDayIndex === -1 || activeDayIndex >= dayOptions.length - 1}
+                className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
+              >
+                Move later
+              </button>
+              <label className="flex items-center gap-2">
+                <span>Swap with</span>
+                <select
+                  value={swapTargetId}
+                  onChange={(event) => setSwapTargetId(event.target.value)}
+                  className="rounded-full border border-orange-100 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                >
+                  <option value="">Select day</option>
+                  {dayOptions
+                    .filter((card) => card.id !== activeDay.id)
+                    .map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {card.title}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={handleSwapDays}
+                disabled={!swapTargetId}
+                className="rounded-full border border-orange-100 px-3 py-1 font-semibold disabled:opacity-50"
+              >
+                Swap
               </button>
             </div>
           </header>
-          {showUnassigned ? (
-            <div className="space-y-3">
-              {unassignedActivities.length ? (
-                unassignedActivities.map((activity) => (
-                  <UnassignedActivityCard
-                    key={activity.id}
-                    activity={activity}
-                    dayCards={dayOptions}
-                    onAssign={onAssignActivity}
-                    onChange={onUnassignedChange}
-                    onTypeChange={onUnassignedTypeChange}
-                    onDelete={onUnassignedDelete}
-                  />
-                ))
-              ) : (
-                <div className="border border-dashed border-orange-100 rounded-xl px-4 py-6 text-sm text-[#4C5A6B] text-center">
-                  All optional activities are assigned. Anything left here will show in the Other
-                  Activities tab for travellers.
-                </div>
-              )}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
 
-      <p className="text-xs text-[#4C5A6B]">
-        Changes are tracked automatically—remember to save the entire trip.
-      </p>
-    </section>
+          <div
+            className="space-y-3"
+            onDragOver={handleDragOver}
+            onDrop={(event) => handleDrop(event, activeTimeline.length)}
+          >
+            {activeTimeline.length === 0 ? (
+              <div className="border border-dashed border-orange-100 rounded-2xl p-6 text-center text-sm text-[#4C5A6B]">
+                Drag cards here or click a type on the left to start building {activeDay.title}.
+              </div>
+            ) : (
+              activeTimeline.map((entry, index) => (
+                <TimelineCard
+                  key={entry.id}
+                  entry={entry}
+                  index={index}
+                  nextEntry={activeTimeline[index + 1]}
+                  dayOptions={dayOptions}
+                  activeDayId={activeDay.id}
+                  onDropCard={(event) => handleDrop(event, index)}
+                  onDragOverCard={handleDragOver}
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData(
+                      'application/json',
+                      JSON.stringify({ kind: 'existing', entryId: entry.id })
+                    );
+                    event.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onFieldChange={handleFieldChange}
+                  onTypeChange={handleTypeChange}
+                  onDelete={handleDelete}
+                  onMoveEntry={(entryId, targetDayId) =>
+                    onMoveEntry?.(entryId, activeDay.id, targetDayId)
+                  }
+                  isExpanded={expandedEntryId === entry.id}
+                  onToggle={() =>
+                    setExpandedEntryId((prev) => (prev === entry.id ? null : entry.id))
+                  }
+                />
+              ))
+            )}
+            <button
+              type="button"
+              onClick={handleAddAttraction}
+              className="flex items-center justify-center gap-2 w-full border border-dashed border-orange-200 rounded-2xl px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50"
+            >
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600">
+                +
+              </span>
+              Add attraction
+            </button>
+          </div>
+
+          {showUnassignedSection ? (
+            <section className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4 space-y-3">
+              <header className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUnassigned((prev) => !prev)}
+                  className="text-sm font-semibold text-slate-900"
+                >
+                  {showUnassigned ? 'Hide' : 'Show'} unassigned activities
+                </button>
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-[#4C5A6B]">
+                  <span>
+                    {unassignedActivities.length
+                      ? `${unassignedActivities.length} in pool`
+                      : 'None yet'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onAddUnassigned?.()}
+                    className="inline-flex items-center justify-center rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-orange-600"
+                  >
+                    Add activity
+                  </button>
+                </div>
+              </header>
+              {showUnassigned ? (
+                <div className="space-y-3">
+                  {unassignedActivities.length ? (
+                    unassignedActivities.map((activity) => (
+                      <UnassignedActivityCard
+                        key={activity.id}
+                        activity={activity}
+                        dayCards={dayOptions}
+                        onAssign={onAssignActivity}
+                        onChange={onUnassignedChange}
+                        onTypeChange={onUnassignedTypeChange}
+                        onDelete={onUnassignedDelete}
+                      />
+                    ))
+                  ) : (
+                    <div className="border border-dashed border-orange-100 rounded-xl px-4 py-6 text-sm text-[#4C5A6B] text-center">
+                      All optional activities are assigned. Anything left here will show in the
+                      Other Activities tab for travellers.
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          <p className="text-xs text-[#4C5A6B]">
+            Changes are tracked automatically—remember to save the entire trip.
+          </p>
+      </section>
+
+      <aside className="space-y-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+            Request
+          </p>
+          <p className="text-sm font-semibold text-slate-900 mt-1">
+            Traveller summary
+          </p>
+        </div>
+        <div className="rounded-2xl border border-orange-100 bg-orange-50/50 p-4 space-y-3 text-sm text-slate-700">
+          <RequestItem label="Route" value={requestSummary?.route} />
+          <RequestItem label="Travellers" value={requestSummary?.travellers} />
+          <RequestItem label="Dates" value={requestSummary?.dates} />
+          <RequestItem label="Trip length" value={requestSummary?.length} />
+          <RequestItem label="Budget" value={requestSummary?.budget} />
+          <RequestItem label="Airport" value={requestSummary?.airport} />
+          <RequestItem label="Preferences" value={requestSummary?.interests} />
+        </div>
+      </aside>
+    </div>
   );
 }
 
 function Palette({ onAdd }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 gap-2">
       {TYPE_OPTIONS.map((item) => (
         <button
           key={item.value}
@@ -740,10 +773,10 @@ function Palette({ onAdd }) {
             event.dataTransfer.effectAllowed = 'copy';
           }}
           onClick={() => onAdd(item.value)}
-          className={`text-left border rounded-2xl p-4 bg-gradient-to-b ${item.accent} ${item.border} hover:border-orange-500/50 transition-colors space-y-3`}
+          className={`text-left border rounded-2xl p-3 bg-gradient-to-b ${item.accent} ${item.border} hover:border-orange-500/50 transition-colors space-y-2`}
         >
           <div
-            className={`h-10 w-10 rounded-full border flex items-center justify-center ${item.border} ${item.text} bg-white/60`}
+            className={`h-9 w-9 rounded-full border flex items-center justify-center ${item.border} ${item.text} bg-white/60`}
           >
             <TypeIcon type={item.value} />
           </div>
@@ -761,6 +794,7 @@ function Palette({ onAdd }) {
 function TimelineCard({
   entry,
   index,
+  nextEntry,
   dayOptions,
   activeDayId,
   onDragStart,
@@ -779,6 +813,13 @@ function TimelineCard({
     typeof entry.fields?.title === 'string' && entry.fields.title.trim()
       ? entry.fields.title.trim()
       : null;
+  const travelMode = typeof entry.fields?.travelMode === 'string' ? entry.fields.travelMode.trim() : '';
+  const currentTitle = titleValue ?? meta.label;
+  const nextTitle = getEntryTitle(nextEntry);
+  const directionsUrl =
+    travelMode && !DISALLOWED_TRAVEL_MODES.has(travelMode) && nextTitle
+      ? buildDirectionsUrl(currentTitle, nextTitle, travelMode)
+      : '';
   const [moveTargetId, setMoveTargetId] = useState('');
   return (
     <div
@@ -921,14 +962,23 @@ function TimelineCard({
       ) : (
         <span className="sr-only">Details collapsed</span>
       )}
-      {entry.fields?.travelMode && !DISALLOWED_TRAVEL_MODES.has(entry.fields.travelMode) ? (
-        <div className="flex items-center justify-end text-xs text-[#4C5A6B]">
+      {travelMode && !DISALLOWED_TRAVEL_MODES.has(travelMode) ? (
+        <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-[#4C5A6B]">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 border border-orange-100 text-[11px] font-semibold text-slate-700">
-            <TravelModeIcon mode={entry.fields.travelMode} />
-            {TRAVEL_MODES.find((mode) => mode.value === entry.fields.travelMode)?.label ??
-              entry.fields.travelMode}
+            <TravelModeIcon mode={travelMode} />
+            {TRAVEL_MODES.find((mode) => mode.value === travelMode)?.label ?? travelMode}
             {entry.fields.travelDuration ? ` • ${entry.fields.travelDuration}` : ''}
           </span>
+          {directionsUrl ? (
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 border border-orange-100 text-[11px] font-semibold text-slate-700 hover:bg-white"
+            >
+              Directions <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -1089,5 +1139,46 @@ function UnassignedActivityCard({ activity, dayCards, onAssign, onChange, onType
         </button>
       </div>
     </article>
+  );
+}
+
+function getEntryTitle(entry) {
+  if (!entry) return '';
+  const fields = entry?.fields ?? {};
+  if (typeof fields.title === 'string' && fields.title.trim()) {
+    return fields.title.trim();
+  }
+  const meta = getTypeMeta(entry.type);
+  return meta.label;
+}
+
+function buildDirectionsUrl(origin, destination, travelMode) {
+  if (!origin || !destination) return '';
+  const modeMap = {
+    walk: 'walking',
+    tube: 'transit',
+    taxi: 'driving',
+    car: 'driving',
+  };
+  const params = new URLSearchParams({
+    api: '1',
+    origin,
+    destination,
+  });
+  const mappedMode = modeMap[travelMode];
+  if (mappedMode) params.set('travelmode', mappedMode);
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function RequestItem({ label, value }) {
+  return (
+    <div className="rounded-xl border border-orange-100 bg-white/80 px-3 py-2">
+      <div className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
+        {label}
+      </div>
+      <div className="text-sm font-semibold text-slate-900 mt-1">
+        {value || '—'}
+      </div>
+    </div>
   );
 }
