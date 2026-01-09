@@ -1288,6 +1288,45 @@ function PopularDestinations({ imagesByPath = {}, destinations = [], templatesBy
     setImageStatus({});
   }, [destinations, imagesByPath]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const preloaders = [];
+
+    destinations.forEach((item) => {
+      const imageUrl = item?.imagePath ? imagesByPath[item.imagePath] : null;
+      const imageKey = item?.imagePath || item?.city || '';
+      if (!imageUrl || !imageKey) return;
+      const img = new Image();
+      img.onload = () => {
+        if (cancelled) return;
+        setImageStatus((prev) =>
+          prev[imageKey] === 'loaded' ? prev : { ...prev, [imageKey]: 'loaded' }
+        );
+      };
+      img.onerror = () => {
+        if (cancelled) return;
+        setImageStatus((prev) =>
+          prev[imageKey] === 'error' ? prev : { ...prev, [imageKey]: 'error' }
+        );
+      };
+      img.src = imageUrl;
+      if (img.complete && img.naturalWidth > 0) {
+        setImageStatus((prev) =>
+          prev[imageKey] === 'loaded' ? prev : { ...prev, [imageKey]: 'loaded' }
+        );
+      }
+      preloaders.push(img);
+    });
+
+    return () => {
+      cancelled = true;
+      preloaders.forEach((img) => {
+        img.onload = null;
+        img.onerror = null;
+      });
+    };
+  }, [destinations, imagesByPath]);
+
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
@@ -1303,7 +1342,6 @@ function PopularDestinations({ imagesByPath = {}, destinations = [], templatesBy
           const status = imageUrl ? imageStatus[imageKey] || 'loading' : 'none';
           const showImage = Boolean(imageUrl) && status !== 'error';
           const showShimmer = Boolean(imageUrl) && status === 'loading';
-          const fallbackColor = item?.color || 'from-slate-300 to-slate-200';
           const hasTemplate = Boolean(
             (item.templateId && templatesById[item.templateId]) ||
               item.templateId ||
@@ -1320,7 +1358,7 @@ function PopularDestinations({ imagesByPath = {}, destinations = [], templatesBy
             >
               <div className="relative h-48 overflow-hidden">
                 {!showImage ? (
-                  <div className={`absolute inset-0 bg-gradient-to-r ${fallbackColor}`} />
+                  <div className="absolute inset-0 bg-slate-100" />
                 ) : null}
                 {showImage ? (
                   <>
