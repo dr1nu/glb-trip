@@ -117,3 +117,28 @@ before update on public.homepage_settings
 for each row execute procedure public.set_homepage_settings_updated_at();
 
 alter table public.homepage_settings disable row level security;
+
+
+create table if not exists public.useful_info_settings (
+  id text primary key,
+  city_transport jsonb,
+  country_info jsonb,
+  country_transport_sites jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create or replace function public.set_useful_info_settings_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists set_useful_info_settings_updated_at on public.useful_info_settings;
+create trigger set_useful_info_settings_updated_at
+before update on public.useful_info_settings
+for each row execute procedure public.set_useful_info_settings_updated_at();
+
+alter table public.useful_info_settings disable row level security;

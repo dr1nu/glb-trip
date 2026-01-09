@@ -10,12 +10,14 @@ import {
   ChevronRight,
   Church,
   Coffee,
+  CreditCard,
   ExternalLink,
   Footprints,
   Hotel,
   Landmark,
   MapPin,
   Plane,
+  PlugZap,
   ShoppingBag,
   TrainFront,
   TramFront,
@@ -23,6 +25,11 @@ import {
   Utensils,
 } from 'lucide-react';
 import ItinerarySummary from '../../_components/ItinerarySummary';
+import {
+  CITY_TRANSPORT_CARDS,
+  COUNTRY_TRANSPORT_SITES,
+  COUNTRY_USEFUL_INFO,
+} from '@/data/destinationUsefulInfo';
 
 export default function TripExperienceClient({
   destinationCountry,
@@ -34,6 +41,11 @@ export default function TripExperienceClient({
   preferences = null,
 }) {
   const [usefulPosts, setUsefulPosts] = useState([]);
+  const [usefulInfoSettings, setUsefulInfoSettings] = useState({
+    cityTransport: CITY_TRANSPORT_CARDS,
+    countryInfo: COUNTRY_USEFUL_INFO,
+    countryTransportSites: COUNTRY_TRANSPORT_SITES,
+  });
 
   const buildPlaceholderDays = (length) => {
     const count = Math.max(1, Number.isFinite(length) && length > 0 ? Math.round(length) : 1);
@@ -129,6 +141,40 @@ export default function TripExperienceClient({
     };
   }, [destinationCountry]);
 
+  useEffect(() => {
+    let ignore = false;
+    async function loadUsefulInfoSettings() {
+      try {
+        const response = await fetch('/api/useful-info-settings');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (ignore) return;
+        setUsefulInfoSettings({
+          cityTransport: Array.isArray(data?.cityTransport) ? data.cityTransport : CITY_TRANSPORT_CARDS,
+          countryInfo: Array.isArray(data?.countryInfo) ? data.countryInfo : COUNTRY_USEFUL_INFO,
+          countryTransportSites: Array.isArray(data?.countryTransportSites)
+            ? data.countryTransportSites
+            : COUNTRY_TRANSPORT_SITES,
+        });
+      } catch (err) {
+        if (!ignore) {
+          console.warn('Failed to load useful info settings', err);
+        }
+      }
+    }
+    loadUsefulInfoSettings();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const usefulInfoCards = useMemo(() => buildUsefulInfoCards({
+    destinationCountry,
+    dayCards,
+    summaryCards,
+    settings: usefulInfoSettings,
+  }), [destinationCountry, dayCards, summaryCards, usefulInfoSettings]);
+
   const tabDefinitions = useMemo(() => {
     const safeSummary = Array.isArray(summaryCards) ? summaryCards : [];
     const safeDaysSource = Array.isArray(dayCards) ? dayCards : safeSummary;
@@ -206,11 +252,11 @@ export default function TripExperienceClient({
         ),
       },
     ];
-    if (usefulPosts.length > 0) {
+    if (usefulPosts.length > 0 || usefulInfoCards.length > 0) {
       tabs.push({
         id: 'useful-info',
         label: 'Useful Info',
-        content: <UsefulInfoGrid posts={usefulPosts} />,
+        content: <UsefulInfoGrid posts={usefulPosts} cards={usefulInfoCards} />,
       });
     }
 
@@ -218,7 +264,7 @@ export default function TripExperienceClient({
       tabs.push({
         id: card.id ?? `day-${index + 1}`,
         label: card.title ?? `Day ${index + 1}`,
-        content: <DayItineraryDetail card={card} />,
+        content: <DayItineraryDetail card={card} dayIndex={index} preferences={preferences} />,
       });
     });
 
@@ -238,6 +284,7 @@ export default function TripExperienceClient({
     tripLengthDays,
     preferences,
     usefulPosts,
+    usefulInfoCards,
   ]);
 
   const [activeTab, setActiveTab] = useState(tabDefinitions[0]?.id);
@@ -340,14 +387,105 @@ function TabBar({ tabs, activeTab, onSelect }) {
   );
 }
 
-function UsefulInfoGrid({ posts }) {
+function UsefulInfoGrid({ posts, cards }) {
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const safePosts = Array.isArray(posts) ? posts : [];
+
   return (
-    <div className="grid grid-cols-1 gap-4">
-      {posts.map((post) => (
-        <UsefulPostCard key={post.id} post={post} />
-      ))}
+    <div className="space-y-6">
+      {safeCards.length ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {safeCards.map((card) => (
+            <UsefulInfoCard key={card.id} card={card} />
+          ))}
+        </div>
+      ) : null}
+      {safePosts.length ? (
+        <div className="grid grid-cols-1 gap-4">
+          {safePosts.map((post) => (
+            <UsefulPostCard key={post.id} post={post} />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function UsefulInfoCard({ card }) {
+  const rows = Array.isArray(card?.rows) ? card.rows : [];
+  const helperNote =
+    card?.helperNote ||
+    (card?.kind === 'transport'
+      ? 'Prices change often based on zones and time. Check the official site for the latest fares.'
+      : '');
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-orange-100 bg-white p-5 shadow-sm shadow-orange-100/40">
+      <div className="flex items-start gap-4">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-orange-100 bg-orange-50 text-orange-700">
+          <UsefulInfoIcon kind={card.kind} />
+        </span>
+        <div>
+          <h3 className="text-base font-semibold text-slate-900">{card.title}</h3>
+          {card.subtitle ? (
+            <p className="text-xs text-[#4C5A6B]">{card.subtitle}</p>
+          ) : null}
+        </div>
+      </div>
+      {rows.length ? (
+        <div className="mt-4 space-y-2">
+          {rows.map((row) => (
+            <div key={row.label} className="flex items-start justify-between gap-3 text-sm">
+              <span className="text-[#4C5A6B]">{row.label}</span>
+              <span className="text-slate-900 font-semibold text-right">{row.value}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {helperNote ? (
+        <p className="mt-3 text-xs text-[#4C5A6B]">{helperNote}</p>
+      ) : null}
+      {Array.isArray(card.links) && card.links.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold">
+          {card.links.map((link) => (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
+            >
+              {link.label || 'Official site'} <ExternalIcon />
+            </a>
+          ))}
+        </div>
+      ) : card.link?.url ? (
+        <a
+          href={card.link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-2 rounded-full bg-orange-500 px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-orange-200 transition hover:bg-orange-600"
+        >
+          {card.link.label || 'Official site'} <ExternalIcon />
+        </a>
+      ) : null}
+    </article>
+  );
+}
+
+function UsefulInfoIcon({ kind }) {
+  const className = 'h-5 w-5';
+  const iconProps = { className, strokeWidth: 1.7, 'aria-hidden': true };
+  switch (kind) {
+    case 'transport':
+      return <TramFront {...iconProps} />;
+    case 'payments':
+      return <CreditCard {...iconProps} />;
+    case 'power':
+      return <PlugZap {...iconProps} />;
+    default:
+      return <MapPin {...iconProps} />;
+  }
 }
 
 function UsefulPostCard({ post }) {
@@ -389,6 +527,205 @@ function UsefulPostCard({ post }) {
   );
 }
 
+
+function buildUsefulInfoCards({ destinationCountry, dayCards, summaryCards, settings }) {
+  if (!destinationCountry) return [];
+
+  const countryInfo = findCountryInfo(destinationCountry, settings?.countryInfo);
+  const cards = [];
+
+  const transportCards = buildTransportCards({ destinationCountry, dayCards, summaryCards, settings });
+  cards.push(...transportCards);
+
+  const currencyLabel = countryInfo?.currency
+    ? `${countryInfo.currency.code} (${countryInfo.currency.name})`
+    : 'Check local currency';
+  const paymentsNote = countryInfo?.payments ?? 'Card acceptance varies; keep small cash handy.';
+
+  cards.push({
+    id: `currency-${normalizeLookup(destinationCountry)}`,
+    kind: 'payments',
+    title: 'Currency & payments',
+    subtitle: destinationCountry,
+    rows: [
+      { label: 'Currency', value: currencyLabel },
+      { label: 'Payments', value: paymentsNote },
+    ],
+  });
+
+  const plugTypes = countryInfo?.power?.types?.length
+    ? countryInfo.power.types.join(', ')
+    : 'Check local plug types';
+  const voltage = countryInfo?.power?.voltage ?? 'Varies';
+  const frequency = countryInfo?.power?.frequency ?? 'Varies';
+
+  cards.push({
+    id: `power-${normalizeLookup(destinationCountry)}`,
+    kind: 'power',
+    title: 'Power & plugs',
+    subtitle: destinationCountry,
+    rows: [
+      { label: 'Plug types', value: plugTypes },
+      { label: 'Voltage', value: voltage },
+      { label: 'Frequency', value: frequency },
+    ],
+    note: 'Pack a universal adapter if you are unsure.',
+  });
+
+  return cards;
+}
+
+function buildTransportCards({ destinationCountry, dayCards, summaryCards, settings }) {
+  const cityCandidates = getCityCandidates(dayCards, summaryCards);
+  const normalizedCountry = normalizeLookup(destinationCountry);
+  const matched = [];
+  const cityTransport = Array.isArray(settings?.cityTransport) ? settings.cityTransport : CITY_TRANSPORT_CARDS;
+
+  cityTransport.forEach((entry) => {
+    if (normalizeLookup(entry.country) !== normalizedCountry) return;
+    const entryCity = normalizeLookup(entry.city);
+    const found = cityCandidates.find((candidate) => normalizeLookup(candidate.city) === entryCity);
+    if (found) {
+      matched.push(entry);
+    }
+  });
+
+  if (matched.length > 0) {
+    return matched.map((entry) => {
+      const rows = buildTransportRows({
+        singleFare: entry.singleFare,
+        passLabel: entry.passLabel,
+        passFare: entry.passFare,
+      });
+      const links = buildTransportLinks(entry);
+      return {
+        id: `transport-${normalizeLookup(entry.city)}`,
+        kind: 'transport',
+        title: `${entry.city} transport`,
+        subtitle: entry.cardName,
+        rows,
+        links,
+        helperNote:
+          'Prices change often based on zones and time. Check the official site for the latest fares.',
+      };
+    });
+  }
+
+  const countrySite = findCountryTransportSite(destinationCountry, settings?.countryTransportSites);
+  if (countrySite) {
+    const rows = buildTransportRows({});
+    const links = buildTransportLinks(countrySite);
+    return [
+      {
+        id: `transport-${normalizeLookup(destinationCountry)}`,
+        kind: 'transport',
+        title: 'Public transport',
+        subtitle: destinationCountry,
+        rows,
+        links,
+        helperNote:
+          'Prices change often based on zones and time. Check the official site for the latest fares.',
+      },
+    ];
+  }
+
+  return [
+    {
+      id: `transport-${normalizeLookup(destinationCountry)}`,
+      kind: 'transport',
+      title: 'Public transport',
+      subtitle: destinationCountry,
+      rows: [
+        { label: 'Tip', value: 'Most cities offer day passes and reloadable cards.' },
+      ],
+      note: 'Choose passes based on how many rides you plan per day.',
+    },
+  ];
+}
+
+function getCityCandidates(dayCards, summaryCards) {
+  const map = new Map();
+  const cards = [...(Array.isArray(dayCards) ? dayCards : []), ...(Array.isArray(summaryCards) ? summaryCards : [])];
+
+  cards.forEach((card) => {
+    const fields = card?.fields ?? {};
+    const city = typeof fields.city === 'string' && fields.city.trim()
+      ? fields.city.trim()
+      : typeof card?.subtitle === 'string' && card.subtitle.trim()
+      ? card.subtitle.trim()
+      : '';
+    if (!city) return;
+    const key = normalizeLookup(city);
+    if (!key) return;
+    const existing = map.get(key) ?? { city, count: 0 };
+    existing.count += 1;
+    if (!existing.city || existing.city.length < city.length) {
+      existing.city = city;
+    }
+    map.set(key, existing);
+  });
+
+  return Array.from(map.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+}
+
+function findCountryInfo(country, entries) {
+  const normalized = normalizeLookup(country);
+  const source = Array.isArray(entries) ? entries : COUNTRY_USEFUL_INFO;
+  return source.find((entry) => normalizeLookup(entry.country) === normalized) || null;
+}
+
+function normalizeLookup(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\(.*?\)/g, '')
+    .replace(/&/g, 'and')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function buildTransportRows({ singleFare, passLabel, passFare }) {
+  const rows = [];
+  if (singleFare) rows.push({ label: 'Single ride', value: singleFare });
+  if (passLabel && passFare) rows.push({ label: passLabel, value: passFare });
+  if (rows.length === 0) {
+    rows.push({ label: 'Tip', value: 'Check the official site for current fares.' });
+  }
+  return rows;
+}
+
+function buildTransportLinks(entry) {
+  if (!entry || typeof entry !== 'object') return [];
+  const officialUrl =
+    entry.officialUrl ||
+    entry.transportUrl ||
+    entry.transportWebsite ||
+    entry.transportwebsiteUrl ||
+    entry.url ||
+    entry.website ||
+    '';
+  const faresUrl = entry.faresUrl || entry.fareUrl || '';
+  const links = [];
+  if (officialUrl) {
+    links.push({ label: 'Official site', url: officialUrl });
+  }
+  if (faresUrl) {
+    links.push({ label: 'Fares', url: faresUrl });
+  }
+  return links;
+}
+
+function findCountryTransportSite(country, entries) {
+  const normalized = normalizeLookup(country);
+  const source = Array.isArray(entries) ? entries : COUNTRY_TRANSPORT_SITES;
+  return source.find((entry) => normalizeLookup(entry.country) === normalized) || null;
+}
+
 function getFeaturedImage(post) {
   const media = post?._embedded?.['wp:featuredmedia']?.[0];
   return media?.source_url || '';
@@ -423,13 +760,14 @@ function slugifyCategory(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-function DayItineraryDetail({ card }) {
+function DayItineraryDetail({ card, dayIndex, preferences }) {
   const fields = card?.fields ?? {};
   const city = fields.city || card?.subtitle || 'Destination';
   const highlight = fields.highlightAttraction || card?.summary;
   const cost = fields.dailyCost || card?.priceLabel;
   const notes = card?.notes;
   const timeline = Array.isArray(card?.timeline) ? card.timeline : [];
+  const useCurrentLocation = isTripDayToday(dayIndex, preferences);
 
   return (
     <div className="space-y-5">
@@ -474,6 +812,7 @@ function DayItineraryDetail({ card }) {
                 key={entry.id ?? index}
                 entry={entry}
                 nextEntry={timeline[index + 1]}
+                useCurrentLocation={useCurrentLocation}
                 isLast={index === timeline.length - 1}
               />
             ))}
@@ -627,7 +966,7 @@ const TRAVEL_META = {
 };
 const DISALLOWED_TRAVEL_MODES = new Set(['train', 'flight']);
 
-function TimelineEntry({ entry, nextEntry, isLast }) {
+function TimelineEntry({ entry, nextEntry, useCurrentLocation = false, isLast }) {
   const meta = ENTRY_META[entry?.type] ?? DEFAULT_ENTRY_META;
   const fields = entry?.fields ?? {};
   const title =
@@ -659,7 +998,12 @@ function TimelineEntry({ entry, nextEntry, isLast }) {
   const nextTitle = getEntryTitle(nextEntry);
   const directionsUrl =
     displayTravelMode && nextTitle
-      ? buildDirectionsUrl(title, nextTitle, displayTravelMode)
+      ? buildDirectionsUrl(
+          useCurrentLocation ? '' : title,
+          nextTitle,
+          displayTravelMode,
+          { preferCurrentLocation: useCurrentLocation }
+        )
       : '';
 
   return (
@@ -866,8 +1210,10 @@ function getEntryTitle(entry) {
   return meta.label;
 }
 
-function buildDirectionsUrl(origin, destination, travelMode) {
-  if (!origin || !destination) return '';
+function buildDirectionsUrl(origin, destination, travelMode, options = {}) {
+  const { preferCurrentLocation = false } = options;
+  if (!destination) return '';
+  if (!origin && !preferCurrentLocation) return '';
   const modeMap = {
     walk: 'walking',
     tube: 'transit',
@@ -876,12 +1222,40 @@ function buildDirectionsUrl(origin, destination, travelMode) {
   };
   const params = new URLSearchParams({
     api: '1',
-    origin,
     destination,
   });
+  if (origin) params.set('origin', origin);
   const mappedMode = modeMap[travelMode];
   if (mappedMode) params.set('travelmode', mappedMode);
   return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function parseLocalDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const raw = typeof value === 'string' ? value.trim() : String(value);
+  if (!raw) return null;
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isTripDayToday(dayIndex, preferences) {
+  if (!Number.isFinite(dayIndex)) return false;
+  const startDate = parseLocalDate(preferences?.dateFrom);
+  if (!startDate) return false;
+  const tripDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + dayIndex);
+  const today = new Date();
+  return (
+    tripDay.getFullYear() === today.getFullYear() &&
+    tripDay.getMonth() === today.getMonth() &&
+    tripDay.getDate() === today.getDate()
+  );
 }
 
 function formatDuration(raw) {
