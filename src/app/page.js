@@ -1663,11 +1663,11 @@ function ValueIcon({ name }) {
 
 function AuthOverlay({ children, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-100/80 backdrop-blur-sm px-4">
       <div className="relative w-full max-w-md">
         <button
           type="button"
-          className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-white border border-orange-100 text-[#4C5A6B] shadow-lg shadow-orange-100 hover:text-[#C2461E]"
+          className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-white border border-slate-200 text-[#4C5A6B] shadow-lg shadow-slate-200 hover:text-[#C2461E]"
           onClick={onClose}
         >
           ×

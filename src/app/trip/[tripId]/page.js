@@ -530,7 +530,7 @@ function ConfirmedTripOverview({
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none z-0 blur-[2px] opacity-60">
+            <div className="pointer-events-none z-0 blur-[6px] opacity-50">
               <ItinerarySummary
                 className="border-0 bg-transparent p-5 sm:p-6 shadow-none"
                 cards={itinerary?.cards || []}
