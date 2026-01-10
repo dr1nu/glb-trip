@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ClipboardList, Home, LayoutGrid, Users } from 'lucide-react';
+import { ClipboardList, Home, Info, LayoutGrid, Users } from 'lucide-react';
 
 const items = [
   { href: '/admin', label: 'Trip Requests', key: 'trips', icon: ClipboardList },
   { href: '/admin/users', label: 'Users', key: 'users', icon: Users },
   { href: '/admin/templates', label: 'Templates', key: 'templates', icon: LayoutGrid },
   { href: '/admin/homepage', label: 'Homepage', key: 'homepage', icon: Home },
+  { href: '/admin/useful-info', label: 'Useful Info', key: 'useful-info', icon: Info },
 ];
 
 export default function AdminNav({ tripCount = null }) {

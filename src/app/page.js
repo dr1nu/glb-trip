@@ -423,6 +423,7 @@ export default function Home() {
   const [budgetTotal, setBudgetTotal] = useState(500);
   const [startDate, setStartDate] = useState(DEFAULT_DATES.start);
   const [endDate, setEndDate] = useState(DEFAULT_DATES.end);
+  const [useAverageDatePricing, setUseAverageDatePricing] = useState(false);
   const [homeCountry, setHomeCountry] = useState('');
   const [travelStyle, setTravelStyle] = useState('value');
   const [homePrefilled, setHomePrefilled] = useState(false);
@@ -475,8 +476,12 @@ export default function Home() {
       bucket = 'mid-range';
     }
 
-    const seasonality = deriveSeasonality(destinationCountry, startDate, endDate);
-    const weekend = deriveWeekendFactor(startDate, endDate);
+    const seasonality = useAverageDatePricing
+      ? { factor: 1.0, label: 'Average season' }
+      : deriveSeasonality(destinationCountry, startDate, endDate);
+    const weekend = useAverageDatePricing
+      ? { factor: 1.0, label: 'Average weekday' }
+      : deriveWeekendFactor(startDate, endDate);
     const destHubOverride = getDestinationHub(destinationCountry, destinationCity);
 
     const flight = isAnywhere
@@ -499,8 +504,8 @@ export default function Home() {
       }
       suggestion =
         d >= 1
-          ? `Try ${d} day${d === 1 ? '' : 's'} or raise budget to ~€${Math.round(totalHigh)}.`
-          : `Budget is tight. Consider a cheaper destination or raise budget to ~€${Math.round(totalHigh)}.`;
+          ? `You might need to decrease your total days to ${d} day${d === 1 ? '' : 's'} or will need to raise budget to ~€${Math.round(totalHigh)}.`
+          : `Budget is tight. Consider a cheaper destination or you might need to factor a higher budget to ~€${Math.round(totalHigh)}.`;
     }
 
     return {
@@ -518,8 +523,19 @@ export default function Home() {
       weekend,
       destinationCity,
       destinationLabel: labelForDestination(destinationCountry, destinationCity),
+      datePricingMode: useAverageDatePricing ? 'average' : 'exact',
     };
-  }, [destinationCountry, destinationCity, homeCountry, tripLengthDays, budgetTotal, travelStyle, startDate, endDate]);
+  }, [
+    destinationCountry,
+    destinationCity,
+    homeCountry,
+    tripLengthDays,
+    budgetTotal,
+    travelStyle,
+    startDate,
+    endDate,
+    useAverageDatePricing,
+  ]);
 
   const directRequestPayload = useMemo(
     () => ({
@@ -767,6 +783,8 @@ export default function Home() {
                 endDate={endDate}
                 onStartDateChange={handleStartDateChange}
                 onEndDateChange={handleEndDateChange}
+                useAverageDatePricing={useAverageDatePricing}
+                setUseAverageDatePricing={setUseAverageDatePricing}
                 homeCountry={homeCountry}
                 setHomeCountry={setHomeCountry}
                 travelStyle={travelStyle}
@@ -829,6 +847,8 @@ function DateRangePicker({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  useAverageDatePricing,
+  onAverageDatePricingChange,
 }) {
   const minDate = new Date();
   minDate.setHours(0, 0, 0, 0);
@@ -863,6 +883,7 @@ function DateRangePicker({
   });
 
   function handleDayClick(day) {
+    if (useAverageDatePricing) return;
     if (!day) return;
     const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
     if (normalized < minDate) return;
@@ -895,6 +916,7 @@ function DateRangePicker({
   }
 
   function startDrag(day) {
+    if (useAverageDatePricing) return;
     if (!day) return;
     if (isDisabled(day)) return;
     const normalized = new Date(day.getFullYear(), day.getMonth(), day.getDate());
@@ -1048,6 +1070,35 @@ function DateRangePicker({
             {renderMonthGrid(displayMonth, monthLabel)}
             {renderMonthGrid(nextMonth, nextMonthLabel)}
           </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-[#4C5A6B]">
+            <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-[#4C5A6B] shadow-sm">
+              <input
+                type="checkbox"
+                checked={useAverageDatePricing}
+                onChange={(event) => {
+                  const nextChecked = event.target.checked;
+                  onAverageDatePricingChange?.(nextChecked);
+                  if (nextChecked) {
+                    onStartDateChange?.('');
+                    onEndDateChange?.('');
+                    setHoverDate(null);
+                  }
+                }}
+                className="sr-only"
+              />
+              <span
+                className={`flex h-4 w-4 items-center justify-center rounded border text-[10px] font-semibold ${
+                  useAverageDatePricing
+                    ? 'border-[#FF6B35] bg-[#FF6B35] text-white'
+                    : 'border-slate-200 bg-white text-transparent'
+                }`}
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+              <span>Don&apos;t know exact dates? Use average pricing.</span>
+            </label>
+          </div>
           <div className="mt-3 flex items-center justify-between text-xs text-[#4C5A6B]">
             <span>{isSelectingEnd ? 'Select an end date' : 'Select a start date'}</span>
             <button
@@ -1077,6 +1128,8 @@ function FormCard({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  useAverageDatePricing,
+  setUseAverageDatePricing,
   homeCountry,
   setHomeCountry,
   travelStyle,
@@ -1088,12 +1141,19 @@ function FormCard({
   const [dateError, setDateError] = useState('');
   const [styleInfoOpen, setStyleInfoOpen] = useState(false);
   const hasDates = Boolean(startDate && endDate);
+  const allowMissingDates = Boolean(useAverageDatePricing);
+
+  useEffect(() => {
+    if (useAverageDatePricing) {
+      setDateError('');
+    }
+  }, [useAverageDatePricing]);
   return (
     <form
       className="relative rounded-[32px] border border-[#E3E6EF] bg-white p-6 shadow-[0_24px_90px_-60px_rgba(15,23,42,0.35)] backdrop-blur-sm ring-1 ring-white/70 space-y-6 sm:p-7"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!hasDates) {
+        if (!allowMissingDates && !hasDates) {
           setDateError('Please select a start and end date.');
           return;
         }
@@ -1140,6 +1200,8 @@ function FormCard({
             endDate={endDate}
             onStartDateChange={onStartDateChange}
             onEndDateChange={onEndDateChange}
+            useAverageDatePricing={useAverageDatePricing}
+            onAverageDatePricingChange={setUseAverageDatePricing}
           />
           {dateError ? (
             <span className="text-xs text-[#C2461E]">{dateError}</span>
@@ -1149,7 +1211,7 @@ function FormCard({
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium flex justify-between text-[#4B5563]">
-          <span>Budget (total)</span>
+          <span>Total Budget (per person)</span>
           <span className="font-semibold text-neutral-800">€{budgetTotal}</span>
         </label>
         <input
@@ -1210,7 +1272,7 @@ function FormCard({
           type="button"
           className="w-full rounded-2xl border border-[#FFB38A] bg-white py-3 text-sm font-semibold text-[#C2461E] shadow-sm transition hover:-translate-y-[1px] hover:border-[#FF6B35] hover:text-[#9E3B18]"
           onClick={() => {
-            if (!hasDates) {
+            if (!allowMissingDates && !hasDates) {
               setDateError('Please select a start and end date.');
               return;
             }
@@ -1288,6 +1350,45 @@ function PopularDestinations({ imagesByPath = {}, destinations = [], templatesBy
     setImageStatus({});
   }, [destinations, imagesByPath]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const preloaders = [];
+
+    destinations.forEach((item) => {
+      const imageUrl = item?.imagePath ? imagesByPath[item.imagePath] : null;
+      const imageKey = item?.imagePath || item?.city || '';
+      if (!imageUrl || !imageKey) return;
+      const img = new Image();
+      img.onload = () => {
+        if (cancelled) return;
+        setImageStatus((prev) =>
+          prev[imageKey] === 'loaded' ? prev : { ...prev, [imageKey]: 'loaded' }
+        );
+      };
+      img.onerror = () => {
+        if (cancelled) return;
+        setImageStatus((prev) =>
+          prev[imageKey] === 'error' ? prev : { ...prev, [imageKey]: 'error' }
+        );
+      };
+      img.src = imageUrl;
+      if (img.complete && img.naturalWidth > 0) {
+        setImageStatus((prev) =>
+          prev[imageKey] === 'loaded' ? prev : { ...prev, [imageKey]: 'loaded' }
+        );
+      }
+      preloaders.push(img);
+    });
+
+    return () => {
+      cancelled = true;
+      preloaders.forEach((img) => {
+        img.onload = null;
+        img.onerror = null;
+      });
+    };
+  }, [destinations, imagesByPath]);
+
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
@@ -1303,7 +1404,6 @@ function PopularDestinations({ imagesByPath = {}, destinations = [], templatesBy
           const status = imageUrl ? imageStatus[imageKey] || 'loading' : 'none';
           const showImage = Boolean(imageUrl) && status !== 'error';
           const showShimmer = Boolean(imageUrl) && status === 'loading';
-          const fallbackColor = item?.color || 'from-slate-300 to-slate-200';
           const hasTemplate = Boolean(
             (item.templateId && templatesById[item.templateId]) ||
               item.templateId ||
@@ -1320,7 +1420,7 @@ function PopularDestinations({ imagesByPath = {}, destinations = [], templatesBy
             >
               <div className="relative h-48 overflow-hidden">
                 {!showImage ? (
-                  <div className={`absolute inset-0 bg-gradient-to-r ${fallbackColor}`} />
+                  <div className="absolute inset-0 bg-slate-100" />
                 ) : null}
                 {showImage ? (
                   <>
@@ -1410,6 +1510,7 @@ function ResultCard({
     totalHigh,
     fits,
     suggestion,
+    datePricingMode,
   } = result;
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState('');
@@ -1478,7 +1579,9 @@ function ResultCard({
                 Travel style: {styleLabel}
               </span>
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-[#4C5A6B]">
-                Pricing auto-adjusts for your dates
+                {datePricingMode === 'average'
+                  ? 'Using average pricing for flexible dates'
+                  : 'Pricing auto-adjusts for your dates'}
               </span>
             </div>
           </div>
@@ -1663,11 +1766,11 @@ function ValueIcon({ name }) {
 
 function AuthOverlay({ children, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-100/80 backdrop-blur-sm px-4">
       <div className="relative w-full max-w-md">
         <button
           type="button"
-          className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-white border border-orange-100 text-[#4C5A6B] shadow-lg shadow-orange-100 hover:text-[#C2461E]"
+          className="absolute -top-3 -right-3 h-9 w-9 rounded-full bg-white border border-slate-200 text-[#4C5A6B] shadow-lg shadow-slate-200 hover:text-[#C2461E]"
           onClick={onClose}
         >
           ×

@@ -366,9 +366,14 @@ export default function TripRequestPage() {
     accommodation: [],
     accommodationBreakfast: 'either',
     accommodationLocation: 'either',
+    rentCarSelfDrive: '',
+    wantsDayTrips: '',
+    dayTripsDetails: '',
     hasBookedFlights: false,
-    flightNumber: '',
-    flightDate: '',
+    departureFlightNumber: '',
+    departureFlightDate: '',
+    returnFlightNumber: '',
+    returnFlightDate: '',
     hasBookedAccommodation: false,
     accommodationUrl: '',
     interests: [],
@@ -631,6 +636,18 @@ export default function TripRequestPage() {
           : form.travelWindow === 'range'
             ? derivedRangeDays || trip?.tripLengthDays || null
             : null;
+      const rentCarSelfDrive =
+        form.rentCarSelfDrive === 'yes'
+          ? true
+          : form.rentCarSelfDrive === 'no'
+            ? false
+            : null;
+      const wantsDayTrips =
+        form.wantsDayTrips === 'yes'
+          ? true
+          : form.wantsDayTrips === 'no'
+            ? false
+            : null;
 
       const contact = {
         firstName: form.firstName.trim(),
@@ -656,9 +673,14 @@ export default function TripRequestPage() {
           breakfast: form.accommodationBreakfast,
           location: form.accommodationLocation,
         },
+        rentCarSelfDrive,
+        wantsDayTrips,
+        dayTripsDetails: wantsDayTrips ? form.dayTripsDetails.trim() : '',
         hasBookedFlights: form.hasBookedFlights,
-        flightNumber: form.flightNumber.trim(),
-        flightDate: form.flightDate,
+        departureFlightNumber: form.departureFlightNumber.trim(),
+        departureFlightDate: form.departureFlightDate,
+        returnFlightNumber: form.returnFlightNumber.trim(),
+        returnFlightDate: form.returnFlightDate,
         hasBookedAccommodation: form.hasBookedAccommodation,
         accommodationUrl: form.accommodationUrl.trim(),
         interests: form.interests,
@@ -1180,6 +1202,79 @@ export default function TripRequestPage() {
             </div>
 
             <div className="space-y-3 rounded-2xl border border-[#E3E6EF] bg-white p-4 shadow-sm">
+              <span className="text-lg font-semibold text-[#0F172A]">
+                Transport & day trips
+              </span>
+              <div className="grid gap-4 text-sm">
+                <div className="space-y-2">
+                  <span className="font-medium text-[#0F172A]">
+                    Are you willing to rent a car and drive yourself?
+                  </span>
+                  <div className="flex flex-wrap gap-3">
+                    {['yes', 'no'].map((option) => (
+                      <label
+                        key={`rent-car-${option}`}
+                        className={`rounded-xl border px-4 py-2 cursor-pointer text-sm transition ${
+                          form.rentCarSelfDrive === option
+                            ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
+                            : 'border-[#E5E7EF] text-[#0F172A] bg-white hover:border-[#D8DFEC]'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="rentCarSelfDrive"
+                          value={option}
+                          checked={form.rentCarSelfDrive === option}
+                          onChange={handleInputChange}
+                          className="hidden"
+                        />
+                        {option === 'yes' ? 'Yes' : 'No'}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="font-medium text-[#0F172A]">
+                    Do you want any particular day trips/excursions?
+                  </span>
+                  <div className="flex flex-wrap gap-3">
+                    {['yes', 'no'].map((option) => (
+                      <label
+                        key={`day-trips-${option}`}
+                        className={`rounded-xl border px-4 py-2 cursor-pointer text-sm transition ${
+                          form.wantsDayTrips === option
+                            ? 'border-[#FF6B35] bg-[#FFF4E8] text-[#C2461E] shadow-sm shadow-orange-100'
+                            : 'border-[#E5E7EF] text-[#0F172A] bg-white hover:border-[#D8DFEC]'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="wantsDayTrips"
+                          value={option}
+                          checked={form.wantsDayTrips === option}
+                          onChange={handleInputChange}
+                          className="hidden"
+                        />
+                        {option === 'yes' ? 'Yes' : 'No'}
+                      </label>
+                    ))}
+                  </div>
+                  {form.wantsDayTrips === 'yes' ? (
+                    <textarea
+                      name="dayTripsDetails"
+                      value={form.dayTripsDetails}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A] resize-none"
+                      placeholder="List the day trips or excursions you have in mind..."
+                    />
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-[#E3E6EF] bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-lg font-semibold text-[#0F172A]">
                   Existing bookings
@@ -1201,30 +1296,57 @@ export default function TripRequestPage() {
                   <span>I already have flights booked</span>
                 </label>
                 {form.hasBookedFlights ? (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="text-[#4B5563]">Flight number</span>
-                      <input
-                        type="text"
-                        name="flightNumber"
-                        value={form.flightNumber}
-                        onChange={handleInputChange}
-                        required={form.hasBookedFlights}
-                        className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                        placeholder="e.g. BA248"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="text-[#4B5563]">Flight date</span>
-                      <input
-                        type="date"
-                        name="flightDate"
-                        value={form.flightDate}
-                        onChange={handleInputChange}
-                        required={form.hasBookedFlights}
-                        className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
-                      />
-                    </label>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <label className="flex flex-col gap-1 text-sm">
+                        <span className="text-[#4B5563]">Departure flight number</span>
+                        <input
+                          type="text"
+                          name="departureFlightNumber"
+                          value={form.departureFlightNumber}
+                          onChange={handleInputChange}
+                          required={form.hasBookedFlights}
+                          className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                          placeholder="e.g. BA248"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-sm">
+                        <span className="text-[#4B5563]">Departure flight date</span>
+                        <input
+                          type="date"
+                          name="departureFlightDate"
+                          value={form.departureFlightDate}
+                          onChange={handleInputChange}
+                          required={form.hasBookedFlights}
+                          className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                        />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <label className="flex flex-col gap-1 text-sm">
+                        <span className="text-[#4B5563]">Return flight number</span>
+                        <input
+                          type="text"
+                          name="returnFlightNumber"
+                          value={form.returnFlightNumber}
+                          onChange={handleInputChange}
+                          required={form.hasBookedFlights}
+                          className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                          placeholder="e.g. BA249"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-sm">
+                        <span className="text-[#4B5563]">Return flight date</span>
+                        <input
+                          type="date"
+                          name="returnFlightDate"
+                          value={form.returnFlightDate}
+                          onChange={handleInputChange}
+                          required={form.hasBookedFlights}
+                          className="bg-white border border-[#E3E6EF] rounded-xl px-3 py-2 text-[#0F172A] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FFB38A]"
+                        />
+                      </label>
+                    </div>
                   </div>
                 ) : null}
 

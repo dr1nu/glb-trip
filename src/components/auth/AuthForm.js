@@ -205,10 +205,10 @@ export default function AuthForm({
     }
   }
 
-  const isLightLayout = layout === 'account-card' || layout === 'page';
+  const isLightLayout = layout === 'modal' || layout === 'account-card' || layout === 'page';
   const containerClasses =
     {
-      modal: 'space-y-6 bg-neutral-900 border border-neutral-800 rounded-2xl p-6',
+      modal: 'space-y-6 bg-white border border-slate-200 rounded-2xl p-6 text-slate-900',
       inline: 'space-y-6',
       page: 'space-y-6 bg-white border border-neutral-200 rounded-2xl p-6 text-neutral-900',
       'account-card': 'space-y-5 text-neutral-800',
@@ -251,7 +251,7 @@ export default function AuthForm({
           <h2 className="text-xl font-semibold">
             {mode === 'signup' ? 'Create your account' : 'Welcome back'}
           </h2>
-          <p className="text-sm text-neutral-400 mt-1">
+          <p className={`text-sm mt-1 ${isLightLayout ? 'text-slate-500' : 'text-neutral-400'}`}>
             {mode === 'signup'
               ? 'Save trips, come back anytime, and speed up future planning.'
               : 'Sign in to continue planning your getaway.'}

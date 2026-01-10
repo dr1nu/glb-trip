@@ -530,7 +530,7 @@ function ConfirmedTripOverview({
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none z-0 blur-[2px] opacity-60">
+            <div className="pointer-events-none z-0 blur-[6px] opacity-50">
               <ItinerarySummary
                 className="border-0 bg-transparent p-5 sm:p-6 shadow-none"
                 cards={itinerary?.cards || []}
@@ -611,6 +611,14 @@ function ConfirmedTripOverview({
                   ? preferences.interests.join(', ')
                   : '—'
               }
+            />
+            <Detail
+              label="Self-drive rental"
+              value={formatYesNo(preferences?.rentCarSelfDrive)}
+            />
+            <Detail
+              label="Day trips"
+              value={formatDayTrips(preferences)}
             />
             <Detail
               label="Special requests"
@@ -818,6 +826,21 @@ function formatTravelWindow(preferences) {
     const to = preferences.dateTo || 'TBC';
     return `${from} → ${to}`;
   }
+  return '—';
+}
+
+function formatYesNo(value) {
+  if (value === true) return 'Yes';
+  if (value === false) return 'No';
+  return '—';
+}
+
+function formatDayTrips(preferences) {
+  if (!preferences) return '—';
+  if (preferences.wantsDayTrips === true) {
+    return preferences.dayTripsDetails?.trim() || 'Yes';
+  }
+  if (preferences.wantsDayTrips === false) return 'No';
   return '—';
 }
 

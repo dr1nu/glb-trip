@@ -47,6 +47,14 @@ const TYPE_OPTIONS = [
     text: 'text-emerald-700',
   },
   {
+    value: 'beach',
+    label: 'Beach',
+    description: 'Seaside time',
+    accent: 'from-sky-400/15 via-sky-100 to-blue-50',
+    border: 'border-sky-200',
+    text: 'text-sky-700',
+  },
+  {
     value: 'church',
     label: 'Church',
     description: 'Cathedrals, chapels',
@@ -211,6 +219,8 @@ export function TypeIcon({ type }) {
       return <Landmark {...iconProps} />;
     case 'park':
       return <Trees {...iconProps} />;
+    case 'beach':
+      return <MapPin {...iconProps} />;
     case 'church':
       return <Church {...iconProps} />;
     case 'shopping':
