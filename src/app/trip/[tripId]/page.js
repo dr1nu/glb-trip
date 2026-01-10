@@ -613,6 +613,14 @@ function ConfirmedTripOverview({
               }
             />
             <Detail
+              label="Self-drive rental"
+              value={formatYesNo(preferences?.rentCarSelfDrive)}
+            />
+            <Detail
+              label="Day trips"
+              value={formatDayTrips(preferences)}
+            />
+            <Detail
               label="Special requests"
               value={preferences?.details || contact?.details || '—'}
               className="sm:col-span-2"
@@ -818,6 +826,21 @@ function formatTravelWindow(preferences) {
     const to = preferences.dateTo || 'TBC';
     return `${from} → ${to}`;
   }
+  return '—';
+}
+
+function formatYesNo(value) {
+  if (value === true) return 'Yes';
+  if (value === false) return 'No';
+  return '—';
+}
+
+function formatDayTrips(preferences) {
+  if (!preferences) return '—';
+  if (preferences.wantsDayTrips === true) {
+    return preferences.dayTripsDetails?.trim() || 'Yes';
+  }
+  if (preferences.wantsDayTrips === false) return 'No';
   return '—';
 }
 

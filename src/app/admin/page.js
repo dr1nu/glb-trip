@@ -252,6 +252,8 @@ export default async function AdminPage({ searchParams }) {
                 'Traveller pending';
               const travellerEmail = contact?.email || 'Email pending';
               const preferenceLabel = formatPreferences(preferences);
+              const rentCarLabel = formatYesNo(preferences?.rentCarSelfDrive);
+              const dayTripsLabel = formatDayTrips(preferences);
 
               return (
                 <article
@@ -332,6 +334,8 @@ export default async function AdminPage({ searchParams }) {
                         durationLabel={durationLabel}
                       />
                       <SummaryItem label="Preferences" value={preferenceLabel} />
+                      <SummaryItem label="Self-drive rental" value={rentCarLabel} />
+                      <SummaryItem label="Day trips" value={dayTripsLabel} />
                     </dl>
                   </div>
                 </article>
@@ -462,6 +466,21 @@ function formatDateLabel(value) {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+function formatYesNo(value) {
+  if (value === true) return 'Yes';
+  if (value === false) return 'No';
+  return '—';
+}
+
+function formatDayTrips(preferences) {
+  if (!preferences) return '—';
+  if (preferences.wantsDayTrips === true) {
+    return preferences.dayTripsDetails?.trim() || 'Yes';
+  }
+  if (preferences.wantsDayTrips === false) return 'No';
+  return '—';
 }
 
 function formatDuration(tripLengthDays, preferences) {

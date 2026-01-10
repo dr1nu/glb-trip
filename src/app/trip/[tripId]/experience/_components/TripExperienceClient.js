@@ -256,7 +256,13 @@ export default function TripExperienceClient({
       tabs.push({
         id: 'useful-info',
         label: 'Useful Info',
-        content: <UsefulInfoGrid posts={usefulPosts} cards={usefulInfoCards} />,
+        content: (
+          <UsefulInfoGrid
+            posts={usefulPosts}
+            cards={usefulInfoCards}
+            destinationCountry={destinationCountry}
+          />
+        ),
       });
     }
 
@@ -387,9 +393,12 @@ function TabBar({ tabs, activeTab, onSelect }) {
   );
 }
 
-function UsefulInfoGrid({ posts, cards }) {
+function UsefulInfoGrid({ posts, cards, destinationCountry }) {
   const safeCards = Array.isArray(cards) ? cards : [];
   const safePosts = Array.isArray(posts) ? posts : [];
+  const blogTitle = destinationCountry
+    ? `Blog posts about ${destinationCountry}`
+    : 'Blog posts';
 
   return (
     <div className="space-y-6">
@@ -401,10 +410,19 @@ function UsefulInfoGrid({ posts, cards }) {
         </div>
       ) : null}
       {safePosts.length ? (
-        <div className="grid grid-cols-1 gap-4">
-          {safePosts.map((post) => (
-            <UsefulPostCard key={post.id} post={post} />
-          ))}
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <span className="h-px flex-1 bg-orange-100" />
+            <h3 className="text-base font-semibold uppercase tracking-[0.25em] text-[#4C5A6B]">
+              {blogTitle}
+            </h3>
+            <span className="h-px flex-1 bg-orange-100" />
+          </div>
+          <div className="grid grid-cols-1 gap-5">
+            {safePosts.map((post) => (
+              <UsefulPostCard key={post.id} post={post} />
+            ))}
+          </div>
         </div>
       ) : null}
     </div>
@@ -483,6 +501,8 @@ function UsefulInfoIcon({ kind }) {
       return <CreditCard {...iconProps} />;
     case 'power':
       return <PlugZap {...iconProps} />;
+    case 'visa':
+      return <Plane {...iconProps} />;
     default:
       return <MapPin {...iconProps} />;
   }
@@ -533,6 +553,9 @@ function buildUsefulInfoCards({ destinationCountry, dayCards, summaryCards, sett
 
   const countryInfo = findCountryInfo(destinationCountry, settings?.countryInfo);
   const cards = [];
+  const normalizedCountry = normalizeLookup(destinationCountry);
+  const isUk = normalizedCountry === 'united kingdom' || normalizedCountry === 'uk';
+  const isSchengen = SCHENGEN_COUNTRIES.has(normalizedCountry);
 
   const transportCards = buildTransportCards({ destinationCountry, dayCards, summaryCards, settings });
   cards.push(...transportCards);
@@ -570,6 +593,21 @@ function buildUsefulInfoCards({ destinationCountry, dayCards, summaryCards, sett
       { label: 'Frequency', value: frequency },
     ],
     note: 'Pack a universal adapter if you are unsure.',
+  });
+
+  cards.push({
+    id: `visa-${normalizeLookup(destinationCountry)}`,
+    kind: 'visa',
+    title: 'Visa requirements',
+    subtitle: destinationCountry,
+    rows: [
+      { label: 'Schengen', value: isSchengen ? 'Yes' : 'No' },
+      { label: 'Visa', value: isUk ? 'ETA required' : 'No visa required' },
+    ],
+    link: isUk
+      ? { label: 'UK ETA app', url: 'https://www.gov.uk/guidance/using-the-uk-eta-app' }
+      : null,
+    note: 'Entry rules depend on your nationality; confirm requirements before travel.',
   });
 
   return cards;
@@ -949,6 +987,37 @@ const ENTRY_META = {
     rail: 'bg-indigo-300',
   },
 };
+
+const SCHENGEN_COUNTRIES = new Set([
+  'austria',
+  'belgium',
+  'croatia',
+  'czechia',
+  'czech republic',
+  'denmark',
+  'estonia',
+  'finland',
+  'france',
+  'germany',
+  'greece',
+  'hungary',
+  'iceland',
+  'italy',
+  'latvia',
+  'liechtenstein',
+  'lithuania',
+  'luxembourg',
+  'malta',
+  'netherlands',
+  'norway',
+  'poland',
+  'portugal',
+  'slovakia',
+  'slovenia',
+  'spain',
+  'sweden',
+  'switzerland',
+].map((country) => normalizeLookup(country)));
 
 const DEFAULT_ENTRY_META = {
   label: 'Plan',
