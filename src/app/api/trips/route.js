@@ -1,15 +1,92 @@
 import { NextResponse } from 'next/server';
 import { createTrip, getTrip, listTrips, listTripsByOwner } from '@/lib/db';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { splitFullName } from '@/lib/profile';
 
 export const dynamic = 'force-dynamic';
 
 const BILLING_CURRENCY = 'EUR';
 const RATE_PER_DAY_CENTS = 300;
+const TRIP_IMAGE_BUCKET = 'trip-country-images';
+const ANYWHERE_FOLDER = 'Anywhere';
 
 function cleanString(value) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeSegment(value) {
+  return cleanString(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function normalizeFilename(value) {
+  const base = cleanString(value).replace(/\.[^/.]+$/, '');
+  return normalizeSegment(base);
+}
+
+async function listImagesInFolder(storage, folder) {
+  if (!folder) return [];
+  const { data, error } = await storage
+    .from(TRIP_IMAGE_BUCKET)
+    .list(folder, { limit: 200, sortBy: { column: 'name', order: 'asc' } });
+  if (error) throw error;
+  return (data ?? [])
+    .filter((entry) => entry?.name && !entry.name.endsWith('/'))
+    .map((entry) => `${folder}/${entry.name}`);
+}
+
+async function findMatchingFolder(storage, country) {
+  const folder = cleanString(country);
+  if (!folder) return { folder: '', paths: [] };
+  let paths = await listImagesInFolder(storage, folder);
+  if (paths.length > 0) return { folder, paths };
+
+  const { data: root, error } = await storage
+    .from(TRIP_IMAGE_BUCKET)
+    .list('', { limit: 200, sortBy: { column: 'name', order: 'asc' } });
+  if (error) throw error;
+
+  const match = (root ?? []).find((entry) => {
+    if (!entry?.name) return false;
+    return entry.name.toLowerCase() === folder.toLowerCase();
+  });
+  if (!match?.name) return { folder, paths: [] };
+
+  paths = await listImagesInFolder(storage, match.name);
+  return { folder: match.name, paths };
+}
+
+async function pickTripImagePath({ storage, destinationCountry, destinationCity }) {
+  const country = cleanString(destinationCountry);
+  const city = cleanString(destinationCity);
+  const isAnywhere = country.toLowerCase() === 'anywhere';
+
+  let paths = [];
+  if (isAnywhere) {
+    paths = await listImagesInFolder(storage, ANYWHERE_FOLDER);
+  } else {
+    const { paths: countryPaths } = await findMatchingFolder(storage, country);
+    paths = countryPaths;
+    if (paths.length === 0) {
+      paths = await listImagesInFolder(storage, ANYWHERE_FOLDER);
+    }
+  }
+
+  if (paths.length === 0) return null;
+  if (!isAnywhere && city) {
+    const prefix = `${normalizeSegment(country)}-${normalizeSegment(city)}-`;
+    const matched = paths.find((path) => {
+      const fileName = path.split('/').pop() ?? '';
+      const normalized = normalizeFilename(fileName);
+      return normalized.startsWith(prefix);
+    });
+    if (matched) return matched;
+  }
+
+  return paths[Math.floor(Math.random() * paths.length)];
 }
 
 function normalizePayload(data) {
@@ -111,8 +188,10 @@ function normalizePayload(data) {
 
 export async function POST(request) {
   let payload;
+  let rawPayload;
   try {
-    payload = normalizePayload(await request.json());
+    rawPayload = await request.json();
+    payload = normalizePayload(rawPayload);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Invalid body.' },
@@ -150,10 +229,24 @@ export async function POST(request) {
       0,
       Math.round(payload.tripLengthDays * RATE_PER_DAY_CENTS)
     );
+    let resolvedImagePath = payload.imagePath;
+    if (!resolvedImagePath) {
+      try {
+        const adminClient = getSupabaseAdminClient();
+        resolvedImagePath = await pickTripImagePath({
+          storage: adminClient.storage,
+          destinationCountry: payload.destinationCountry,
+          destinationCity: cleanString(rawPayload?.destinationCity),
+        });
+      } catch (err) {
+        console.warn('Failed to auto-select trip image', err);
+      }
+    }
 
     const trip = await createTrip(
       {
         ...payload,
+        imagePath: resolvedImagePath,
         billingStatus: isFreeTrip ? 'free' : 'pending',
         billingCurrency: BILLING_CURRENCY,
         billingAmountCents: isFreeTrip ? 0 : baseAmountCents,

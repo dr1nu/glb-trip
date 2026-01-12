@@ -831,7 +831,7 @@ export default function Home() {
             initialMode="signin"
             onRequestSignup={() => {
               setAuthModalOpen(false);
-              router.push('/account');
+              router.push('/account?mode=signup');
             }}
             onSuccess={handleAuthSuccess}
           />

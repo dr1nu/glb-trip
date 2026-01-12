@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { User } from 'lucide-react';
 import { HOME_COUNTRIES } from '@/lib/countries-europe';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -14,6 +15,7 @@ import { getAirportsForCountry } from '@/lib/airports-by-country';
 
 export default function AccountPage() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const searchParams = useSearchParams();
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
   const [profile, setProfile] = useState({
@@ -45,6 +47,13 @@ export default function AccountPage() {
       return value && value !== DEFAULT_TRAVEL_PREFERENCES[key];
     });
   };
+
+  useEffect(() => {
+    const mode = (searchParams?.get('mode') || '').toLowerCase();
+    if (mode === 'signup' || mode === 'signin') {
+      setAuthMode(mode);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let active = true;
