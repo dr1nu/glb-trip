@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { HOME_COUNTRIES } from '@/lib/countries-europe';
+import { getAirportsForCountry } from '@/lib/airports-by-country';
 import {
   DEFAULT_TRAVEL_PREFERENCES,
   mergeTravelPreferences,
@@ -44,6 +45,10 @@ export default function AuthForm({
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const airportsForCountry = useMemo(
+    () => getAirportsForCountry(fields.homeCountry),
+    [fields.homeCountry]
+  );
 
   useEffect(() => {
     const next = splitFullName(defaultName);
@@ -73,6 +78,26 @@ export default function AuthForm({
   useEffect(() => {
     setPreferences(mergeTravelPreferences(defaultPreferences));
   }, [defaultPreferences]);
+
+  useEffect(() => {
+    if (!fields.homeCountry) {
+      setFields((prev) =>
+        prev.nearestAirport ? { ...prev, nearestAirport: '' } : prev
+      );
+      return;
+    }
+
+    if (airportsForCountry.length === 0) {
+      return;
+    }
+
+    setFields((prev) => {
+      if (prev.nearestAirport && airportsForCountry.includes(prev.nearestAirport)) {
+        return prev;
+      }
+      return { ...prev, nearestAirport: airportsForCountry[0] };
+    });
+  }, [airportsForCountry, fields.homeCountry]);
 
   function handleFieldChange(event) {
     const { name, value } = event.target;
@@ -311,15 +336,23 @@ export default function AuthForm({
             </label>
             <label className="flex flex-col gap-2 text-sm">
               <span className="font-medium">Nearest Airport</span>
-              <input
+              <select
                 required
                 name="nearestAirport"
-                type="text"
                 value={fields.nearestAirport}
                 onChange={handleFieldChange}
-                className={fieldClasses}
-                placeholder="e.g. London Gatwick"
-              />
+                className={`${fieldClasses} disabled:cursor-not-allowed`}
+                disabled={!fields.homeCountry || airportsForCountry.length === 0}
+              >
+                <option value="" disabled>
+                  {fields.homeCountry ? 'Select an airport' : 'Select your home country first'}
+                </option>
+                {airportsForCountry.map((airport) => (
+                  <option key={airport} value={airport}>
+                    {airport}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
         </>
