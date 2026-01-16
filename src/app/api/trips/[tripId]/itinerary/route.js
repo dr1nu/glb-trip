@@ -81,15 +81,37 @@ export async function PATCH(request, context) {
           continue;
         }
 
-        if (item.type !== 'accommodation') continue;
+        if (item.type !== 'accommodation' && item.type !== 'day') continue;
+        if (item.type === 'accommodation') {
+          newCards.push({
+            id: item.id,
+            type: item.type,
+            title: typeof item.title === 'string' ? item.title : 'Accommodation',
+            subtitle: typeof item.subtitle === 'string' ? item.subtitle : 'Awaiting selection',
+            summary:
+              typeof item.summary === 'string'
+                ? item.summary
+                : 'Choose ideal hotel or apartment.',
+            priceLabel: typeof item.priceLabel === 'string' ? item.priceLabel : '',
+            fields: normalizedFields,
+            notes: typeof item.notes === 'string' ? item.notes : '',
+          });
+          continue;
+        }
         newCards.push({
           id: item.id,
           type: item.type,
-          title: typeof item.title === 'string' ? item.title : 'Accommodation',
-          subtitle: typeof item.subtitle === 'string' ? item.subtitle : 'Awaiting selection',
-          summary: typeof item.summary === 'string' ? item.summary : 'Choose ideal hotel or apartment.',
+          title: typeof item.title === 'string' ? item.title : 'Day',
+          subtitle: typeof item.subtitle === 'string' ? item.subtitle : 'Destination',
+          summary:
+            typeof item.summary === 'string'
+              ? item.summary
+              : 'Plan headline experiences, dining, and downtime.',
           priceLabel: typeof item.priceLabel === 'string' ? item.priceLabel : '',
           fields: normalizedFields,
+          timeline: Array.isArray(item.timeline)
+            ? sanitizeTimeline(item.timeline)
+            : [],
           notes: typeof item.notes === 'string' ? item.notes : '',
         });
       }
