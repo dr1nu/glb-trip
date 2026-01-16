@@ -306,7 +306,7 @@ function daysBetweenDates(startValue, endValue) {
   const end = toDate(endValue);
   if (!start || !end) return 1;
   const day = 1000 * 60 * 60 * 24;
-  const diffDays = Math.ceil((end.getTime() - start.getTime()) / day);
+  const diffDays = Math.ceil((end.getTime() - start.getTime()) / day) + 1;
   return Math.max(1, diffDays || 1);
 }
 
