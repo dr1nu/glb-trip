@@ -110,7 +110,7 @@ function formatDuration(trip) {
   if (start && end) {
     const diffDays = Math.max(
       1,
-      Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
     );
     return `${diffDays} day${diffDays === 1 ? '' : 's'}`;
   }
@@ -145,7 +145,7 @@ function formatTravelWindowLabel(trip) {
         const start = new Date(dateFrom);
         const end = new Date(dateTo);
         if (Number.isNaN(start) || Number.isNaN(end)) return 0;
-        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
         return diff > 0 ? diff : 0;
       })();
     const daysLabel = days > 0 ? `${days} days` : 'Flexible days';

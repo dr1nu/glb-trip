@@ -373,6 +373,7 @@ export default function DayTimelineBuilder({
   onMoveEntry,
   onSwapDays,
   onReorderDay,
+  onAddDay,
   unassignedActivities,
   onAssignActivity,
   onUnassignedChange,
@@ -386,6 +387,7 @@ export default function DayTimelineBuilder({
   const [expandedEntryId, setExpandedEntryId] = useState(null);
   const [showUnassigned, setShowUnassigned] = useState(true);
   const [swapTargetId, setSwapTargetId] = useState('');
+  const [pendingDayId, setPendingDayId] = useState(null);
   const showUnassignedSection = Array.isArray(unassignedActivities);
 
   useEffect(() => {
@@ -395,6 +397,13 @@ export default function DayTimelineBuilder({
       setActiveDayId(dayOptions[0]?.id ?? null);
     }
   }, [activeDayId, dayOptions]);
+
+  useEffect(() => {
+    if (pendingDayId && dayOptions.some((card) => card.id === pendingDayId)) {
+      setActiveDayId(pendingDayId);
+      setPendingDayId(null);
+    }
+  }, [pendingDayId, dayOptions]);
 
   useEffect(() => {
     setExpandedEntryId(null);
@@ -537,6 +546,14 @@ export default function DayTimelineBuilder({
     setSwapTargetId('');
   }
 
+  function handleAddDay() {
+    if (!onAddDay) return;
+    const nextId = onAddDay();
+    if (nextId) {
+      setPendingDayId(nextId);
+    }
+  }
+
   if (!activeDay) {
     return (
       <section className="bg-white border border-orange-100 rounded-2xl p-6">
@@ -586,6 +603,15 @@ export default function DayTimelineBuilder({
                     {card.title}
                   </button>
                 ))}
+                {onAddDay ? (
+                  <button
+                    type="button"
+                    onClick={handleAddDay}
+                    className="px-3 py-1.5 rounded-full text-sm font-semibold border border-orange-100 text-orange-600 hover:bg-orange-50"
+                  >
+                    Add day
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-wide text-[#4C5A6B]">

@@ -291,6 +291,31 @@ export default function TripBuilderClient({
     };
   }
 
+  function buildDayCard(labelIndex, seedCard) {
+    const globalCrypto = typeof globalThis !== 'undefined' ? globalThis.crypto : null;
+    const id = globalCrypto?.randomUUID?.() ?? `day-${Date.now()}-${labelIndex}`;
+    const subtitle = seedCard?.subtitle ?? destinationCountry ?? 'Destination';
+    const priceLabel = seedCard?.priceLabel ?? '';
+    const city = seedCard?.fields?.city ?? subtitle ?? '';
+    const dailyCost = seedCard?.fields?.dailyCost ?? priceLabel ?? '';
+    return {
+      id,
+      type: 'day',
+      title: `Day ${labelIndex}`,
+      subtitle,
+      priceLabel,
+      summary: 'Plan headline experiences, dining, and downtime.',
+      fields: {
+        city,
+        highlightAttraction: '',
+        dailyCost,
+      },
+      timeline: [],
+      notes: '',
+      isDirty: true,
+    };
+  }
+
   function handleAddAccommodation() {
     setCards((prev) => {
       const count = prev.filter((card) => card.type === 'accommodation').length;
@@ -309,6 +334,37 @@ export default function TripBuilderClient({
       ];
     });
     setOrderEdited(true);
+  }
+
+  function handleAddDay() {
+    let nextDayId = null;
+    setFeedback({ type: '', message: '' });
+    setCards((prev) => {
+      const dayCards = prev.filter((card) => card.type === 'day');
+      const nextIndex = dayCards.length + 1;
+      const seedCard = dayCards[dayCards.length - 1] ?? null;
+      const nextCard = buildDayCard(nextIndex, seedCard);
+      nextDayId = nextCard.id;
+
+      let insertIndex = prev.length;
+      for (let i = prev.length - 1; i >= 0; i -= 1) {
+        if (prev[i]?.type === 'day') {
+          insertIndex = i + 1;
+          break;
+        }
+        if (prev[i]?.type === 'return') {
+          insertIndex = i;
+        }
+      }
+
+      return [
+        ...prev.slice(0, insertIndex),
+        nextCard,
+        ...prev.slice(insertIndex),
+      ];
+    });
+    setOrderEdited(true);
+    return nextDayId;
   }
 
   function handleRemoveAccommodation(cardId) {
@@ -959,6 +1015,7 @@ export default function TripBuilderClient({
             onMoveEntry={handleMoveEntry}
             onSwapDays={handleSwapDays}
             onReorderDay={handleReorderDay}
+            onAddDay={handleAddDay}
             unassignedActivities={unassignedActivities}
             onAssignActivity={handleAssignActivity}
             onUnassignedChange={handleUnassignedChange}
