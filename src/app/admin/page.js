@@ -290,7 +290,7 @@ export default async function AdminPage({ searchParams }) {
                         </Link>
                       ) : (
                         <Link
-                          href={`/trip/${id}?from=admin`}
+                          href={`/trip/${id}/builder?from=admin`}
                           className="inline-flex items-center justify-center rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-[1px] hover:bg-orange-400"
                         >
                           Review &amp; build
@@ -298,7 +298,7 @@ export default async function AdminPage({ searchParams }) {
                       )}
                       {itineraryReady ? (
                         <Link
-                          href={`/trip/${id}?from=admin`}
+                          href={`/trip/${id}/builder?from=admin`}
                           className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
                         >
                           Review request

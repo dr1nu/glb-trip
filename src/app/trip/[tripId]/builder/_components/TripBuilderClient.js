@@ -6,6 +6,7 @@ import AccommodationCardPanel from './AccommodationCardPanel';
 import DayCardPanel from './DayCardPanel';
 import DayTimelineBuilder from './DayTimelineBuilder';
 import { applyCardFieldUpdates } from '@/lib/itinerary';
+import TripRequestOverview from '@/app/trip/[tripId]/_components/TripRequestOverview';
 
 function hasContent(value) {
   if (typeof value === 'string') {
@@ -187,12 +188,10 @@ export default function TripBuilderClient({
   initialCards,
   initialActivities = [],
   destinationCountry,
-  homeCountry,
   tripLengthDays,
   templates = [],
   preferences = null,
-  contact = null,
-  budgetTotal = null,
+  tripData = null,
 }) {
   const [cards, setCards] = useState(() =>
     prepareCards(initialCards, preferences)
@@ -232,6 +231,19 @@ export default function TripBuilderClient({
     () => cards.filter((card) => card.type === 'day'),
     [cards]
   );
+  const requestSummary = useMemo(() => {
+    const currentPreferences = tripData?.preferences ?? preferences;
+    const currentContact = tripData?.contact ?? null;
+    const currentBudget = tripData?.budgetTotal ?? null;
+    return {
+      dates: formatTravelWindow(currentPreferences),
+      travellers: formatTravellerCount(currentContact),
+      dayTrips: formatDayTrips(currentPreferences),
+      requests: formatSpecialRequests(currentPreferences, currentContact),
+      budget: formatBudget(currentBudget),
+      interests: formatInterests(currentPreferences),
+    };
+  }, [tripData, preferences]);
 
   function handleFieldChange(cardId, fieldUpdates) {
     setFeedback({ type: '', message: '' });
@@ -848,9 +860,24 @@ export default function TripBuilderClient({
             >
               Days
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('request')}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-full transition ${
+                activeView === 'request'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-[#4C5A6B] hover:text-slate-900'
+              }`}
+            >
+              Request
+            </button>
           </div>
           <span className="text-xs uppercase tracking-wide text-[#4C5A6B]">
-            {activeView === 'summary' ? 'Trip summary builder' : 'Day-by-day timeline'}
+            {activeView === 'summary'
+              ? 'Trip summary builder'
+              : activeView === 'days'
+              ? 'Day-by-day timeline'
+              : 'Trip request overview'}
           </span>
         </div>
       </section>
@@ -1007,7 +1034,7 @@ export default function TripBuilderClient({
           </section>
 
         </>
-      ) : (
+      ) : activeView === 'days' ? (
         <div className="relative left-1/2 right-1/2 w-screen max-w-none -translate-x-1/2 px-6">
           <DayTimelineBuilder
             dayCards={dayCards}
@@ -1022,17 +1049,12 @@ export default function TripBuilderClient({
             onUnassignedTypeChange={handleUnassignedTypeChange}
             onUnassignedDelete={handleUnassignedDelete}
             onAddUnassigned={handleAddUnassigned}
-            requestSummary={{
-              route: `${homeCountry || 'Home'} → ${destinationCountry || 'Destination'}`,
-              travellers: formatTravellerCount(contact),
-              dates: formatTravelWindow(preferences),
-              length: formatDuration(tripLengthDays, preferences),
-              budget: formatBudget(budgetTotal),
-              airport: contact?.nearestAirport || 'Airport TBD',
-              interests: formatPreferences(preferences),
-            }}
+            requestSummary={requestSummary}
+            showRequestSummary
           />
         </div>
+      ) : (
+        <TripRequestOverview trip={tripData} fromAdmin />
       )}
 
       <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
@@ -1125,14 +1147,6 @@ function formatBudget(value) {
   return `€${Math.round(value)}`;
 }
 
-function formatPreferences(preferences) {
-  const interests = Array.isArray(preferences?.interests)
-    ? preferences.interests.filter(Boolean)
-    : [];
-  if (interests.length > 0) return interests.join(', ');
-  return 'No preferences listed';
-}
-
 function formatTravellerCount(contact) {
   if (!contact) return 'Travellers TBD';
   const adults = typeof contact.adults === 'number' ? contact.adults : null;
@@ -1177,21 +1191,24 @@ function formatDateLabel(value) {
   });
 }
 
-function formatDuration(tripLengthDays, preferences) {
-  if (tripLengthDays) {
-    return `${tripLengthDays} day${tripLengthDays === 1 ? '' : 's'}`;
+function formatDayTrips(preferences) {
+  if (!preferences) return 'Day trips TBD';
+  if (preferences.wantsDayTrips === true) {
+    return preferences.dayTripsDetails?.trim() || 'Yes';
   }
-  const { dateFrom, dateTo } = preferences || {};
-  if (dateFrom && dateTo) {
-    const start = new Date(dateFrom);
-    const end = new Date(dateTo);
-    if (!Number.isNaN(start) && !Number.isNaN(end)) {
-      const ms = end - start;
-      if (ms > 0) {
-        const days = Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
-        return `${days} day${days === 1 ? '' : 's'}`;
-      }
-    }
-  }
-  return 'Length TBD';
+  if (preferences.wantsDayTrips === false) return 'No';
+  return 'Day trips TBD';
+}
+
+function formatSpecialRequests(preferences, contact) {
+  const details = preferences?.details?.trim() || contact?.details?.trim() || '';
+  return details || 'None';
+}
+
+function formatInterests(preferences) {
+  const interests = Array.isArray(preferences?.interests)
+    ? preferences.interests.filter(Boolean)
+    : [];
+  if (interests.length === 0) return 'No preferences listed';
+  return interests.join(', ');
 }

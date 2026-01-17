@@ -381,6 +381,7 @@ export default function DayTimelineBuilder({
   onUnassignedDelete,
   onAddUnassigned,
   requestSummary,
+  showRequestSummary = true,
 }) {
   const dayOptions = useMemo(() => dayCards ?? [], [dayCards]);
   const [activeDayId, setActiveDayId] = useState(dayOptions[0]?.id ?? null);
@@ -565,7 +566,13 @@ export default function DayTimelineBuilder({
   }
 
   return (
-    <div className="grid gap-6 justify-center lg:grid-cols-[240px_minmax(0,56rem)_260px]">
+    <div
+      className={`grid gap-6 justify-center ${
+        showRequestSummary
+          ? 'lg:grid-cols-[240px_minmax(0,56rem)_260px]'
+          : 'lg:grid-cols-[240px_minmax(0,56rem)]'
+      }`}
+    >
       <aside className="space-y-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
@@ -770,25 +777,26 @@ export default function DayTimelineBuilder({
           </p>
       </section>
 
-      <aside className="space-y-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
-            Request
-          </p>
-          <p className="text-sm font-semibold text-slate-900 mt-1">
-            Traveller summary
-          </p>
-        </div>
-        <div className="rounded-2xl border border-orange-100 bg-orange-50/50 p-4 space-y-3 text-sm text-slate-700">
-          <RequestItem label="Route" value={requestSummary?.route} />
-          <RequestItem label="Travellers" value={requestSummary?.travellers} />
-          <RequestItem label="Dates" value={requestSummary?.dates} />
-          <RequestItem label="Trip length" value={requestSummary?.length} />
-          <RequestItem label="Budget" value={requestSummary?.budget} />
-          <RequestItem label="Airport" value={requestSummary?.airport} />
-          <RequestItem label="Preferences" value={requestSummary?.interests} />
-        </div>
-      </aside>
+      {showRequestSummary ? (
+        <aside className="space-y-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-[#4C5A6B]">
+              Request
+            </p>
+            <p className="text-sm font-semibold text-slate-900 mt-1">
+              Traveller summary
+            </p>
+          </div>
+          <div className="rounded-2xl border border-orange-100 bg-orange-50/50 p-4 space-y-3 text-sm text-slate-700">
+            <RequestItem label="Dates" value={requestSummary?.dates} />
+            <RequestItem label="Travellers" value={requestSummary?.travellers} />
+            <RequestItem label="Day trips" value={requestSummary?.dayTrips} />
+            <RequestItem label="Special requests" value={requestSummary?.requests} />
+            <RequestItem label="Budget" value={requestSummary?.budget} />
+            <RequestItem label="Interests" value={requestSummary?.interests} />
+          </div>
+        </aside>
+      ) : null}
     </div>
   );
 }

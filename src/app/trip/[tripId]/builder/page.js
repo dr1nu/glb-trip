@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getTrip } from '@/lib/db';
 import { listTemplates } from '@/lib/templates';
 import { extractUnassignedActivities } from '@/lib/itinerary';
@@ -16,9 +16,6 @@ export default async function TripBuilderPage({ params }) {
   }
 
   const itinerary = trip.itinerary ?? null;
-  if (!itinerary?.cards?.length) {
-    redirect(`/trip/${tripId}?from=admin`);
-  }
   const unassignedActivities = extractUnassignedActivities(itinerary);
 
   const origin = trip.homeCountry ?? 'Home';
@@ -49,27 +46,25 @@ export default async function TripBuilderPage({ params }) {
             </p>
           </div>
           <Link
-            href={`/trip/${tripId}?from=admin`}
+            href="/admin"
             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
           >
             <span className="text-sm" aria-hidden>
               ←
             </span>
-            Back to trip
+            Back to admin
           </Link>
         </header>
 
         <TripBuilderClient
           tripId={tripId}
-          initialCards={itinerary.cards}
+          initialCards={itinerary?.cards ?? []}
           initialActivities={unassignedActivities}
           destinationCountry={trip.destinationCountry}
-          homeCountry={trip.homeCountry}
           tripLengthDays={trip.tripLengthDays}
           templates={sortedTemplates}
           preferences={trip.preferences}
-          contact={trip.contact}
-          budgetTotal={trip.budgetTotal}
+          tripData={trip}
         />
       </div>
     </main>
