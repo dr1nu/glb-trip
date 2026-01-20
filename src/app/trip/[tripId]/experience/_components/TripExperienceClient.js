@@ -82,7 +82,7 @@ export default function TripExperienceClient({
       return true;
     }
     if (Array.isArray(card.timeline) && card.timeline.length > 0) return true;
-    if (card.fields?.city || card.fields?.dailyCost || card.fields?.highlightAttraction) return true;
+    if (card.fields?.city) return true;
     return false;
   };
 
@@ -801,8 +801,6 @@ function slugifyCategory(value) {
 function DayItineraryDetail({ card, dayIndex, preferences }) {
   const fields = card?.fields ?? {};
   const city = fields.city || card?.subtitle || 'Destination';
-  const highlight = fields.highlightAttraction || card?.summary;
-  const cost = fields.dailyCost || card?.priceLabel;
   const notes = card?.notes;
   const timeline = Array.isArray(card?.timeline) ? card.timeline : [];
   const useCurrentLocation = isTripDayToday(dayIndex, preferences);
@@ -810,31 +808,12 @@ function DayItineraryDetail({ card, dayIndex, preferences }) {
   return (
     <div className="space-y-5">
       <div className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-sm shadow-slate-100 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
-              City
-            </p>
-            <p className="text-lg font-semibold">{city}</p>
-          </div>
-          {cost ? (
-            <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
-                Est. spend
-              </p>
-              <p className="text-lg font-semibold">{cost}</p>
-            </div>
-          ) : null}
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-[#4C5A6B]">
+            City
+          </p>
+          <p className="text-lg font-semibold">{city}</p>
         </div>
-        {highlight ? (
-          <p className="text-sm text-[#4C5A6B]">
-            {highlight}
-          </p>
-        ) : (
-          <p className="text-sm text-[#4C5A6B]">
-            Add a headline highlight from the day planner.
-          </p>
-        )}
       </div>
 
       <div className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-sm shadow-slate-100 space-y-4">

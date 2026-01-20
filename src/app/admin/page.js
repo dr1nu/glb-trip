@@ -281,29 +281,12 @@ export default async function AdminPage({ searchParams }) {
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {itineraryReady ? (
-                        <Link
-                          href={`/trip/${id}/builder?from=admin`}
-                          className="inline-flex items-center justify-center rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-[1px] hover:bg-orange-400"
-                        >
-                          Open builder
-                        </Link>
-                      ) : (
-                        <Link
-                          href={`/trip/${id}/builder?from=admin`}
-                          className="inline-flex items-center justify-center rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-[1px] hover:bg-orange-400"
-                        >
-                          Review &amp; build
-                        </Link>
-                      )}
-                      {itineraryReady ? (
-                        <Link
-                          href={`/trip/${id}/builder?from=admin`}
-                          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
-                        >
-                          Review request
-                        </Link>
-                      ) : null}
+                      <Link
+                        href={`/trip/${id}/builder?from=admin`}
+                        className="inline-flex items-center justify-center rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-[1px] hover:bg-orange-400"
+                      >
+                        Open trip
+                      </Link>
                       <DeleteTripButton tripId={id} />
                     </div>
                   </div>

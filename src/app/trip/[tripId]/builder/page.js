@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getTrip } from '@/lib/db';
+import { getTrip, updateTrip } from '@/lib/db';
 import { listTemplates } from '@/lib/templates';
-import { extractUnassignedActivities } from '@/lib/itinerary';
+import { buildDefaultItinerary, extractUnassignedActivities } from '@/lib/itinerary';
 import TripBuilderClient from './_components/TripBuilderClient';
 
 export const runtime = 'nodejs';
@@ -15,7 +15,12 @@ export default async function TripBuilderPage({ params }) {
     notFound();
   }
 
-  const itinerary = trip.itinerary ?? null;
+  let itinerary = trip.itinerary ?? null;
+  if (!itinerary?.cards?.length) {
+    const nextItinerary = buildDefaultItinerary(trip);
+    const updated = await updateTrip(tripId, { itinerary: nextItinerary });
+    itinerary = updated?.itinerary ?? nextItinerary;
+  }
   const unassignedActivities = extractUnassignedActivities(itinerary);
 
   const origin = trip.homeCountry ?? 'Home';

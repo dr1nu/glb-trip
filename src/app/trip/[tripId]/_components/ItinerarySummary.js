@@ -257,11 +257,6 @@ function DayDisplay({ card }) {
   const fields = card.fields ?? {};
   const details = [
     { label: 'City', value: fields.city || card.subtitle },
-    {
-      label: 'Highlight',
-      value: fields.highlightAttraction || card.summary,
-    },
-    { label: 'Daily cost', value: fields.dailyCost || card.priceLabel },
   ];
 
   return (
@@ -270,7 +265,6 @@ function DayDisplay({ card }) {
       iconType="pin"
       title={card.title}
       subtitle={fields.city || card.subtitle || 'Destination'}
-      price={fields.dailyCost || card.priceLabel || 'Cost tbc'}
     >
       <DetailList details={details} />
     </SummaryCard>

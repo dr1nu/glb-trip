@@ -23,7 +23,7 @@ function isDayCard(card, index) {
     return true;
   }
   if (Array.isArray(card.timeline) && card.timeline.length > 0) return true;
-  if (card.fields?.city || card.fields?.dailyCost || card.fields?.highlightAttraction) return true;
+  if (card.fields?.city) return true;
   return false;
 }
 
@@ -56,7 +56,7 @@ export default async function TripExperiencePage({ params, searchParams }) {
   const itinerary = trip.itinerary ?? null;
   if (!itinerary?.cards?.length) {
     const fallback = fromAdmin
-      ? `/trip/${tripId}/builder?from=admin`
+      ? `/trip/${tripId}?from=admin`
       : `/trip/${tripId}`;
     redirect(fallback);
   }
@@ -68,11 +68,11 @@ export default async function TripExperiencePage({ params, searchParams }) {
     <main className="min-h-screen bg-gradient-to-b from-[#eaf3ff] via-white to-[#fffaf5] text-slate-900">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <Link
-          href="/my-trips"
+          href={fromAdmin ? `/trip/${tripId}/builder?from=admin` : '/my-trips'}
           className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-[1px] hover:border-orange-200 hover:text-[#C2461E]"
         >
           <ArrowLeftCircle className="h-5 w-5" strokeWidth={1.6} aria-hidden="true" />
-          Back to my trips
+          {fromAdmin ? 'Back to trip builder' : 'Back to my trips'}
         </Link>
 
         <TripExperienceClient

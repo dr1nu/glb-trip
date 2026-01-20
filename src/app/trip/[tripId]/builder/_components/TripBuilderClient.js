@@ -1,12 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import FlightCardPanel from './FlightCardPanel';
 import AccommodationCardPanel from './AccommodationCardPanel';
-import DayCardPanel from './DayCardPanel';
 import DayTimelineBuilder from './DayTimelineBuilder';
 import { applyCardFieldUpdates } from '@/lib/itinerary';
 import TripRequestOverview from '@/app/trip/[tripId]/_components/TripRequestOverview';
+import AdminBillingEditor from '@/app/trip/[tripId]/_components/AdminBillingEditor';
+import TripImagePicker from '@/app/trip/[tripId]/_components/TripImagePicker';
+import { COUNTRY_HUBS } from '@/lib/airfare';
 
 function hasContent(value) {
   if (typeof value === 'string') {
@@ -40,6 +43,133 @@ function parseDateTimeParts(value) {
     return { date: '', time: timeMatch[1], hasDate: false };
   }
   return { date: '', time: '', hasDate: false };
+}
+
+function normalizeTimeValue(value) {
+  if (typeof value !== 'string') return '';
+  const { time } = parseDateTimeParts(value);
+  return time || value.trim();
+}
+
+function buildTimelineEntry({ id, type, title, time }) {
+  return {
+    id,
+    type,
+    fields: {
+      title,
+      time,
+      duration: '',
+      price: '',
+      link: '',
+      description: '',
+      travelMode: '',
+      travelDuration: '',
+    },
+  };
+}
+
+function splitCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    if (char === '"' && (i === 0 || line[i - 1] !== '\\')) {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function parseCsv(text) {
+  const rows = [];
+  const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length === 0) return rows;
+  const headers = splitCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+  for (let i = 1; i < lines.length; i += 1) {
+    const values = splitCsvLine(lines[i]);
+    const row = {};
+    headers.forEach((header, idx) => {
+      row[header] = values[idx] ?? '';
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function toNumber(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function applyManagedTimelineEntries(cards, { destinationCountry, departureCard, returnCard }) {
+  const dayCards = cards.filter((card) => card.type === 'day');
+  if (dayCards.length === 0) {
+    return { cards, mutated: false };
+  }
+
+  const arrivalTime = normalizeTimeValue(departureCard?.fields?.arrivalTime ?? '');
+  const returnTime = normalizeTimeValue(returnCard?.fields?.departTime ?? '');
+  const arrivalEntry = buildTimelineEntry({
+    id: 'managed-arrival-flight',
+    type: 'flight',
+    title: `Arrive in ${destinationCountry || 'Destination'}`,
+    time: arrivalTime,
+  });
+  const checkinEntry = buildTimelineEntry({
+    id: 'managed-checkin-accommodation',
+    type: 'accommodation',
+    title: 'Check In Accommodation',
+    time: '',
+  });
+  const returnEntry = buildTimelineEntry({
+    id: 'managed-return-flight',
+    type: 'flight',
+    title: 'Flight Back Home',
+    time: returnTime,
+  });
+  const managedIds = new Set([
+    arrivalEntry.id,
+    checkinEntry.id,
+    returnEntry.id,
+  ]);
+
+  const firstDayId = dayCards[0].id;
+  const lastDayId = dayCards[dayCards.length - 1].id;
+  let mutated = false;
+  const nextCards = cards.map((card) => {
+    if (card.type !== 'day') return card;
+    const existingTimeline = Array.isArray(card.timeline) ? card.timeline : [];
+    const filteredTimeline = existingTimeline.filter(
+      (entry) => !managedIds.has(entry?.id)
+    );
+    let nextTimeline = filteredTimeline;
+    if (card.id === firstDayId && departureCard) {
+      nextTimeline = [arrivalEntry, checkinEntry, ...nextTimeline];
+    }
+    if (card.id === lastDayId && returnCard) {
+      nextTimeline = [...nextTimeline, returnEntry];
+    }
+    if (JSON.stringify(existingTimeline) !== JSON.stringify(nextTimeline)) {
+      mutated = true;
+      return {
+        ...card,
+        timeline: nextTimeline,
+        isDirty: true,
+      };
+    }
+    return card;
+  });
+
+  return { cards: nextCards, mutated };
 }
 
 function hydrateCardFields(card, preferences) {
@@ -90,8 +220,6 @@ function hydrateCardFields(card, preferences) {
     ensureField('accommodationDateTo', preferences?.dateTo);
   } else if (card.type === 'day') {
     ensureField('city', card.subtitle);
-    ensureField('dailyCost', card.priceLabel);
-    ensureField('highlightAttraction', card.summary);
   }
 
   if (!mutated) {
@@ -144,27 +272,6 @@ function normalizeActivity(activity = {}) {
   };
 }
 
-function parsePriceValue(raw) {
-  if (typeof raw !== 'string') return 0;
-  const match = raw.match(/[\d,.]+/);
-  if (!match) return 0;
-  const normalized = match[0].replace(/,/g, '.');
-  const value = Number.parseFloat(normalized);
-  return Number.isFinite(value) ? value : 0;
-}
-
-function sumTimelinePrices(timeline) {
-  return (timeline ?? []).reduce((total, entry) => {
-    const price = parsePriceValue(entry?.fields?.price ?? '');
-    return total + price;
-  }, 0);
-}
-
-function buildDailyCost(timeline) {
-  const total = Math.round(sumTimelinePrices(timeline));
-  return total > 0 ? `€${total}` : '';
-}
-
 function prepareActivities(raw = [], { resetDirty = false } = {}) {
   return (raw ?? []).map((activity) => {
     const normalized = normalizeActivity(activity);
@@ -207,6 +314,10 @@ export default function TripBuilderClient({
     type: '',
     message: '',
   });
+  const [csvImportFeedback, setCsvImportFeedback] = useState({
+    type: '',
+    message: '',
+  });
   const [orderEdited, setOrderEdited] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [applyingTemplate, setApplyingTemplate] = useState(false);
@@ -214,13 +325,23 @@ export default function TripBuilderClient({
   const [publishing, setPublishing] = useState(false);
   const [activeView, setActiveView] = useState('summary');
   const [deletedCardIds, setDeletedCardIds] = useState(() => new Set());
+  const [chatGptPrompt, setChatGptPrompt] = useState('');
+  const [promptStatus, setPromptStatus] = useState('');
+  const [importingCsv, setImportingCsv] = useState(false);
+  const csvInputRef = useRef(null);
 
   const departureCard = useMemo(
-    () => cards.find((card) => card.id === 'departure-flight') ?? null,
+    () =>
+      cards.find(
+        (card) => card.id === 'departure-flight' || card.type === 'departure'
+      ) ?? null,
     [cards]
   );
   const returnCard = useMemo(
-    () => cards.find((card) => card.id === 'return-flight') ?? null,
+    () =>
+      cards.find(
+        (card) => card.id === 'return-flight' || card.type === 'return'
+      ) ?? null,
     [cards]
   );
   const accommodationCards = useMemo(
@@ -231,6 +352,30 @@ export default function TripBuilderClient({
     () => cards.filter((card) => card.type === 'day'),
     [cards]
   );
+
+  useEffect(() => {
+    const desiredDays = Math.max(0, Number(tripLengthDays) || 0);
+    if (dayCards.length > 0 || desiredDays === 0) return;
+    setCards((prev) => {
+      const existingDays = prev.filter((card) => card.type === 'day');
+      if (existingDays.length > 0) return prev;
+      const newDayCards = Array.from({ length: desiredDays }, (_, index) =>
+        buildDayCard(index + 1, null)
+      );
+      let insertIndex = prev.length;
+      for (let i = prev.length - 1; i >= 0; i -= 1) {
+        if (prev[i]?.type === 'return' || prev[i]?.id === 'return-flight') {
+          insertIndex = i;
+        }
+      }
+      return [
+        ...prev.slice(0, insertIndex),
+        ...newDayCards,
+        ...prev.slice(insertIndex),
+      ];
+    });
+    setOrderEdited(true);
+  }, [dayCards.length, tripLengthDays, destinationCountry]);
   const requestSummary = useMemo(() => {
     const currentPreferences = tripData?.preferences ?? preferences;
     const currentContact = tripData?.contact ?? null;
@@ -244,6 +389,30 @@ export default function TripBuilderClient({
       interests: formatInterests(currentPreferences),
     };
   }, [tripData, preferences]);
+
+  const { flightsUrl, accommodationUrl } = useMemo(
+    () =>
+      buildQuickSearchLinks({
+        homeCountry: tripData?.homeCountry,
+        destinationCountry,
+        preferences: preferences ?? tripData?.preferences ?? null,
+        contact: tripData?.contact ?? null,
+        result: tripData?.result ?? null,
+      }),
+    [tripData, preferences, destinationCountry]
+  );
+
+  const chatPromptSource = useMemo(
+    () => buildChatPromptSource({
+      destinationCountry,
+      tripLengthDays,
+      departureCard,
+      returnCard,
+      preferences: preferences ?? tripData?.preferences ?? null,
+      contact: tripData?.contact ?? null,
+    }),
+    [destinationCountry, tripLengthDays, departureCard, returnCard, tripData, preferences]
+  );
 
   function handleFieldChange(cardId, fieldUpdates) {
     setFeedback({ type: '', message: '' });
@@ -259,18 +428,12 @@ export default function TripBuilderClient({
   function handleTimelineChange(cardId, nextTimeline) {
     setFeedback({ type: '', message: '' });
     const safeTimeline = Array.isArray(nextTimeline) ? nextTimeline : [];
-    const dailyCost = buildDailyCost(safeTimeline);
     setCards((prev) =>
       prev.map((card) => {
         if (card.id !== cardId) return card;
         return {
           ...card,
           timeline: safeTimeline,
-          priceLabel: dailyCost,
-          fields: {
-            ...(card.fields ?? {}),
-            dailyCost,
-          },
           isDirty: true,
         };
       })
@@ -307,20 +470,15 @@ export default function TripBuilderClient({
     const globalCrypto = typeof globalThis !== 'undefined' ? globalThis.crypto : null;
     const id = globalCrypto?.randomUUID?.() ?? `day-${Date.now()}-${labelIndex}`;
     const subtitle = seedCard?.subtitle ?? destinationCountry ?? 'Destination';
-    const priceLabel = seedCard?.priceLabel ?? '';
     const city = seedCard?.fields?.city ?? subtitle ?? '';
-    const dailyCost = seedCard?.fields?.dailyCost ?? priceLabel ?? '';
     return {
       id,
       type: 'day',
       title: `Day ${labelIndex}`,
       subtitle,
-      priceLabel,
       summary: 'Plan headline experiences, dining, and downtime.',
       fields: {
         city,
-        highlightAttraction: '',
-        dailyCost,
       },
       timeline: [],
       notes: '',
@@ -402,19 +560,12 @@ export default function TripBuilderClient({
       const entry = fromTimeline[entryIndex];
       const nextFromTimeline = fromTimeline.filter((item) => item.id !== entryId);
       const toTimeline = Array.isArray(toCard.timeline) ? toCard.timeline : [];
-      const fromDailyCost = buildDailyCost(nextFromTimeline);
-      const toDailyCost = buildDailyCost([...toTimeline, entry]);
 
       return prev.map((card) => {
         if (card.id === fromDayId) {
           return {
             ...card,
             timeline: nextFromTimeline,
-            priceLabel: fromDailyCost,
-            fields: {
-              ...(card.fields ?? {}),
-              dailyCost: fromDailyCost,
-            },
             isDirty: true,
           };
         }
@@ -422,11 +573,6 @@ export default function TripBuilderClient({
           return {
             ...card,
             timeline: [...toTimeline, entry],
-            priceLabel: toDailyCost,
-            fields: {
-              ...(card.fields ?? {}),
-              dailyCost: toDailyCost,
-            },
             isDirty: true,
           };
         }
@@ -522,15 +668,9 @@ export default function TripBuilderClient({
           ...existingTimeline,
           { id: activity.id, type: activity.type, fields: activity.fields },
         ];
-        const dailyCost = buildDailyCost(nextTimeline);
         return {
           ...card,
           timeline: nextTimeline,
-          priceLabel: dailyCost,
-          fields: {
-            ...(card.fields ?? {}),
-            dailyCost,
-          },
           isDirty: true,
         };
       })
@@ -563,6 +703,90 @@ export default function TripBuilderClient({
           : activity
       )
     );
+  }
+
+  async function handleCsvFileChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (importingCsv) return;
+    setCsvImportFeedback({ type: '', message: '' });
+    setImportingCsv(true);
+
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (!rows.length) {
+        throw new Error('CSV is empty or unreadable.');
+      }
+
+      const dayGroups = new Map();
+      const unassignedActivities = [];
+      let entryCounter = 0;
+
+      rows.forEach((row) => {
+        const day = toNumber(row.day);
+        const itemTypeRaw = (row.type || row.category || 'attraction')
+          .toString()
+          .trim()
+          .toLowerCase();
+        const title = row.title || row.activity || row.place || '';
+        entryCounter += 1;
+        const timelineItem = {
+          id: `csv-${Date.now()}-${entryCounter}`,
+          type: itemTypeRaw || 'attraction',
+          fields: {
+            title,
+            name: title,
+            time: row.time || '',
+            duration: row.duration || '',
+            travelMode: row['travel connector'] || '',
+            travelDuration: row['travel time'] || '',
+            price: row.price || '',
+            link: row.link || '',
+            description: row.description || row.notes || '',
+          },
+        };
+        if (!day) {
+          unassignedActivities.push(timelineItem);
+          return;
+        }
+        dayGroups.set(day, [...(dayGroups.get(day) || []), timelineItem]);
+      });
+
+      if (dayGroups.size === 0 && unassignedActivities.length === 0) {
+        throw new Error('No rows with a valid "day" column were found.');
+      }
+
+      setCards((prev) => {
+        let dayIndex = 0;
+        return prev.map((card) => {
+          if (card.type !== 'day') return card;
+          dayIndex += 1;
+          if (!dayGroups.has(dayIndex)) return card;
+          return {
+            ...card,
+            timeline: dayGroups.get(dayIndex),
+            isDirty: true,
+          };
+        });
+      });
+      setUnassignedActivities(
+        prepareActivities(unassignedActivities, { resetDirty: false })
+      );
+      if (unassignedActivities.length > 0) {
+        setActivitiesEdited(true);
+      }
+      setCsvImportFeedback({ type: 'success', message: 'CSV imported into day timelines.' });
+    } catch (err) {
+      console.error('Failed to import CSV', err);
+      setCsvImportFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Unable to import CSV.',
+      });
+    } finally {
+      setImportingCsv(false);
+    }
   }
 
   function handleUnassignedTypeChange(activityId, type) {
@@ -748,7 +972,12 @@ export default function TripBuilderClient({
     setFeedback({ type: '', message: '' });
 
     try {
-      const dirtyCards = cards
+      const { cards: cardsWithTimeline } = applyManagedTimelineEntries(cards, {
+        destinationCountry,
+        departureCard,
+        returnCard,
+      });
+      const dirtyCards = cardsWithTimeline
         .filter((card) => card.isDirty)
         .map(({ isDirty, ...card }) => ({
           id: card.id,
@@ -808,7 +1037,7 @@ export default function TripBuilderClient({
         throw new Error(message);
       }
 
-      const nextCards = Array.isArray(data?.cards) ? data.cards : cards;
+      const nextCards = Array.isArray(data?.cards) ? data.cards : cardsWithTimeline;
       const nextActivities = Array.isArray(data?.unassignedActivities)
         ? data.unassignedActivities
         : unassignedActivities;
@@ -862,14 +1091,14 @@ export default function TripBuilderClient({
             </button>
             <button
               type="button"
-              onClick={() => setActiveView('request')}
+              onClick={() => setActiveView('admin')}
               className={`px-4 py-1.5 text-sm font-semibold rounded-full transition ${
-                activeView === 'request'
+                activeView === 'admin'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-[#4C5A6B] hover:text-slate-900'
               }`}
             >
-              Request
+              Admin
             </button>
           </div>
           <span className="text-xs uppercase tracking-wide text-[#4C5A6B]">
@@ -877,7 +1106,7 @@ export default function TripBuilderClient({
               ? 'Trip summary builder'
               : activeView === 'days'
               ? 'Day-by-day timeline'
-              : 'Trip request overview'}
+              : 'Admin settings'}
           </span>
         </div>
       </section>
@@ -923,7 +1152,37 @@ export default function TripBuilderClient({
               >
                 {applyingTemplate ? 'Applying…' : 'Apply template'}
               </button>
+              <button
+                type="button"
+                onClick={() => csvInputRef.current?.click()}
+                disabled={importingCsv}
+                className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                  importingCsv
+                    ? 'bg-orange-100 text-[#4C5A6B] cursor-not-allowed'
+                    : 'bg-white text-slate-900 border border-orange-200 hover:border-orange-300'
+                }`}
+              >
+                {importingCsv ? 'Importing…' : 'Import CSV'}
+              </button>
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={handleCsvFileChange}
+              />
             </div>
+            {csvImportFeedback.message ? (
+              <div
+                className={`text-sm rounded-xl px-3 py-2 border ${
+                  csvImportFeedback.type === 'success'
+                    ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                    : 'bg-red-500/10 border-red-500/30 text-red-300'
+                }`}
+              >
+                {csvImportFeedback.message}
+              </div>
+            ) : null}
             {templateFeedback.message ? (
               <div
                 className={`text-sm rounded-xl px-3 py-2 border ${
@@ -945,11 +1204,32 @@ export default function TripBuilderClient({
           </section>
 
           <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-            <header>
-              <h2 className="text-lg font-semibold">Flights</h2>
-              <p className="text-sm text-[#4C5A6B]">
-                Add confirmed timings, baggage info, and booking links for each leg.
-              </p>
+            <header className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Flights</h2>
+                <p className="text-sm text-[#4C5A6B]">
+                  Add confirmed timings, baggage info, and booking links for each leg.
+                </p>
+              </div>
+              {flightsUrl ? (
+                <a
+                  href={flightsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ff9f43] via-[#ff8a00] to-[#ff6f00] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#ff8a00]/30 hover:brightness-105 transition"
+                >
+                  ✈ Search flights
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#f3e5d8] px-4 py-2 text-xs font-semibold text-[#a07955] cursor-not-allowed"
+                  title="Add valid airports and dates to enable flight search"
+                  disabled
+                >
+                  ✈ Search flights
+                </button>
+              )}
             </header>
 
             <div className="space-y-4">
@@ -984,13 +1264,34 @@ export default function TripBuilderClient({
                   Capture stay details so travellers know where they&apos;ll unwind.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleAddAccommodation}
-                className="inline-flex items-center justify-center rounded-2xl border border-orange-100 bg-white px-4 py-2 text-sm font-semibold text-orange-600 shadow shadow-orange-100 hover:bg-orange-50"
-              >
-                Add accommodation option
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {accommodationUrl ? (
+                  <a
+                    href={accommodationUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#0c2a52] px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-[#0c2a52]/20 hover:bg-[#0a2344] transition"
+                  >
+                    🏨 Search accommodation
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#f3e5d8] px-4 py-2 text-xs font-semibold text-[#a07955] cursor-not-allowed"
+                    title="Add valid dates to enable accommodation search"
+                    disabled
+                  >
+                    🏨 Search accommodation
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleAddAccommodation}
+                  className="inline-flex items-center justify-center rounded-2xl border border-orange-100 bg-white px-4 py-2 text-sm font-semibold text-orange-600 shadow shadow-orange-100 hover:bg-orange-50"
+                >
+                  Add accommodation option
+                </button>
+              </div>
             </header>
             {accommodationCards.length > 0 ? (
               <div className="space-y-4">
@@ -1010,29 +1311,11 @@ export default function TripBuilderClient({
             )}
           </section>
 
-          <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
-            <header>
-              <h2 className="text-lg font-semibold">Daily highlights</h2>
-              <p className="text-sm text-[#4C5A6B]">
-                Outline each day&apos;s must-see experience and costs.
-              </p>
-            </header>
-            <div className="space-y-4">
-              {dayCards.length > 0 ? (
-                dayCards.map((card) => (
-                  <DayCardPanel
-                    key={card.id}
-                    card={card}
-                    onFieldChange={handleFieldChange}
-                    isDirty={card.isDirty}
-                  />
-                ))
-              ) : (
-                <MissingCardNotice label="Daily plans" />
-              )}
-            </div>
-          </section>
-
+          <TripRequestOverview
+            trip={tripData}
+            fromAdmin
+            showItinerarySummary={false}
+          />
         </>
       ) : activeView === 'days' ? (
         <div className="relative left-1/2 right-1/2 w-screen max-w-none -translate-x-1/2 px-6">
@@ -1053,9 +1336,70 @@ export default function TripBuilderClient({
             showRequestSummary
           />
         </div>
-      ) : (
-        <TripRequestOverview trip={tripData} fromAdmin />
-      )}
+      ) : activeView === 'admin' ? (
+        <div className="space-y-6">
+          <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-5">
+            <header>
+              <h2 className="text-lg font-semibold">Trip settings</h2>
+              <p className="text-sm text-[#4C5A6B]">
+                Update billing and the trip cover image from one place.
+              </p>
+            </header>
+            <div className="space-y-5">
+              <AdminBillingEditor
+                tripId={tripId}
+                tripLengthDays={tripLengthDays}
+                billingCurrency={tripData?.billingCurrency ?? 'EUR'}
+                billingAmountCents={tripData?.billingAmountCents ?? null}
+                billingCustomAmountCents={tripData?.billingCustomAmountCents ?? null}
+              />
+              <TripImagePicker
+                tripId={tripId}
+                destinationCountry={destinationCountry}
+                initialImagePath={tripData?.imagePath ?? ''}
+              />
+            </div>
+          </section>
+          <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
+            <header>
+              <h2 className="text-lg font-semibold">ChatGPT prompt</h2>
+              <p className="text-sm text-[#4C5A6B]">
+                Generate a copy-ready prompt with the latest trip request details.
+              </p>
+            </header>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextPrompt = buildChatGptPrompt(chatPromptSource);
+                  setChatGptPrompt(nextPrompt);
+                  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                    navigator.clipboard
+                      .writeText(nextPrompt)
+                      .then(() => setPromptStatus('Copied to clipboard.'))
+                      .catch(() => setPromptStatus('Prompt generated. Copy manually.'));
+                  } else {
+                    setPromptStatus('Prompt generated. Copy manually.');
+                  }
+                }}
+                className="inline-flex items-center justify-center rounded-2xl bg-orange-500 px-4 py-2 text-sm font-semibold text-neutral-900 shadow shadow-orange-200 hover:bg-orange-600 transition"
+              >
+                Create ChatGPT prompt
+              </button>
+              {promptStatus ? (
+                <span className="text-xs text-[#4C5A6B]">{promptStatus}</span>
+              ) : null}
+            </div>
+            {chatGptPrompt ? (
+              <textarea
+                readOnly
+                value={chatGptPrompt}
+                className="min-h-[180px] w-full rounded-2xl border border-orange-100 bg-[#fff8f0] p-4 text-sm text-[#1f2937] focus:outline-none"
+              />
+            ) : null}
+          </section>
+        </div>
+      ) : null}
 
       <section className="bg-white border border-orange-100 rounded-2xl p-6 space-y-4">
         <header className="flex flex-wrap items-center justify-between gap-3">
@@ -1067,6 +1411,12 @@ export default function TripBuilderClient({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/trip/${tripId}/experience?from=admin`}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors border border-orange-200 bg-white text-slate-900 hover:border-orange-300"
+            >
+              Preview immersive view
+            </Link>
             <button
               type="button"
               onClick={handleSaveAsTemplate}
@@ -1211,4 +1561,123 @@ function formatInterests(preferences) {
     : [];
   if (interests.length === 0) return 'No preferences listed';
   return interests.join(', ');
+}
+
+function formatYesNo(value) {
+  if (value === true) return 'Yes';
+  if (value === false) return 'No';
+  return 'Not specified';
+}
+
+function formatDayTripsForPrompt(preferences) {
+  if (!preferences) return 'Not specified';
+  if (preferences.wantsDayTrips === true) {
+    return preferences.dayTripsDetails?.trim() || 'Yes';
+  }
+  if (preferences.wantsDayTrips === false) return 'No';
+  return 'Not specified';
+}
+
+function buildChatPromptSource({
+  destinationCountry,
+  tripLengthDays,
+  departureCard,
+  returnCard,
+  preferences,
+  contact,
+}) {
+  const arrivalTime = normalizeTimeValue(departureCard?.fields?.arrivalTime ?? '');
+  const departureTime = normalizeTimeValue(returnCard?.fields?.departTime ?? '');
+  const interests = Array.isArray(preferences?.interests)
+    ? preferences.interests.filter(Boolean).join(', ')
+    : '';
+  const specialRequests =
+    preferences?.details?.trim() || contact?.details?.trim() || '';
+  const accommodationLocation =
+    preferences?.accommodationLocation ||
+    preferences?.location ||
+    '';
+
+  return {
+    destinationCountry: destinationCountry || 'Destination',
+    tripLengthDays: tripLengthDays ?? '',
+    arrivalTime,
+    departureTime,
+    interests: interests || 'Not specified',
+    carRental: formatYesNo(preferences?.rentCarSelfDrive),
+    accommodationLocation: accommodationLocation || 'Not specified',
+    dayTrips: formatDayTripsForPrompt(preferences),
+    specialRequests: specialRequests || 'Not specified',
+  };
+}
+
+function buildChatGptPrompt(source) {
+  return [
+    `Destination: ${source.destinationCountry}`,
+    `Days: Total of days ${source.tripLengthDays || '—'} (arrival and departure day inclusive)`,
+    `Arrival time (Day 1): ${source.arrivalTime || '—'}`,
+    `Departure time (Final day): ${source.departureTime || '—'}`,
+    `Interests/likes: ${source.interests}`,
+    `Car rental: ${source.carRental}`,
+    `Accommodation area/address: ${source.accommodationLocation}`,
+    `Day trips: ${source.dayTrips}`,
+    `Special requests: ${source.specialRequests}`,
+  ].join('\n');
+}
+
+function buildQuickSearchLinks({ homeCountry, destinationCountry, preferences, contact, result }) {
+  const parseIata = (value) => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(trimmed)) return trimmed;
+    const match = trimmed.match(/\b([A-Z]{3})\b/);
+    return match ? match[1] : null;
+  };
+  const formatSkyScannerDate = (value) => {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${yy}${mm}${dd}`;
+  };
+  const formatBookingDate = (value) => {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 10);
+  };
+
+  const homeHub = COUNTRY_HUBS[homeCountry] ?? {};
+  const destHub = COUNTRY_HUBS[destinationCountry] ?? {};
+  const originIata =
+    parseIata(contact?.nearestAirport) ||
+    parseIata(result?.flight?.from) ||
+    parseIata(homeHub.iata);
+  const destinationIata =
+    parseIata(result?.flight?.to) ||
+    parseIata(destHub.iata);
+
+  const outbound = formatSkyScannerDate(preferences?.dateFrom);
+  const inbound = formatSkyScannerDate(preferences?.dateTo);
+  const flightsUrl =
+    originIata && destinationIata && outbound && inbound
+      ? `https://www.skyscanner.net/transport/flights/${originIata.toLowerCase()}/${destinationIata.toLowerCase()}/${outbound}/${inbound}/`
+      : '';
+
+  const checkin = formatBookingDate(preferences?.dateFrom);
+  const checkout = formatBookingDate(preferences?.dateTo);
+  const destinationLabel =
+    (typeof result?.destinationLabel === 'string' && result.destinationLabel) ||
+    destinationCountry ||
+    '';
+  const adults =
+    Number.isFinite(contact?.adults) && contact.adults > 0 ? contact.adults : 2;
+  const children =
+    Number.isFinite(contact?.children) && contact.children >= 0 ? contact.children : 0;
+  const accommodationUrl =
+    destinationLabel && checkin && checkout
+      ? `https://www.booking.com/searchresults.en-gb.html?ss=${encodeURIComponent(destinationLabel)}&checkin=${checkin}&checkout=${checkout}&group_adults=${adults}&group_children=${children}&no_rooms=1`
+      : '';
+
+  return { flightsUrl, accommodationUrl };
 }

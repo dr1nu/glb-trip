@@ -102,6 +102,8 @@ export default function TemplateImporter() {
             name: title,
             time: row.time || '',
             duration: row.duration || '',
+            travelMode: row['travel connector'] || '',
+            travelDuration: row['travel time'] || '',
             price: row.price || '',
             link: row.link || '',
             description: row.description || row.notes || '',

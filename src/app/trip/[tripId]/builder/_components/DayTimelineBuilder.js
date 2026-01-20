@@ -559,7 +559,7 @@ export default function DayTimelineBuilder({
     return (
       <section className="bg-white border border-orange-100 rounded-2xl p-6">
         <p className="text-sm text-[#4C5A6B]">
-          Add day cards in the summary builder to enable timeline editing.
+          Day cards appear once the trip length is set. Save the trip to persist changes.
         </p>
       </section>
     );
